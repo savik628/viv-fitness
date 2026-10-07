@@ -1,0 +1,322 @@
+/* VIV Fitness - Comprehensive Theme Design Tokens (Dark & Light)
+   Crafted to Apple Human Interface Guidelines & Nike Training Club aesthetics */
+
+:root, [data-theme="dark"] {
+  color-scheme: dark;
+  --bg-color: #000000;
+  --body-bg: #050505;
+  --card-bg: #121215;
+  --card-bg-elevated: #1a1a1e;
+  --card-bg-subtle: rgba(255, 255, 255, 0.04);
+  --text-primary: #ffffff;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+  --accent-color: #ffffff;
+  --accent-subtle: rgba(255, 255, 255, 0.08);
+  --border-color: #28282e;
+  --border-subtle: #1e1e24;
+
+  /* Primary Action Button */
+  --btn-primary-bg: #ffffff;
+  --btn-primary-text: #000000;
+  --btn-primary-hover: #e4e4e7;
+
+  /* Status & Action Buttons */
+  --green-btn: #16a34a;
+  --green-btn-hover: #15803d;
+  --red-btn: #dc2626;
+  --red-btn-hover: #b91c1c;
+
+  /* Navigation & Structural Chrome */
+  --nav-bg: rgba(18, 18, 21, 0.94);
+  --nav-border: #24242a;
+  --app-shadow: 0 0 40px rgba(0, 0, 0, 0.85);
+  --modal-overlay-bg: rgba(0, 0, 0, 0.78);
+  --modal-card-shadow: 0 -10px 40px rgba(0, 0, 0, 0.85);
+
+  /* Rest Timer Floating Bar (Solid, Non-transparent) */
+  --timer-bar-bg: #18181b;
+  --timer-bar-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(34, 197, 94, 0.2);
+
+  /* Chart Canvas Colors */
+  --chart-line: #ffffff;
+  --chart-grad-start: rgba(255, 255, 255, 0.14);
+  --chart-grid: rgba(120, 120, 128, 0.14);
+  --chart-dot-fill: #000000;
+  --chart-dot-stroke: #ffffff;
+  --chart-badge-bg: #18181b;
+  --chart-badge-border: #3f3f46;
+  --chart-badge-text: #ffffff;
+  --chart-axis-text: #a1a1aa;
+  --chart-axis-subtext: #71717a;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --bg-color: #f8fafc;
+  --body-bg: #e2e8f0;
+  --card-bg: #ffffff;
+  --card-bg-elevated: #f1f5f9;
+  --card-bg-subtle: #f8fafc;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --accent-color: #0f172a;
+  --accent-subtle: rgba(15, 23, 42, 0.05);
+  --border-color: #e2e8f0;
+  --border-subtle: #cbd5e1;
+
+  /* Primary Action Button */
+  --btn-primary-bg: #0f172a;
+  --btn-primary-text: #ffffff;
+  --btn-primary-hover: #1e293b;
+
+  /* Status & Action Buttons */
+  --green-btn: #16a34a;
+  --green-btn-hover: #15803d;
+  --red-btn: #dc2626;
+  --red-btn-hover: #b91c1c;
+
+  /* Navigation & Structural Chrome */
+  --nav-bg: rgba(255, 255, 255, 0.95);
+  --nav-border: #e2e8f0;
+  --app-shadow: 0 4px 30px rgba(15, 23, 42, 0.08);
+  --modal-overlay-bg: rgba(15, 23, 42, 0.45);
+  --modal-card-shadow: 0 -10px 40px rgba(15, 23, 42, 0.12);
+
+  /* Rest Timer Floating Bar (Solid, Non-transparent) */
+  --timer-bar-bg: #ffffff;
+  --timer-bar-shadow: 0 8px 30px rgba(15, 23, 42, 0.12), 0 0 15px rgba(22, 163, 74, 0.15);
+
+  /* Chart Canvas Colors */
+  --chart-line: #0f172a;
+  --chart-grad-start: rgba(15, 23, 42, 0.12);
+  --chart-grid: rgba(0, 0, 0, 0.07);
+  --chart-dot-fill: #ffffff;
+  --chart-dot-stroke: #0f172a;
+  --chart-badge-bg: #0f172a;
+  --chart-badge-border: #1e293b;
+  --chart-badge-text: #ffffff;
+  --chart-axis-text: #475569;
+  --chart-axis-subtext: #64748b;
+}
+
+/* =========================================================
+   Theme Switcher Component Controls
+   ========================================================= */
+.btn-theme-select {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 12px 8px;
+  background: var(--card-bg-elevated);
+  border: 1.5px solid var(--border-color);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.btn-theme-select:hover {
+  border-color: var(--text-muted);
+  color: var(--text-primary);
+}
+
+.btn-theme-select.theme-active {
+  border-color: var(--accent-color);
+  color: var(--text-primary);
+  background: var(--accent-subtle);
+  box-shadow: 0 0 0 1px var(--accent-color);
+}
+
+/* =========================================================
+   Light Theme Refinements & Micro-Interactions (Apple HIG / NTC)
+   ========================================================= */
+[data-theme="light"] .card,
+[data-theme="light"] .tile-card,
+[data-theme="light"] .list-card,
+[data-theme="light"] .social-btn,
+[data-theme="light"] .muscle-heatmap-card,
+[data-theme="light"] .plate-summary-card {
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+[data-theme="light"] .sub-tabs {
+  background-color: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
+[data-theme="light"] .sub-tab-btn {
+  color: #64748b;
+}
+
+[data-theme="light"] .sub-tab-btn.active {
+  background-color: #ffffff;
+  color: #0f172a;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+[data-theme="light"] .filter-chip {
+  background-color: #ffffff;
+  border-color: #cbd5e1;
+  color: #475569;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+[data-theme="light"] .filter-chip:hover {
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+[data-theme="light"] .filter-chip.active {
+  background-color: #0f172a;
+  color: #ffffff;
+  border-color: #0f172a;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
+}
+
+[data-theme="light"] .form-input,
+[data-theme="light"] .form-select {
+  background-color: #ffffff;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+[data-theme="light"] .form-input:focus,
+[data-theme="light"] .form-select:focus {
+  border-color: #0f172a;
+  box-shadow: 0 0 0 1px #0f172a;
+}
+
+[data-theme="light"] .search-input {
+  background-color: #ffffff;
+  border-color: #cbd5e1;
+  color: #0f172a;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+[data-theme="light"] .search-input:focus {
+  border-color: #0f172a;
+}
+
+[data-theme="light"] .stepper-container {
+  background-color: #ffffff;
+  border-color: #cbd5e1;
+}
+
+[data-theme="light"] .stepper-input {
+  background-color: transparent;
+  color: #0f172a;
+}
+
+[data-theme="light"] .stepper-btn {
+  color: #0f172a;
+}
+
+[data-theme="light"] .stepper-btn:active {
+  background-color: rgba(15, 23, 42, 0.06);
+}
+
+[data-theme="light"] .sets-table-row.completed {
+  background-color: rgba(22, 163, 74, 0.08);
+}
+
+[data-theme="light"] .cal-cell {
+  background-color: #ffffff;
+  border-color: #e2e8f0;
+  color: #0f172a;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+[data-theme="light"] .cal-cell.today {
+  border-color: #0f172a;
+  box-shadow: inset 0 0 0 1.5px #0f172a;
+  font-weight: 800;
+}
+
+[data-theme="light"] .cal-cell.active-workout {
+  background-color: rgba(22, 163, 74, 0.12);
+  border-color: rgba(22, 163, 74, 0.7);
+}
+
+[data-theme="light"] .cal-nav-btn {
+  background-color: #ffffff;
+  border-color: #cbd5e1;
+  color: #0f172a;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+[data-theme="light"] .cal-detail-metric,
+[data-theme="light"] .finish-stat-box,
+[data-theme="light"] .report-stat-item {
+  background-color: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+[data-theme="light"] .pr-banner {
+  background-color: #fefce8;
+  border-color: rgba(234, 179, 8, 0.4);
+}
+
+[data-theme="light"] .exercise-anim-box {
+  background-color: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.03);
+}
+
+[data-theme="light"] .barbell-visual {
+  background-color: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: inset 0 1px 4px rgba(15, 23, 42, 0.04);
+}
+
+[data-theme="light"] .barbell-shaft {
+  background: linear-gradient(180deg, #94a3b8 0%, #475569 50%, #1e293b 100%);
+}
+
+[data-theme="light"] .barbell-collar {
+  background: linear-gradient(180deg, #cbd5e1 0%, #64748b 50%, #334155 100%);
+}
+
+[data-theme="light"] .plate-5 {
+  background-color: #ffffff;
+  border: 1px solid #94a3b8;
+  color: #0f172a;
+}
+
+[data-theme="light"] .plate-quick-chip {
+  background-color: #ffffff;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+[data-theme="light"] .plate-quick-chip.active {
+  background-color: #0f172a;
+  color: #ffffff;
+  border-color: #0f172a;
+}
+
+[data-theme="light"] .muscle-bar-bg {
+  background-color: #e2e8f0;
+}
+
+[data-theme="light"] .badge {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+[data-theme="light"] .btn-secondary:active {
+  background-color: #e2e8f0;
+}
+
+[data-theme="light"] .modal-card {
+  box-shadow: var(--modal-card-shadow);
+}

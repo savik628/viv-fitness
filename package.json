@@ -1,0 +1,12 @@
+{
+  "name": "viv-web",
+  "version": "1.0.0",
+  "description": "VIV",
+  "scripts": {
+    "start": "python3 server.py",
+    "dev": "python3 server.py"
+  },
+  "keywords": ["viv"],
+  "author": "",
+  "license": "MIT"
+}

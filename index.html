@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>VIV</title>
+  
+  <!-- Telegram Web App SDK (defer to avoid blocking offline) -->
+  <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
+
+  <!-- PWA & Mobile Web App settings for iPhone and Android -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="VIV">
+  <link rel="manifest" href="manifest.json">
+
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-slot header-left">
+        <button id="back-btn" class="nav-back-btn hidden" aria-label="Назад">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+      </div>
+      <h1 id="screen-title">Направления</h1>
+      <div id="header-actions" class="header-slot header-right"></div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main id="main-content" class="screen-content">
+      <!-- Dynamic Views Injected Here -->
+    </main>
+
+    <!-- Floating Rest Timer Root -->
+    <div id="rest-timer-root"></div>
+
+    <!-- Bottom Navigation Bar (5 Tabs) -->
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-tab="home">
+        <div class="nav-icon">
+          <svg class="icon-outline" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          <svg class="icon-filled" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.1 2.5 9.5a1 1 0 0 0-.5.8v10.2a1.5 1.5 0 0 0 1.5 1.5h6a.5.5 0 0 0 .5-.5V15a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v6.5a.5.5 0 0 0 .5.5h6a1.5 1.5 0 0 0 1.5-1.5V10.3a1 1 0 0 0-.5-.8L12 2.1z"></path></svg>
+        </div>
+        <span>База</span>
+      </button>
+      <button class="nav-item" data-tab="work">
+        <div class="nav-icon">
+          <svg class="icon-outline" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 12h10"></path><rect x="4.5" y="7" width="2.5" height="10" rx="1"></rect><rect x="17" y="7" width="2.5" height="10" rx="1"></rect><path d="M2 9v6"></path><path d="M22 9v6"></path></svg>
+          <svg class="icon-filled" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="7" y="11" width="10" height="2" rx="0.5"></rect><rect x="4.5" y="7" width="2.5" height="10" rx="1"></rect><rect x="17" y="7" width="2.5" height="10" rx="1"></rect><rect x="1.8" y="8.5" width="2" height="7" rx="0.8"></rect><rect x="20.2" y="8.5" width="2" height="7" rx="0.8"></rect></svg>
+        </div>
+        <span>Тренировки</span>
+      </button>
+      <button class="nav-item" data-tab="stats">
+        <div class="nav-icon">
+          <svg class="icon-outline" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="8" rx="1"></rect><rect x="10" y="5" width="4" height="15" rx="1"></rect><rect x="17" y="9" width="4" height="11" rx="1"></rect></svg>
+          <svg class="icon-filled" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="12" width="4" height="8" rx="1"></rect><rect x="10" y="5" width="4" height="15" rx="1"></rect><rect x="17" y="9" width="4" height="11" rx="1"></rect></svg>
+        </div>
+        <span>Статистика</span>
+      </button>
+      <button class="nav-item" data-tab="profile">
+        <div class="nav-icon">
+          <svg class="icon-outline" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M20 21a8 8 0 0 0-16 0"></path></svg>
+          <svg class="icon-filled" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4.5"></circle><path d="M12 14c-4.42 0-8 2.24-8 5v1.5a.5.5 0 0 0 .5.5h15a.5.5 0 0 0 .5-.5V19c0-2.76-3.58-5-8-5z"></path></svg>
+        </div>
+        <span>Профиль</span>
+      </button>
+      <button class="nav-item" data-tab="shop">
+        <div class="nav-icon">
+          <svg class="icon-outline" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+          <svg class="icon-filled" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4H6zm10 8a4 4 0 0 1-8 0H6a6 6 0 0 0 12 0h-2z"></path></svg>
+        </div>
+        <span>VIV</span>
+      </button>
+    </nav>
+
+    <!-- Modal Container -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+      <div id="modal-container" class="modal-card"></div>
+    </div>
+  </div>
+
+  <!-- Core Modules -->
+  <script src="js/core/storage.js"></script>
+  <script src="js/core/theme.js"></script>
+  <script src="js/core/audio.js"></script>
+
+  <!-- Component Modules -->
+  <script src="js/components/modal.js"></script>
+  <script src="js/components/timer.js"></script>
+  <script src="js/components/chart.js"></script>
+  <script src="js/components/plate-calc.js"></script>
+
+  <!-- Screen Modules -->
+  <script src="js/screens/catalog.js"></script>
+  <script src="js/screens/workout.js"></script>
+  <script src="js/screens/stats.js"></script>
+  <script src="js/screens/habits.js"></script>
+  <script src="js/screens/profile.js"></script>
+
+  <!-- Main Application Router -->
+  <script src="js/app.js"></script>
+</body>
+</html>
