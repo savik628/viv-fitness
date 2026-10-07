@@ -26,7 +26,7 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
         </button>
       </div>
-      <h1 id="screen-title">Направления</h1>
+      <h1 id="screen-title">Мои тренировки</h1>
       <div id="header-actions" class="header-slot header-right"></div>
     </header>
 
@@ -38,16 +38,16 @@
     <!-- Floating Rest Timer Root -->
     <div id="rest-timer-root"></div>
 
-    <!-- Bottom Navigation Bar (5 Tabs) -->
+    <!-- Bottom Navigation Bar (5 Tabs with Habits instead of Home) -->
     <nav class="bottom-nav">
-      <button class="nav-item active" data-tab="home">
+      <button class="nav-item" data-tab="habits">
         <div class="nav-icon">
-          <svg class="icon-outline" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-          <svg class="icon-filled" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.1 2.5 9.5a1 1 0 0 0-.5.8v10.2a1.5 1.5 0 0 0 1.5 1.5h6a.5.5 0 0 0 .5-.5V15a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v6.5a.5.5 0 0 0 .5.5h6a1.5 1.5 0 0 0 1.5-1.5V10.3a1 1 0 0 0-.5-.8L12 2.1z"></path></svg>
+          <svg class="icon-outline" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+          <svg class="icon-filled" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm-8.29 13.71a1 1 0 0 1-1.42 0l-3.29-3.29a1 1 0 1 1 1.42-1.42L10 14.59l6.29-6.3a1 1 0 0 1 1.42 1.42l-7 7z"></path></svg>
         </div>
-        <span>База</span>
+        <span>Привычки</span>
       </button>
-      <button class="nav-item" data-tab="work">
+      <button class="nav-item active" data-tab="work">
         <div class="nav-icon">
           <svg class="icon-outline" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 12h10"></path><rect x="4.5" y="7" width="2.5" height="10" rx="1"></rect><rect x="17" y="7" width="2.5" height="10" rx="1"></rect><path d="M2 9v6"></path><path d="M22 9v6"></path></svg>
           <svg class="icon-filled" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="7" y="11" width="10" height="2" rx="0.5"></rect><rect x="4.5" y="7" width="2.5" height="10" rx="1"></rect><rect x="17" y="7" width="2.5" height="10" rx="1"></rect><rect x="1.8" y="8.5" width="2" height="7" rx="0.8"></rect><rect x="20.2" y="8.5" width="2" height="7" rx="0.8"></rect></svg>
@@ -95,10 +95,9 @@
   <script src="js/components/plate-calc.js"></script>
 
   <!-- Screen Modules -->
-  <script src="js/screens/catalog.js"></script>
+  <script src="js/screens/habits.js"></script>
   <script src="js/screens/workout.js"></script>
   <script src="js/screens/stats.js"></script>
-  <script src="js/screens/habits.js"></script>
   <script src="js/screens/profile.js"></script>
 
   <!-- Main Application Router -->

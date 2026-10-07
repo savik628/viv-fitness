@@ -1,5 +1,5 @@
 // VIV Fitness - Client Application Controller & Router
-// Центральный модуль управления состоянием, навигацией и жизненным циклом PWA
+// Модуль управления состоянием, навигацией и жизненным циклом PWA
 
 (function () {
   'use strict';
@@ -14,15 +14,7 @@
 
   // App State
   const state = {
-    currentTab: 'home',
-    home: {
-      category: null,
-      muscle: null,
-      exercises: [],
-      searchQuery: '',
-      selectedEquipment: 'all',
-      allExercises: []
-    },
+    currentTab: 'work', // Стартовый экран: Тренировки
     work: {
       routines: [],
       activeWorkout: null
@@ -63,12 +55,6 @@
       b.classList.toggle('active', b.dataset.tab === tab);
     });
 
-    if (tab !== 'home') {
-      state.home.category = null;
-      state.home.muscle = null;
-      state.home.searchQuery = '';
-      state.home.selectedEquipment = 'all';
-    }
     if (tab !== 'work' && state.work.activeWorkout) {
       if (!confirm('Прервать текущую активную тренировку?')) return;
       state.work.activeWorkout = null;
@@ -80,8 +66,8 @@
   // Main Render Router
   function render() {
     switch (state.currentTab) {
-      case 'home':
-        if (window.renderHome) window.renderHome();
+      case 'habits':
+        if (window.renderHabits) window.renderHabits();
         break;
       case 'work':
         if (window.renderWork) window.renderWork();
@@ -108,18 +94,7 @@
     const backBtn = document.getElementById('back-btn');
     if (backBtn) {
       backBtn.addEventListener('click', () => {
-        if (state.currentTab === 'home') {
-          if (state.home.searchQuery) {
-            state.home.searchQuery = '';
-            if (window.renderHome) window.renderHome();
-          } else if (state.home.muscle) {
-            state.home.muscle = null;
-            if (window.renderHome) window.renderHome();
-          } else if (state.home.category) {
-            state.home.category = null;
-            if (window.renderHome) window.renderHome();
-          }
-        } else if (state.currentTab === 'work' && state.work.activeWorkout) {
+        if (state.currentTab === 'work' && state.work.activeWorkout) {
           if (confirm('Прервать текущую тренировку без сохранения?')) {
             state.work.activeWorkout = null;
             if (window.stopRestTimer) window.stopRestTimer();
@@ -135,15 +110,6 @@
         navigator.serviceWorker.register('/sw.js')
           .then(reg => console.log('VIV ServiceWorker registered successfully:', reg.scope))
           .catch(err => console.warn('VIV ServiceWorker registration failed:', err));
-      });
-    }
-
-    // Warm catalog cache and perform initial render
-    if (window.Storage && window.Storage.initCatalog) {
-      window.Storage.initCatalog().finally(() => {
-        if (state.currentTab === 'home' && window.renderHome) {
-          window.renderHome();
-        }
       });
     }
 

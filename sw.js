@@ -1,5 +1,5 @@
 // Service Worker for VIV Fitness PWA (100% Offline Support)
-const CACHE_NAME = 'viv-core-v30';
+const CACHE_NAME = 'viv-core-v33';
 
 const CORE_ASSETS = [
   '/',
@@ -9,7 +9,6 @@ const CORE_ASSETS = [
   '/app.js',
   '/storage.js',
   '/manifest.json',
-  '/data/catalog.json',
   '/js/app.js',
   '/js/core/storage.js',
   '/js/core/theme.js',
@@ -18,10 +17,9 @@ const CORE_ASSETS = [
   '/js/components/timer.js',
   '/js/components/chart.js',
   '/js/components/plate-calc.js',
-  '/js/screens/catalog.js',
+  '/js/screens/habits.js',
   '/js/screens/workout.js',
   '/js/screens/stats.js',
-  '/js/screens/habits.js',
   '/js/screens/profile.js'
 ];
 
@@ -56,7 +54,7 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
 
-  // Network First for fresh code on localhost, fallback to cache for airplane mode
+  // Network First for fresh code on localhost, fallback to cache for offline
   if (url.origin === location.origin) {
     event.respondWith(
       fetch(event.request)

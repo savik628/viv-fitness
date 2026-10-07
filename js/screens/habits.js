@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  // 8 атлетических эмодзи для привычек
+  // 12 минималистичных символьных эмодзи для привычек
   const HABIT_EMOJIS = ['✅', '🛑', '🌙', '⏱️', '⚡', '💧', '🔥', '🎯', '❄️', '☀️', '🌿', '➡️'];
 
   // Старый маппинг категорий на эмодзи для обратной совместимости
@@ -35,17 +35,18 @@
     monday.setDate(ref.getDate() + distToMon);
 
     const week = [];
-    const weekdayNames = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
+    const weekdaysNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+    const todayStr = new Date().toISOString().substring(0, 10);
 
     for (let i = 0; i < 7; i++) {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
-      const isoStr = d.toISOString().substring(0, 10);
+      const iso = d.toISOString().substring(0, 10);
       week.push({
-        dateStr: isoStr,
+        dateStr: iso,
         dayNum: d.getDate(),
-        weekday: weekdayNames[i],
-        isToday: isoStr === new Date().toISOString().substring(0, 10)
+        weekday: weekdaysNames[i],
+        isToday: iso === todayStr
       });
     }
     return week;
@@ -65,10 +66,19 @@
     renderHabitsTab();
   }
 
-  // Рендеринг основного содержимого подвкладки "Привычки"
+  // Рендеринг основного содержимого экрана "Привычки"
   function renderHabitsTab(targetContainer) {
-    const container = targetContainer || document.getElementById('stats-tab-content');
+    const isMainTab = window.state?.currentTab === 'habits';
+    const container = targetContainer || (isMainTab ? document.getElementById('main-content') : document.getElementById('stats-tab-content'));
     if (!container) return;
+
+    if (isMainTab && window.setHeader) {
+      window.setHeader('Привычки', false, `
+        <button class="header-icon-btn" onclick="openAddHabitModal()" title="Добавить привычку">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        </button>
+      `);
+    }
 
     const habits = window.Storage ? window.Storage.getHabits() : [];
     const curDateStr = getSelectedDate();
@@ -113,38 +123,35 @@
               ${habits.length ? `Выполнено ${dailyProgress.completed} из ${dailyProgress.total}` : 'Нет активных привычек'}
             </div>
           </div>
-          ${habits.length ? `
-            <span class="badge" style="font-size:13px; font-weight:800; padding:4px 10px;">
-              ${dailyProgress.percentage}%
-            </span>
-          ` : ''}
+          <div style="font-size:20px; font-weight:800; color:${dailyProgress.percentage === 100 ? 'var(--color-success)' : 'var(--accent)'};">
+            ${dailyProgress.percentage}%
+          </div>
         </div>
 
-        ${habits.length ? `
-          <div class="habit-progress-bar-bg">
-            <div class="habit-progress-bar-fill" style="width:${dailyProgress.percentage}%;"></div>
-          </div>
-        ` : ''}
+        <div class="habit-progress-track">
+          <div 
+            class="habit-progress-bar" 
+            style="width:${dailyProgress.percentage}%; ${dailyProgress.percentage === 100 ? 'background:var(--color-success);' : ''}"
+          ></div>
+        </div>
       </div>
     `;
 
     // 3. Список привычек
     if (!habits.length) {
       html += `
-        <div class="card" style="text-align:center; padding:36px 16px; margin-bottom:16px;">
-          <div style="font-size:32px; margin-bottom:10px;">⚡</div>
-          <div style="font-size:17px; font-weight:700; margin-bottom:6px;">Трекер привычек</div>
-          <div style="font-size:13px; color:var(--text-secondary); margin-bottom:20px; line-height:1.4;">
-            Создайте свои ежедневные привычки для контроля режима, сна и восстановления.
+        <div class="card" style="text-align:center; padding:36px 16px;">
+          <div style="font-size:36px; margin-bottom:12px;">🎯</div>
+          <div style="font-size:16px; font-weight:700; margin-bottom:6px;">Трекер привычек пуст</div>
+          <div style="font-size:13px; color:var(--text-secondary); margin-bottom:20px; max-width:280px; margin-left:auto; margin-right:auto;">
+            Добавьте ежедневные привычки: сон, воду, зарядку или приём витаминов.
           </div>
-          <button class="btn btn-primary" onclick="openAddHabitModal()" style="width:100%;">
-            + Добавить привычку
-          </button>
+          <button class="btn btn-primary" onclick="openAddHabitModal()">+ Добавить привычку</button>
         </div>
       `;
     } else {
       html += `
-        <div class="habits-list" style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
+        <div class="habit-cards-list">
           ${habits.map(h => {
             const isDone = window.Storage ? window.Storage.isHabitCompleted(curDateStr, h.id) : false;
             const stats = window.Storage ? window.Storage.getHabitStats(h.id) : { currentStreak: 0, bestStreak: 0, totalCompleted: 0 };
@@ -193,8 +200,9 @@
 
   // Переключение статуса привычки
   function toggleHabitStatus(habitId) {
-    if (!window.Storage) return;
     const curDateStr = getSelectedDate();
+    if (!window.Storage) return;
+
     const isDone = window.Storage.toggleHabit(curDateStr, habitId);
 
     if (window.triggerHaptic) {
@@ -206,79 +214,87 @@
   // Модальное окно добавления/редактирования
   function openAddHabitModal(habitId = null) {
     const isEdit = habitId !== null;
-    let habit = { title: '', emoji: '💧' };
+    let habit = { title: '', emoji: '✅' };
 
     if (isEdit && window.Storage) {
-      const found = window.Storage.getHabits().find(h => String(h.id) === String(habitId));
-      if (found) {
-        habit = {
-          ...found,
-          emoji: getHabitEmoji(found)
-        };
-      }
+      const habits = window.Storage.getHabits();
+      const found = habits.find(h => h.id === habitId);
+      if (found) habit = { ...found, emoji: getHabitEmoji(found) };
     }
 
-    const currentEmoji = habit.emoji || '💧';
+    let selectedEmoji = habit.emoji || '✅';
 
-    if (window.openModal) {
-      window.openModal(`
-        <div class="modal-header">
-          <div class="modal-title">${isEdit ? 'Настройка привычки' : 'Новая привычка'}</div>
-          <button class="modal-close-btn" onclick="closeModal()">✕</button>
+    const modalHtml = `
+      <div style="padding:16px;">
+        <div style="font-size:18px; font-weight:bold; margin-bottom:16px;">
+          ${isEdit ? 'Редактировать привычку' : 'Новая привычка'}
         </div>
 
-        <div class="form-group">
-          <label class="form-label">Название привычки</label>
+        <div style="margin-bottom:14px;">
+          <label style="display:block; font-size:13px; color:var(--text-secondary); margin-bottom:6px;">Название</label>
           <input id="habit-title-input" class="form-input" placeholder="Название привычки" value="${habit.title || ''}">
         </div>
 
-        <div class="form-group">
-          <label class="form-label">Иконка</label>
-          <div class="habit-emoji-grid">
+        <!-- Сетка 12 минималистичных иконок -->
+        <div style="margin-bottom:18px;">
+          <label style="display:block; font-size:13px; color:var(--text-secondary); margin-bottom:8px;">Иконка</label>
+          <div class="habit-emoji-grid" id="habit-emoji-selector">
             ${HABIT_EMOJIS.map(em => `
               <button 
                 type="button" 
-                class="habit-emoji-chip ${currentEmoji === em ? 'active' : ''}" 
+                class="habit-emoji-chip ${em === selectedEmoji ? 'active' : ''}" 
                 data-emoji="${em}"
                 onclick="selectHabitEmoji('${em}')"
               >
-                ${em}
+                <span>${em}</span>
               </button>
             `).join('')}
           </div>
-          <input type="hidden" id="habit-emoji-val" value="${currentEmoji}">
+          <input type="hidden" id="habit-selected-emoji" value="${selectedEmoji}">
         </div>
 
-        <div style="display:flex; flex-direction:column; gap:8px; margin-top:14px;">
-          <button class="btn btn-green" onclick="saveHabitModal(${habitId})">
-            ${isEdit ? 'Сохранить изменения' : 'Создать привычку'}
+        <div style="display:flex; gap:10px;">
+          <button class="btn btn-green" style="flex:1;" onclick="saveHabitModal(${habitId})">
+            ${isEdit ? 'Сохранить' : 'Создать'}
           </button>
           ${isEdit ? `
-            <button class="btn btn-outline" style="color:#ef4444; border-color:rgba(239,68,68,0.3);" onclick="deleteHabitModal(${habitId})">
-              Удалить привычку
+            <button class="btn btn-outline" style="color:var(--color-danger); border-color:var(--color-danger);" onclick="deleteHabitModal(${habitId})">
+              Удалить
             </button>
           ` : ''}
+          <button class="btn btn-outline" onclick="window.closeModal()">Отмена</button>
         </div>
-      `);
+      </div>
+    `;
+
+    if (window.showModal) {
+      window.showModal(modalHtml);
+      setTimeout(() => {
+        const inp = document.getElementById('habit-title-input');
+        if (inp) inp.focus();
+      }, 100);
     }
   }
 
-  function selectHabitEmoji(emoji) {
-    const hidden = document.getElementById('habit-emoji-val');
-    if (hidden) hidden.value = emoji;
+  function selectHabitEmoji(em) {
+    const hiddenInp = document.getElementById('habit-selected-emoji');
+    if (hiddenInp) hiddenInp.value = em;
+
     document.querySelectorAll('.habit-emoji-chip').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.emoji === emoji);
+      btn.classList.toggle('active', btn.dataset.emoji === em);
     });
   }
 
   function saveHabitModal(habitId) {
     const titleInput = document.getElementById('habit-title-input');
-    const emojiInput = document.getElementById('habit-emoji-val');
+    const emojiInput = document.getElementById('habit-selected-emoji');
+    const title = titleInput?.value.trim();
+    const emoji = emojiInput?.value || '✅';
 
-    const title = titleInput ? titleInput.value.trim() : '';
-    if (!title) return alert('Введите название привычки');
-
-    const emoji = emojiInput ? emojiInput.value : '💧';
+    if (!title) {
+      alert('Введите название привычки');
+      return;
+    }
 
     if (window.Storage) {
       window.Storage.saveHabit({
@@ -302,6 +318,7 @@
   }
 
   // Экспорт в глобальную область
+  window.renderHabits = renderHabitsTab;
   window.renderHabitsTab = renderHabitsTab;
   window.selectHabitDate = setSelectedDate;
   window.toggleHabitStatus = toggleHabitStatus;
