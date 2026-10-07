@@ -1,5 +1,5 @@
 // Service Worker for VIV Fitness PWA (100% Offline Support)
-const CACHE_NAME = 'viv-core-v33';
+const CACHE_NAME = 'viv-core-v34';
 
 const CORE_ASSETS = [
   '/',

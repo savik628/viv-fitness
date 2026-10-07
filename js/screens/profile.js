@@ -195,8 +195,19 @@
         <div style="font-weight:bold; font-size:14px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:12px;">
           Память устройства
         </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
+          <button class="btn btn-secondary" onclick="exportUserData()" style="display:flex; align-items:center; justify-content:center; gap:6px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Экспорт
+          </button>
+          <button class="btn btn-secondary" onclick="triggerImportUserData()" style="display:flex; align-items:center; justify-content:center; gap:6px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            Импорт
+          </button>
+          <input type="file" id="import-backup-file" accept=".json,application/json" style="display:none;" onchange="handleImportFile(event)">
+        </div>
         <div style="display:flex; flex-direction:column; gap:8px;">
-          <button class="btn btn-secondary" onclick="exportUserData()">Экспорт резервной копии</button>
+          <button class="btn btn-outline" onclick="copyBackupToClipboard()">Скопировать в буфер обмена</button>
           <button class="btn btn-outline" onclick="resetUserLocalData()" style="color:#ef4444; border-color:rgba(239,68,68,0.3);">Сбросить локальные данные</button>
         </div>
       </div>
@@ -500,6 +511,75 @@
     URL.revokeObjectURL(url);
   }
 
+  function triggerImportUserData() {
+    const fileInput = document.getElementById('import-backup-file');
+    if (fileInput) {
+      fileInput.value = '';
+      fileInput.click();
+    }
+  }
+
+  function handleImportFile(event) {
+    const file = event?.target?.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      try {
+        const content = e.target.result;
+        if (!window.Storage) return;
+        const success = window.Storage.importBackup(content);
+        if (success) {
+          alert('Данные успешно импортированы!');
+          renderProfile();
+          if (window.renderWorkouts && window.state?.currentTab === 'work') {
+            window.renderWorkouts();
+          }
+        } else {
+          alert('Ошибка при импорте файла: неверный формат резервной копии.');
+        }
+      } catch (err) {
+        alert('Не удалось прочитать файл резервной копии.');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function copyBackupToClipboard() {
+    if (!window.Storage) return;
+    try {
+      const data = window.Storage.exportBackup();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(data).then(() => {
+          alert('Резервная копия скопирована в буфер обмена!');
+        }).catch(() => {
+          fallbackCopyText(data);
+        });
+      } else {
+        fallbackCopyText(data);
+      }
+    } catch (e) {
+      alert('Ошибка при копировании в буфер обмена.');
+    }
+  }
+
+  function fallbackCopyText(text) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-9999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      document.execCommand('copy');
+      alert('Резервная копия скопирована в буфер обмена!');
+    } catch (err) {
+      alert('Не удалось скопировать данные. Попробуйте использовать экспорт в файл.');
+    }
+    document.body.removeChild(textArea);
+  }
+
   function resetUserLocalData() {
     if (confirm('Сбросить все тренировки и настройки к начальному состоянию?')) {
       if (window.Storage) window.Storage.resetAllData();
@@ -589,6 +669,9 @@
   window.triggerPrintReport = triggerPrintReport;
   window.saveProfile = saveProfile;
   window.exportUserData = exportUserData;
+  window.triggerImportUserData = triggerImportUserData;
+  window.handleImportFile = handleImportFile;
+  window.copyBackupToClipboard = copyBackupToClipboard;
   window.resetUserLocalData = resetUserLocalData;
   window.renderShop = renderShop;
   window.openExternal = openExternal;
