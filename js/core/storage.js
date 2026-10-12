@@ -20,6 +20,7 @@ const KEYS = {
   THEME: 'viv_theme',
   HABITS: 'viv_user_habits',
   HABIT_LOGS: 'viv_user_habit_logs',
+  CHART_LIMIT: 'viv_chart_limit',
 };
 
 const DEFAULT_PROFILE = {
@@ -346,6 +347,17 @@ const Storage = {
         setsCount: sets.length,
       };
     });
+  },
+
+  getChartLimit() {
+    const val = parseInt(getStore(KEYS.CHART_LIMIT, 10), 10);
+    return (isNaN(val) || val < 1) ? 10 : Math.min(50, val);
+  },
+
+  setChartLimit(limit) {
+    const val = Math.max(1, Math.min(50, parseInt(limit, 10) || 10));
+    setStore(KEYS.CHART_LIMIT, val);
+    return val;
   },
 
   getActivityCalendar() {

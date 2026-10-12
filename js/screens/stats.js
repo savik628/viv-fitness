@@ -115,21 +115,18 @@
 
     container.innerHTML = `
       <div class="report-tab-wrapper">
-        <!-- Верхняя панель экспорта в PDF -->
-        <div class="apple-report-action-bar">
-          <div class="apple-report-title-box">
-          </div>
-          <button class="btn btn-green apple-export-btn" onclick="triggerPrintReport()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-            Экспорт в PDF
-          </button>
-        </div>
-
         <!-- Документ отчёта: лаконичный, стиль Apple Fitness / Nike, логотип VIV по центру -->
         <div id="viv-athlete-pdf-document" class="printable-athlete-doc apple-fitness-report">
-          <!-- Шапка ПО ЦЕНТРУ с логотипом VIV -->
+          <!-- Шапка ПО ЦЕНТРУ с логотипом VIV (двойной клик для сохранения PNG) -->
           <div class="apple-report-branding">
-            <div class="apple-report-logo">VIV</div>
+            <div class="apple-report-logo-interactive" 
+                 id="viv-report-logo-btn" 
+                 role="button" 
+                 tabindex="0"
+                 title="Нажмите дважды для сохранения в PNG"
+                 ondblclick="exportVivReportPng()"
+                 onclick="handleVivLogoClick(event)">VIV</div>
+            <div class="apple-report-hint">Дважды нажмите на VIV для сохранения PNG</div>
             <div class="apple-report-date">${todayDateStr}</div>
             <div class="apple-athlete-pill">
               <span class="apple-athlete-name">${esc(prof.name || 'Атлет')}</span>
@@ -274,9 +271,284 @@
     `;
   }
 
-  function triggerPrintReport() {
-    window.print();
+  let _vivTapTime = 0;
+  function handleVivLogoClick(e) {
+    const now = Date.now();
+    if (now - _vivTapTime < 420) {
+      _vivTapTime = 0;
+      exportVivReportPng();
+    } else {
+      _vivTapTime = now;
+    }
   }
+
+  function exportVivReportPng() {
+    if (window.triggerHaptic) window.triggerHaptic('medium');
+
+    const history = window.Storage ? window.Storage.getHistory() : [];
+    const prof = window.Storage ? window.Storage.getProfile() : {};
+    const weightLogs = window.Storage ? window.Storage.getBodyweightHistory() : [];
+    const latestW = weightLogs.length ? weightLogs[weightLogs.length - 1].weight : (prof.weight || null);
+
+    let totalWorkouts = history.length;
+    let totalSets = 0;
+    let totalVolume = 0;
+    let totalDurationSec = 0;
+    history.forEach(h => {
+      totalDurationSec += (h.durationSeconds || 0);
+      h.sets?.forEach(s => {
+        totalSets++;
+        totalVolume += ((parseFloat(s.weight) || 0) * (parseInt(s.reps, 10) || 0));
+      });
+    });
+
+    const totalHours = Math.round((totalDurationSec / 3600) * 10) / 10;
+    const isTons = totalVolume >= 1000;
+    const displayVol = isTons ? (Math.round((totalVolume / 1000) * 10) / 10) : Math.round(totalVolume);
+    const volUnit = isTons ? 'ТОНН' : 'КГ';
+    const avgSetsPerWorkout = totalWorkouts > 0 ? Math.round((totalSets / totalWorkouts) * 10) / 10 : 0;
+
+    const habits = window.Storage ? window.Storage.getHabits() : [];
+    let maxStreak = 0;
+    habits.forEach(h => {
+      const st = window.Storage ? window.Storage.getHabitStats(h.id) : { currentStreak: 0 };
+      if (st.currentStreak > maxStreak) maxStreak = st.currentStreak;
+    });
+
+    const bests = {};
+    history.forEach(h => {
+      h.sets?.forEach(s => {
+        const w = parseFloat(s.weight) || 0;
+        if (w > 0 && s.exerciseName) {
+          if (!bests[s.exerciseName] || w > bests[s.exerciseName].weight) {
+            bests[s.exerciseName] = { weight: w, reps: s.reps, date: h.date };
+          }
+        }
+      });
+    });
+    const bestsList = Object.keys(bests)
+      .map(k => ({ name: k, ...bests[k] }))
+      .sort((a, b) => b.weight - a.weight)
+      .slice(0, 4);
+
+    const canvas = document.createElement('canvas');
+    const W = 1080;
+    const H = 1520;
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    function roundRect(x, y, w, h, r, fill, stroke, strokeColor, lineWidth = 1) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+      if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+      if (stroke) { ctx.strokeStyle = strokeColor; ctx.lineWidth = lineWidth; ctx.stroke(); }
+    }
+
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+    bgGrad.addColorStop(0, '#090b0e');
+    bgGrad.addColorStop(1, '#11151a');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    const glow = ctx.createRadialGradient(W / 2, 160, 20, W / 2, 220, 460);
+    glow.addColorStop(0, 'rgba(0, 245, 155, 0.12)');
+    glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, W, 500);
+
+    roundRect(24, 24, W - 48, H - 48, 36, null, true, 'rgba(255, 255, 255, 0.08)', 2);
+
+    ctx.textAlign = 'center';
+    ctx.font = '900 68px -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = 'rgba(223, 255, 0, 0.4)';
+    ctx.shadowBlur = 24;
+    ctx.fillText('VIV', W / 2, 130);
+    ctx.shadowBlur = 0;
+
+    const dateStr = new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+    ctx.font = '500 20px -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+    ctx.fillText(dateStr, W / 2, 172);
+
+    const pillText = `${prof.name || 'Атлет'}  •  ${prof.level || 'Начинающий'}${latestW ? '  •  ' + latestW + ' кг' : ''}`;
+    ctx.font = '600 20px -apple-system, sans-serif';
+    const pillW = ctx.measureText(pillText).width + 48;
+    roundRect(W / 2 - pillW / 2, 202, pillW, 44, 22, 'rgba(255, 255, 255, 0.06)', true, 'rgba(255, 255, 255, 0.12)', 1.5);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.fillText(pillText, W / 2, 231);
+
+    const heroY = 280;
+    const heroH = 320;
+    roundRect(64, heroY, W - 128, heroH, 28, '#13181f', true, 'rgba(255, 255, 255, 0.08)', 1.5);
+
+    const ringX = 220;
+    const ringY = heroY + heroH / 2;
+    const ringR = 86;
+    ctx.lineWidth = 18;
+    ctx.beginPath();
+    ctx.arc(ringX, ringY, ringR, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+    ctx.stroke();
+
+    const ringGrad = ctx.createLinearGradient(ringX - ringR, ringY, ringX + ringR, ringY + ringR);
+    ringGrad.addColorStop(0, '#00F59B');
+    ringGrad.addColorStop(1, '#DFFF00');
+    ctx.beginPath();
+    ctx.arc(ringX, ringY, ringR, -Math.PI / 2, Math.PI * 1.15);
+    ctx.strokeStyle = ringGrad;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+
+    ctx.textAlign = 'center';
+    ctx.font = '900 24px -apple-system, sans-serif';
+    ctx.fillStyle = '#00F59B';
+    ctx.fillText('VIV', ringX, ringY + 8);
+
+    ctx.textAlign = 'left';
+    ctx.font = '800 16px -apple-system, sans-serif';
+    ctx.fillStyle = '#00F59B';
+    ctx.fillText('СУММАРНЫЙ ТОННАЖ', 360, heroY + 80);
+
+    ctx.font = '900 68px -apple-system, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(`${displayVol}`, 360, heroY + 155);
+    const volNumW = ctx.measureText(`${displayVol}`).width;
+    ctx.font = '800 28px -apple-system, sans-serif';
+    ctx.fillStyle = '#DFFF00';
+    ctx.fillText(volUnit, 360 + volNumW + 14, heroY + 140);
+
+    ctx.font = '400 20px -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.fillText(`Поднято за ${totalWorkouts} ${plural(totalWorkouts, ['тренировку', 'тренировки', 'тренировок'])} и ${totalSets} ${plural(totalSets, ['подход', 'подхода', 'подходов'])}`, 360, heroY + 205);
+
+    const gridY = heroY + heroH + 24;
+    const cardW = (W - 128 - 24) / 2;
+    const cardH = 200;
+
+    roundRect(64, gridY, cardW, cardH, 24, '#13181f', true, 'rgba(255, 255, 255, 0.08)', 1.5);
+    ctx.textAlign = 'left';
+    ctx.font = '800 15px -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.fillText('ТРЕНИРОВКИ', 96, gridY + 50);
+    ctx.font = '900 58px -apple-system, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(`${totalWorkouts}`, 96, gridY + 120);
+    ctx.font = '500 18px -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+    ctx.fillText(`${totalHours} ч под нагрузкой`, 96, gridY + 160);
+
+    const card2X = 64 + cardW + 24;
+    roundRect(card2X, gridY, cardW, cardH, 24, '#13181f', true, 'rgba(255, 255, 255, 0.08)', 1.5);
+    ctx.font = '800 15px -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.fillText('ПОДХОДЫ', card2X + 32, gridY + 50);
+    ctx.font = '900 58px -apple-system, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(`${totalSets}`, card2X + 32, gridY + 120);
+    ctx.font = '500 18px -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+    ctx.fillText(`В среднем ${avgSetsPerWorkout} на тренировку`, card2X + 32, gridY + 160);
+
+    const discY = gridY + cardH + 20;
+    const discH = 120;
+    roundRect(64, discY, W - 128, discH, 24, '#13181f', true, 'rgba(255, 255, 255, 0.08)', 1.5);
+    ctx.font = '800 15px -apple-system, sans-serif';
+    ctx.fillStyle = '#00F59B';
+    ctx.fillText('ДИСЦИПЛИНА И ПРИВЫЧКИ', 96, discY + 45);
+    ctx.font = '700 24px -apple-system, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(`Серия ${maxStreak} ${plural(maxStreak, ['день', 'дня', 'дней'])} подряд  •  ${habits.length} активных привычек`, 96, discY + 86);
+
+    const prY = discY + discH + 40;
+    ctx.font = '900 22px -apple-system, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('ЛИЧНЫЕ РЕКОРДЫ В УПРАЖНЕНИЯХ', 64, prY);
+
+    let rowY = prY + 24;
+    if (!bestsList.length) {
+      roundRect(64, rowY, W - 128, 90, 20, '#13181f', true, 'rgba(255, 255, 255, 0.06)', 1);
+      ctx.textAlign = 'center';
+      ctx.font = '500 18px -apple-system, sans-serif';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.fillText('Нет завершенных тренировок', W / 2, rowY + 52);
+    } else {
+      bestsList.forEach((b) => {
+        roundRect(64, rowY, W - 128, 80, 20, '#13181f', true, 'rgba(255, 255, 255, 0.07)', 1.5);
+        ctx.textAlign = 'left';
+        ctx.font = '700 20px -apple-system, sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(b.name, 96, rowY + 36);
+
+        ctx.font = '500 15px -apple-system, sans-serif';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+        const dateSub = b.date ? b.date.substring(0, 10) : '';
+        ctx.fillText(`${b.reps} повт  •  ${dateSub}`, 96, rowY + 62);
+
+        const badgeText = `${b.weight} кг`;
+        ctx.font = '800 20px -apple-system, sans-serif';
+        const badgeW = ctx.measureText(badgeText).width + 36;
+        const badgeX = W - 64 - badgeW - 20;
+        roundRect(badgeX, rowY + 18, badgeW, 44, 22, '#DFFF00', false, null);
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#000000';
+        ctx.fillText(badgeText, badgeX + badgeW / 2, rowY + 47);
+
+        rowY += 94;
+      });
+    }
+
+    ctx.textAlign = 'center';
+    ctx.font = '700 14px -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+    ctx.fillText('VIV  •  ATHLETIC PERFORMANCE SYSTEM', W / 2, H - 46);
+
+    canvas.toBlob(async (blob) => {
+      if (!blob) return;
+      const fileName = `viv-athletic-report-${new Date().toISOString().substring(0, 10)}.png`;
+      const file = new File([blob], fileName, { type: 'image/png' });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            title: 'VIV Athletic Report',
+            text: 'Мой атлетический отчёт VIV',
+            files: [file]
+          });
+          if (window.triggerHaptic) window.triggerHaptic('success');
+          return;
+        } catch (err) {
+          if (err.name === 'AbortError') return;
+        }
+      }
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      if (window.triggerHaptic) window.triggerHaptic('success');
+      alert('Отчёт VIV успешно сохранён в PNG! ✨');
+    }, 'image/png');
+  }
+
+  window.handleVivLogoClick = handleVivLogoClick;
+  window.exportVivReportPng = exportVivReportPng;
 
   // ---------------------------------------------------------------------------
   // БЛОК 2. ВКЛАДКА "ПРОГРЕСС" И ГРАФИКИ ДИНАМИКИ (Progress Charts)
@@ -308,6 +580,10 @@
       ? window.Storage.getChartPoints(window.state.stats.selectedRoutine, window.state.stats.selectedExercise)
       : [];
     window.state.stats.chartPoints = chartPoints;
+
+    const currentLimit = (window.Storage && window.Storage.getChartLimit) ? window.Storage.getChartLimit() : 10;
+    window.state.stats.chartLimit = currentLimit;
+    const visiblePoints = chartPoints.slice(-currentLimit);
 
     const exType = chartPoints[0]?.exerciseType || 'weight_reps';
     const isWeightReps = exType === 'weight_reps' || (chartPoints[0]?.maxWeight > 0);
@@ -373,6 +649,13 @@
 
     container.innerHTML = `
       <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <div style="font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">Выбор упражнения</div>
+          <button class="btn btn-outline btn-sm chart-limit-filter-btn" onclick="openChartLimitPicker()" style="display:inline-flex; align-items:center; gap:6px; font-weight:600; padding:6px 12px; border-radius:10px; cursor:pointer;">
+            <span>Последние: <b style="color:var(--accent-color);">${currentLimit}</b></span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+        </div>
         <div class="form-group">
           <label class="form-label">Программа</label>
           <select class="form-select" onchange="changeStatsRoutine(this.value)">
@@ -389,20 +672,43 @@
       ${chartsHtml}
     `;
 
-    if (chartPoints.length > 0 && window.drawChart) {
+    if (visiblePoints.length > 0 && window.drawChart) {
       if (isWeightReps) {
-        window.drawChart('progressCanvasMaxWeight', chartPoints, p => p.maxWeight, 'кг');
-        window.drawChart('progressCanvas1RM', chartPoints, p => p.oneRepMax, 'кг');
-        window.drawChart('progressCanvasTotalVolume', chartPoints, p => p.totalVolume, 'кг');
+        window.drawChart('progressCanvasMaxWeight', visiblePoints, p => p.maxWeight, 'кг');
+        window.drawChart('progressCanvas1RM', visiblePoints, p => p.oneRepMax, 'кг');
+        window.drawChart('progressCanvasTotalVolume', visiblePoints, p => p.totalVolume, 'кг');
       } else if (exType === 'bodyweight') {
-        window.drawChart('progressCanvasSingle', chartPoints, p => p.maxReps, 'повторений');
+        window.drawChart('progressCanvasSingle', visiblePoints, p => p.maxReps, 'повторений');
       } else if (exType === 'distance') {
-        window.drawChart('progressCanvasSingle', chartPoints, p => p.totalValue, 'км');
+        window.drawChart('progressCanvasSingle', visiblePoints, p => p.totalValue, 'км');
       } else {
-        window.drawChart('progressCanvasSingle', chartPoints, p => p.totalValue, 'сек');
+        window.drawChart('progressCanvasSingle', visiblePoints, p => p.totalValue, 'сек');
       }
     }
   }
+
+  function openChartLimitPicker() {
+    if (window.openNumberPicker) {
+      window.openNumberPicker({
+        title: 'Показать последние тренировки',
+        value: window.state.stats.chartLimit || 10,
+        min: 1,
+        max: 50,
+        step: 1,
+        unit: 'записей',
+        deltas: [-10, -5, -1, 1, 5, 10],
+        onConfirm: (val) => {
+          const limit = Math.max(1, Math.min(50, Math.round(val)));
+          window.state.stats.chartLimit = limit;
+          if (window.Storage && window.Storage.setChartLimit) {
+            window.Storage.setChartLimit(limit);
+          }
+          renderStatsProgressTab();
+        }
+      });
+    }
+  }
+  window.openChartLimitPicker = openChartLimitPicker;
 
   function changeStatsRoutine(val) {
     window.state.stats.selectedRoutine = val;

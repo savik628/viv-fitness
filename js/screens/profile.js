@@ -338,6 +338,46 @@
     }
   }
 
+  function formatDisplayDate(dateStr) {
+    if (!dateStr) return 'Сегодня';
+    try {
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+        return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+      }
+    } catch (e) {}
+    return dateStr;
+  }
+
+  function setProfileQuickDate(inputId, textId, offsetDays) {
+    const d = new Date();
+    d.setDate(d.getDate() + offsetDays);
+    const dateStr = fmtDate(d);
+    const input = document.getElementById(inputId);
+    if (input) input.value = dateStr;
+    const txt = document.getElementById(textId);
+    if (txt) txt.textContent = formatDisplayDate(dateStr);
+    if (window.triggerHaptic) window.triggerHaptic('light');
+  }
+
+  function onDateInputChange(inputId, textId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const txt = document.getElementById(textId);
+    if (txt) txt.textContent = formatDisplayDate(input.value);
+  }
+
+  function triggerNativeDatePicker(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    if (input.showPicker) {
+      try { input.showPicker(); return; } catch (e) {}
+    }
+    input.focus();
+    input.click();
+  }
+
   function openAddWeightModal() {
     const today = fmtDate();
     const curW = (window.Storage ? window.Storage.getProfile()?.weight : '') || '';
@@ -350,7 +390,25 @@
         </div>
         <div class="form-group">
           <label class="form-label">Дата взвешивания</label>
-          <input id="bw-date" type="date" class="form-input" value="${today}">
+          <div style="position:relative; width:100%;">
+            <input id="bw-date" 
+                   type="date" 
+                   class="form-input" 
+                   value="${today}" 
+                   onchange="onDateInputChange('bw-date', 'bw-date-text')"
+                   onclick="triggerNativeDatePicker('bw-date')"
+                   style="position:absolute; inset:0; width:100%; height:100%; opacity:0; z-index:2; cursor:pointer;">
+            <div id="bw-date-display" class="form-input" onclick="triggerNativeDatePicker('bw-date')" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+              <span id="bw-date-text" style="font-weight:600;">${formatDisplayDate(today)}</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--accent-color); flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            </div>
+          </div>
+          <div class="date-quick-chips" style="display:flex; gap:6px; margin-top:8px; overflow-x:auto;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="setProfileQuickDate('bw-date', 'bw-date-text', 0)">Сегодня</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="setProfileQuickDate('bw-date', 'bw-date-text', -1)">Вчера</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="setProfileQuickDate('bw-date', 'bw-date-text', -2)">2 дня назад</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="triggerNativeDatePicker('bw-date')">Выбрать...</button>
+          </div>
         </div>
         <div class="form-group">
           <label class="form-label">Вес (кг)</label>
@@ -417,7 +475,25 @@
         </div>
         <div class="form-group">
           <label class="form-label">Дата замера</label>
-          <input id="bm-date" type="date" class="form-input" value="${today}">
+          <div style="position:relative; width:100%;">
+            <input id="bm-date" 
+                   type="date" 
+                   class="form-input" 
+                   value="${today}" 
+                   onchange="onDateInputChange('bm-date', 'bm-date-text')"
+                   onclick="triggerNativeDatePicker('bm-date')"
+                   style="position:absolute; inset:0; width:100%; height:100%; opacity:0; z-index:2; cursor:pointer;">
+            <div id="bm-date-display" class="form-input" onclick="triggerNativeDatePicker('bm-date')" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+              <span id="bm-date-text" style="font-weight:600;">${formatDisplayDate(today)}</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--accent-color); flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            </div>
+          </div>
+          <div class="date-quick-chips" style="display:flex; gap:6px; margin-top:8px; overflow-x:auto;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="setProfileQuickDate('bm-date', 'bm-date-text', 0)">Сегодня</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="setProfileQuickDate('bm-date', 'bm-date-text', -1)">Вчера</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="setProfileQuickDate('bm-date', 'bm-date-text', -2)">2 дня назад</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="triggerNativeDatePicker('bm-date')">Выбрать...</button>
+          </div>
         </div>
         <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; width:100%; box-sizing:border-box;">
           <div class="form-group" style="min-width:0; margin-bottom:12px;">
@@ -654,4 +730,7 @@
   window.openProfileWeightPicker = openProfileWeightPicker;
   window.openBwWeightPicker = openBwWeightPicker;
   window.openMeasurementPicker = openMeasurementPicker;
+  window.setProfileQuickDate = setProfileQuickDate;
+  window.onDateInputChange = onDateInputChange;
+  window.triggerNativeDatePicker = triggerNativeDatePicker;
 })();
