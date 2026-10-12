@@ -2552,7 +2552,10 @@ canvas {
   vertical-align: middle;
   height: 38px;
   width: auto;
-  border-radius: 8px;
+  border-radius: 0;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .app-logo-brand {
@@ -2562,10 +2565,12 @@ canvas {
 }
 
 .apple-report-logo-interactive .app-logo-badge {
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+  width: auto;
+  height: 38px;
+  border-radius: 0;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .apple-athlete-pill {

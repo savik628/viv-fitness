@@ -30,7 +30,7 @@
       <div class="sub-tabs">
         <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'progress' ? 'active' : ''}" onclick="switchStatsSubTab('progress')">Прогресс</button>
         <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'calendar' ? 'active' : ''}" onclick="switchStatsSubTab('calendar')">Календарь</button>
-        <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'report' ? 'active' : ''}" onclick="switchStatsSubTab('report')" title="VIV" style="display:inline-flex; align-items:center; justify-content:center; gap:5px;"><img src="icon.svg" style="width:16px; height:16px; border-radius:4px; vertical-align:middle;" alt="VIV"><span>VIV</span></button>
+        <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'report' ? 'active' : ''}" onclick="switchStatsSubTab('report')" title="VIV" style="display:inline-flex; align-items:center; justify-content:center; gap:5px;"><img src="icon.svg" style="width:16px; height:16px; border:none; vertical-align:middle;" alt="VIV"><span>VIV</span></button>
       </div>
       <div id="stats-tab-content"></div>`;
 
@@ -283,25 +283,54 @@
     const cardY = padOuter;
     roundRect(cardX, cardY, cardW, cardH, 22, '#000000', true, 'rgba(255, 255, 255, 0.1)', 1);
 
-    // 3. Шапка: VIV badge + дата
-    const iconSize = 38;
-    const iconX = cardX + (cardW - iconSize) / 2;
-    const iconY = cardY + cardTopPad;
+    // 3. Шапка: спортивный логотип VIV без рамок + дата
+    const logoCenterX = cardX + cardW / 2;
+    const logoCenterY = cardY + cardTopPad + 12;
+    const sLogo = 68 / 377.6; // Масштаб логотипа VIV без рамок
 
-    // Отрисовка фирменного бейджа VIV с мягким свечением
     ctx.save();
-    ctx.shadowColor = 'rgba(255, 255, 255, 0.25)';
-    ctx.shadowBlur = 8;
-    roundRect(iconX, iconY, iconSize, iconSize, 9, '#000000', true, '#27272a', 1);
+    ctx.translate(logoCenterX, logoCenterY);
+    ctx.scale(sLogo, sLogo);
+    ctx.translate(-252.8, -255.6);
+    ctx.fillStyle = '#ffffff';
+
+    // Буква V (левая)
+    ctx.beginPath();
+    ctx.moveTo(64.0, 208.0);
+    ctx.lineTo(118.4, 208.0);
+    ctx.lineTo(140.8, 259.0);
+    ctx.lineTo(163.2, 208.0);
+    ctx.lineTo(217.6, 208.0);
+    ctx.lineTo(169.6, 303.2);
+    ctx.lineTo(89.6, 303.2);
+    ctx.closePath();
+    ctx.fill();
+
+    // Буква I
+    ctx.beginPath();
+    ctx.moveTo(227.2, 208.0);
+    ctx.lineTo(275.2, 208.0);
+    ctx.lineTo(265.6, 303.2);
+    ctx.lineTo(217.6, 303.2);
+    ctx.closePath();
+    ctx.fill();
+
+    // Буква V (правая)
+    ctx.beginPath();
+    ctx.moveTo(288.0, 208.0);
+    ctx.lineTo(342.4, 208.0);
+    ctx.lineTo(364.8, 259.0);
+    ctx.lineTo(387.2, 208.0);
+    ctx.lineTo(441.6, 208.0);
+    ctx.lineTo(393.6, 303.2);
+    ctx.lineTo(313.6, 303.2);
+    ctx.closePath();
+    ctx.fill();
+
     ctx.restore();
 
-    ctx.textAlign = 'center';
-    ctx.font = '900 13px -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText('VIV', iconX + iconSize / 2, iconY + 24);
-
     const dateStr = new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
-    const dateY = iconY + iconSize + 14;
+    const dateY = logoCenterY + 24;
     ctx.font = '500 12px -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif';
     ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
     ctx.textAlign = 'center';

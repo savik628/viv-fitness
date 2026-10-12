@@ -30,7 +30,7 @@
       const cls = options.className || '';
       const style = options.style || '';
       const height = options.small ? '16px' : (options.height || '26px');
-      return `<img src="${this.iconSrc}" alt="VIV" class="app-logo-badge ${cls}" style="display:inline-block; vertical-align:middle; height:${height}; border-radius:6px; ${style}">`;
+      return `<img src="${this.iconSrc}" alt="VIV" class="app-logo-badge ${cls}" style="display:inline-block; vertical-align:middle; height:${height}; border:none; outline:none; ${style}">`;
     },
     getText() {
       return 'VIV';
