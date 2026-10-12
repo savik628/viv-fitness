@@ -144,11 +144,6 @@
           <div class="wheel-picker-spacer"></div>
         </div>
       </div>
-
-      <div class="wheel-picker-footer-actions">
-        <button type="button" class="btn btn-outline" style="flex:1;" id="picker-cancel-btn-bottom">Отмена</button>
-        <button type="button" class="btn btn-green" style="flex:1.6;" id="picker-confirm-btn-bottom">Готово</button>
-      </div>
     `;
 
     // Показываем оверлей
@@ -172,9 +167,7 @@
     const container = getContainer();
     const drum = document.getElementById('picker-drum');
     const cancelBtn = document.getElementById('picker-cancel-btn');
-    const cancelBtnBottom = document.getElementById('picker-cancel-btn-bottom');
     const confirmBtn = document.getElementById('picker-confirm-btn');
-    const confirmBtnBottom = document.getElementById('picker-confirm-btn-bottom');
     const displayCard = document.getElementById('picker-display-card');
     const manualInput = document.getElementById('picker-manual-input');
     const manualBox = document.getElementById('picker-manual-box');
@@ -195,13 +188,8 @@
       closeNumberPicker();
     };
 
-    // Кнопки Отмена (верхняя и нижняя)
     if (cancelBtn) cancelBtn.onclick = handleCancel;
-    if (cancelBtnBottom) cancelBtnBottom.onclick = handleCancel;
-
-    // Кнопки Готово (верхняя и нижняя)
     if (confirmBtn) confirmBtn.onclick = handleConfirm;
-    if (confirmBtnBottom) confirmBtnBottom.onclick = handleConfirm;
 
     // Закрытие по клику на фон оверлея
     if (overlay) {
@@ -223,8 +211,14 @@
     function switchToManualInput() {
       if (_isManualEditing) return;
       _isManualEditing = true;
-      if (displayVal) displayVal.classList.add('hidden');
-      if (manualBox) manualBox.classList.remove('hidden');
+      if (displayVal) {
+        displayVal.classList.add('hidden');
+        displayVal.style.display = 'none';
+      }
+      if (manualBox) {
+        manualBox.classList.remove('hidden');
+        manualBox.style.display = 'inline-flex';
+      }
       if (hintEl) hintEl.textContent = 'Введите число и нажмите "Готово"';
       if (manualInput) {
         manualInput.value = _currentValue;
@@ -242,8 +236,14 @@
           scrollToValue(_currentValue, false);
         }
         _isManualEditing = false;
-        if (displayVal) displayVal.classList.remove('hidden');
-        if (manualBox) manualBox.classList.add('hidden');
+        if (displayVal) {
+          displayVal.classList.remove('hidden');
+          displayVal.style.display = 'inline-flex';
+        }
+        if (manualBox) {
+          manualBox.classList.add('hidden');
+          manualBox.style.display = 'none';
+        }
         if (hintEl) hintEl.textContent = 'Нажмите на значение для ручного ввода с клавиатуры';
       }
     }

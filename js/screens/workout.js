@@ -236,7 +236,7 @@
     syncActiveDraft();
 
     if (window.setHeader) {
-      window.setHeader(aw.routineName, true, `<button class="btn btn-green btn-sm" onclick="finishWorkout()">Завершить</button>`);
+      window.setHeader(aw.routineName, true);
     }
 
     mainContent.innerHTML = `
@@ -626,19 +626,31 @@
         <div id="we-exercises-list" class="item-list" style="margin-bottom:16px;">
           ${getEditorExercisesHtml()}
         </div>
-        <button class="btn btn-outline" style="width:100%; margin-bottom:16px;" onclick="promptAddExercise()">+ Добавить упражнение</button>
+        <div style="display:flex; gap:8px; margin-bottom:16px;">
+          <input id="we-new-ex-input" class="form-input" placeholder="Название упражнения" style="flex:1;" onkeydown="if(event.key==='Enter'){event.preventDefault();addEditorExerciseFromInput();}">
+          <button class="btn btn-secondary" onclick="addEditorExerciseFromInput()" style="padding:0 14px; font-weight:700; white-space:nowrap;">+ Добавить</button>
+        </div>
         <button class="btn btn-green" style="width:100%;" onclick="saveEditorRoutine()">Сохранить программу</button>
       `);
     }
   }
 
-  function promptAddExercise() {
-    const name = prompt('Введите название упражнения:');
-    if (name?.trim()) {
+  function addEditorExerciseFromInput() {
+    const inp = document.getElementById('we-new-ex-input');
+    const name = inp?.value.trim();
+    if (name) {
       syncEditorFormValues();
-      editorState.exercises.push({ name: name.trim(), type: 'weight_reps' });
+      editorState.exercises.push({ name, type: 'weight_reps' });
       updateWorkoutEditorListDOM();
+      if (inp) {
+        inp.value = '';
+        inp.focus();
+      }
     }
+  }
+
+  function promptAddExercise() {
+    addEditorExerciseFromInput();
   }
 
   function removeEditorEx(idx) {
@@ -686,6 +698,7 @@
   window.moveEditorEx = moveEditorEx;
   window.renderWorkoutEditorModal = renderWorkoutEditorModal;
   window.promptAddExercise = promptAddExercise;
+  window.addEditorExerciseFromInput = addEditorExerciseFromInput;
   window.removeEditorEx = removeEditorEx;
   window.saveEditorRoutine = saveEditorRoutine;
   window.openSetPicker = openSetPicker;

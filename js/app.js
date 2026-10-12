@@ -35,7 +35,7 @@
       activeWorkout: window.Storage ? window.Storage.getActiveDraft() : null
     },
     stats: {
-      activeSubTab: 'summary', // 'summary' | 'progress' | 'calendar'
+      activeSubTab: 'progress', // 'progress' | 'calendar' | 'report'
       routines: [],
       selectedRoutine: null,
       exercises: [],

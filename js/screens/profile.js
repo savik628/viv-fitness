@@ -112,15 +112,9 @@
             <option value="Продвинутый" ${prof.level === 'Продвинутый' ? 'selected' : ''}>Продвинутый</option>
           </select>
         </div>
-        <div style="display:flex; gap:10px;">
-          <div style="flex:1; min-width:0;">
-            <label class="form-label">Рост (см)</label>
-            <input id="prof-height" type="text" inputmode="decimal" readonly style="cursor:pointer;" class="form-input" placeholder="0" value="${prof.height != null ? prof.height : ''}" onclick="openProfileHeightPicker()">
-          </div>
-          <div style="flex:1; min-width:0;">
-            <label class="form-label">Вес (кг)</label>
-            <input id="prof-weight" type="text" inputmode="decimal" readonly style="cursor:pointer;" class="form-input" placeholder="0" value="${latestWeight != null ? latestWeight : ''}" onclick="openProfileWeightPicker()">
-          </div>
+        <div class="form-group">
+          <label class="form-label">Рост (см)</label>
+          <input id="prof-height" type="text" inputmode="decimal" readonly style="cursor:pointer;" class="form-input" placeholder="Не указан" value="${prof.height != null ? prof.height : ''}" onclick="openProfileHeightPicker()">
         </div>
         <button class="btn btn-primary" onclick="saveProfile()" style="width:100%; margin-top:14px;">Сохранить параметры</button>
       </div>
@@ -310,22 +304,23 @@
   function saveProfile() {
     const nameInput = document.getElementById('prof-name');
     const levelSelect = document.getElementById('prof-level');
-    const weightInput = document.getElementById('prof-weight');
     const heightInput = document.getElementById('prof-height');
 
     const name = nameInput?.value.trim() || '';
     const level = levelSelect?.value || 'Начинающий';
-    const weight = parseFloat(weightInput?.value) || null;
     const height = parseFloat(heightInput?.value) || null;
 
     if (window.Storage) {
       const prevProfile = window.Storage.getProfile();
-      const prevWeight = prevProfile?.weight;
-      window.state.profile = window.Storage.saveProfile({ name, level, weight, height, notificationsEnabled: true });
-      if (weight && weight !== prevWeight) {
-        window.Storage.addBodyweightLog(weight);
-      }
+      window.state.profile = window.Storage.saveProfile({
+        name,
+        level,
+        weight: prevProfile?.weight ?? null,
+        height,
+        notificationsEnabled: true
+      });
     }
+    if (window.triggerHaptic) window.triggerHaptic('success');
     alert('Профиль успешно сохранен!');
     renderProfile();
   }
@@ -512,100 +507,12 @@
   // БЛОК 5. ГЕНЕРАТОР ПЕЧАТНОГО ОТЧЕТА АТЛЕТА (Coach PDF Report)
   // ---------------------------------------------------------------------------
   function openCoachReportModal() {
-    const prof = window.Storage ? window.Storage.getProfile() : {};
-    const history = window.Storage ? window.Storage.getHistory() : [];
-    const weightLogs = window.Storage ? window.Storage.getBodyweightHistory() : [];
-    const latestW = weightLogs.length ? weightLogs[weightLogs.length - 1].weight : prof.weight;
-    const measurements = window.Storage ? window.Storage.getMeasurements() : [];
-    const latestM = measurements[0] || { chest: 0, waist: 0, bicep: 0, thigh: 0 };
-
-    let totalVolume = 0;
-    let totalSets = 0;
-    history.forEach(h => {
-      h.sets?.forEach(s => {
-        totalSets++;
-        totalVolume += ((parseFloat(s.weight) || 0) * (parseInt(s.reps, 10) || 0));
-      });
-    });
-
-    const bests = {};
-    history.forEach(h => {
-      h.sets?.forEach(s => {
-        const w = parseFloat(s.weight) || 0;
-        if (w > 0 && s.exerciseName) {
-          if (!bests[s.exerciseName] || w > bests[s.exerciseName].weight) {
-            bests[s.exerciseName] = { weight: w, reps: s.reps, date: h.date };
-          }
-        }
-      });
-    });
-
-    const bestsList = Object.keys(bests).map(k => ({ name: k, ...bests[k] })).sort((a, b) => b.weight - a.weight).slice(0, 6);
-
-    if (window.openModal) {
-      window.openModal(`
-        <div class="modal-header">
-          <div class="modal-title">Отчёт атлета</div>
-          <button class="modal-close-btn" onclick="closeModal()">✕</button>
-        </div>
-        <div id="coach-printable-report" style="background:var(--card-bg-elevated); border:1px solid var(--border-color); border-radius:12px; padding:16px; margin-bottom:14px;">
-          <div style="text-align:center; border-bottom:1px solid var(--border-color); padding-bottom:12px; margin-bottom:12px;">
-            <div style="font-size:18px; font-weight:900; letter-spacing:1.2px;">VIV FITNESS • АТЛЕТИЧЕСКИЙ ОТЧЁТ</div>
-            <div style="font-size:11px; color:var(--text-secondary); margin-top:3px;">Дата формирования: ${new Date().toLocaleDateString('ru-RU')}</div>
-          </div>
-
-          <div style="margin-bottom:12px;">
-            <div style="font-weight:bold; font-size:14px; margin-bottom:3px;">${esc(prof.name || 'Атлет')}</div>
-            <div style="font-size:12px; color:var(--text-secondary);">
-              Уровень: ${esc(prof.level || 'Начинающий')}${prof.height ? ` • Рост: ${prof.height} см` : ''}${latestW ? ` • Вес: ${latestW} кг` : ''}
-            </div>
-          </div>
-
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; font-size:12px;">
-            <div style="background:var(--card-bg); padding:8px 12px; border-radius:8px; border:1px solid var(--border-color);">
-              <div style="color:var(--text-secondary); font-size:11px;">Всего тренировок:</div>
-              <div style="font-size:16px; font-weight:bold; margin-top:2px;">${history.length}</div>
-            </div>
-            <div style="background:var(--card-bg); padding:8px 12px; border-radius:8px; border:1px solid var(--border-color);">
-              <div style="color:var(--text-secondary); font-size:11px;">Суммарный тоннаж:</div>
-              <div style="font-size:16px; font-weight:bold; margin-top:2px;">${Math.round(totalVolume)} кг</div>
-            </div>
-          </div>
-
-          <div style="font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">
-            Последние замеры тела:
-          </div>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:12px;">
-            <div class="report-stat-item"><span>Грудь</span><strong style="color:var(--text-primary);">${latestM.chest || '—'} см</strong></div>
-            <div class="report-stat-item"><span>Талия</span><strong style="color:var(--text-primary);">${latestM.waist || '—'} см</strong></div>
-            <div class="report-stat-item"><span>Бицепс</span><strong style="color:var(--text-primary);">${latestM.bicep || '—'} см</strong></div>
-            <div class="report-stat-item"><span>Бедро</span><strong style="color:var(--text-primary);">${latestM.thigh || '—'} см</strong></div>
-          </div>
-
-          ${bestsList.length ? `
-            <div style="font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">
-              Личные рекорды (PR):
-            </div>
-            <div style="display:flex; flex-direction:column; gap:5px; font-size:12.5px;">
-              ${bestsList.map(b => `
-                <div style="display:flex; justify-content:space-between; border-bottom:1px dashed var(--border-color); padding-bottom:3px;">
-                  <span>${esc(b.name)}</span>
-                  <strong>${b.weight} кг × ${b.reps}</strong>
-                </div>
-              `).join('')}
-            </div>
-          ` : ''}
-        </div>
-
-        <button class="btn btn-green" style="width:100%; padding:14px; font-weight:700;" onclick="triggerPrintReport()">
-          Печать / Экспорт в PDF
-        </button>
-      `);
+    if (window.switchTab) {
+      window.switchTab('stats');
+      if (window.switchStatsSubTab) {
+        window.switchStatsSubTab('report');
+      }
     }
-  }
-
-  function triggerPrintReport() {
-    window.print();
   }
 
   // ---------------------------------------------------------------------------
