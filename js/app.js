@@ -29,8 +29,8 @@
     render(options = {}) {
       const cls = options.className || '';
       const style = options.style || '';
-      const height = options.small ? '16px' : (options.height || '26px');
-      return `<img src="${this.iconSrc}" alt="VIV" class="app-logo-badge ${cls}" style="display:inline-block; vertical-align:middle; height:${height}; border:none; outline:none; ${style}">`;
+      const height = options.small ? '14px' : (options.height || '24px');
+      return `<img src="${this.iconSrc}" alt="VIV" class="app-logo-badge ${cls}" style="display:inline-block; vertical-align:middle; height:${height}; width:auto; border:none; outline:none; background:transparent; ${style}">`;
     },
     getText() {
       return 'VIV';
