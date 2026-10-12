@@ -629,7 +629,7 @@
           </div>
           <div style="font-size:13px; color:var(--text-secondary);">Официальные ресурсы и сообщества</div>
         </div>
-        <a href="https://vivclub.ru" target="_blank" rel="noopener noreferrer" onclick="openExternal('https://vivclub.ru'); return false;" class="social-btn">
+        <a href="https://vivclub.ru" target="_blank" rel="noopener noreferrer" onclick="return openExternal('https://vivclub.ru', event);" class="social-btn">
           <div class="social-btn-content">
             <div style="width:38px; height:38px; background:var(--card-bg-elevated); border:1px solid var(--border-color); border-radius:10px; display:flex; align-items:center; justify-content:center;">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
@@ -640,7 +640,7 @@
           </div>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </a>
-        <a href="https://t.me/vivclubru" target="_blank" rel="noopener noreferrer" onclick="openExternal('https://t.me/vivclubru'); return false;" class="social-btn">
+        <a href="https://t.me/vivclubru" target="_blank" rel="noopener noreferrer" onclick="return openExternal('https://t.me/vivclubru', event);" class="social-btn">
           <div class="social-btn-content">
             <div style="width:38px; height:38px; background:var(--card-bg-elevated); border:1px solid var(--border-color); border-radius:10px; display:flex; align-items:center; justify-content:center;">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
@@ -651,7 +651,7 @@
           </div>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </a>
-        <a href="https://www.instagram.com/vivclub.ru?stkn=MTF4aTZwc3ZucG03eg==" target="_blank" rel="noopener noreferrer" onclick="openExternal('https://www.instagram.com/vivclub.ru?stkn=MTF4aTZwc3ZucG03eg=='); return false;" class="social-btn">
+        <a href="https://www.instagram.com/vivclub.ru?stkn=MTF4aTZwc3ZucG03eg==" target="_blank" rel="noopener noreferrer" onclick="return openExternal('https://www.instagram.com/vivclub.ru?stkn=MTF4aTZwc3ZucG03eg==', event);" class="social-btn">
           <div class="social-btn-content">
             <div style="width:38px; height:38px; background:var(--card-bg-elevated); border:1px solid var(--border-color); border-radius:10px; display:flex; align-items:center; justify-content:center;">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
@@ -666,12 +666,19 @@
     `;
   }
 
-  function openExternal(url) {
-    if (window.Telegram?.WebApp?.openLink) {
+  function openExternal(url, e) {
+    const isTelegram = !!(window.Telegram?.WebApp?.initData && window.Telegram?.WebApp?.platform && window.Telegram.WebApp.platform !== 'unknown');
+    if (isTelegram && typeof window.Telegram?.WebApp?.openLink === 'function') {
+      if (e && e.preventDefault) e.preventDefault();
       window.Telegram.WebApp.openLink(url);
-    } else {
-      window.open(url, '_blank', 'noopener,noreferrer');
+      return false;
     }
+    // В стандартном браузере или PWA позволяем нативному переходу сработать
+    if (e && e.type === 'click') {
+      return true;
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
+    return true;
   }
 
   // ---------------------------------------------------------------------------

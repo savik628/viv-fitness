@@ -179,15 +179,8 @@
     `;
   }
 
-  let _vivTapTime = 0;
   function handleVivLogoClick(e) {
-    const now = Date.now();
-    if (now - _vivTapTime < 420) {
-      _vivTapTime = 0;
-      exportVivReportPng();
-    } else {
-      _vivTapTime = now;
-    }
+    exportVivReportPng();
   }
 
   async function exportVivReportPng() {
@@ -226,13 +219,35 @@
       })
       .sort((a, b) => b.volume - a.volume);
 
+    const scale = 2; // Ретина-качество (2x)
+    const cardW = 390;
+    const padOuter = 16;
+    const W = cardW + padOuter * 2;
+
+    const cardPad = 14;
+    const innerW = cardW - cardPad * 2;
+    const heroH = 216;
+    const exCount = Math.max(1, sortedExercises.length);
+    const exCardH = 56;
+    const exGap = 10;
+    const exListH = sortedExercises.length ? (exCount * exCardH + (exCount - 1) * exGap) : 56;
+
+    const cardTopPad = 18;
+    const headerH = 38 + 6 + 14 + 12 + 1; // иконка (38) + отступ (6) + дата (14) + отступ (12) + линия (1)
+    const gapHero = 14;
+    const gapEx = 12;
+    const botDividerPad = 14;
+    const cardBotPad = 16;
+
+    const cardH = cardTopPad + headerH + gapHero + heroH + gapEx + exListH + botDividerPad + 1 + cardBotPad;
+    const H = cardH + padOuter * 2;
+
     const canvas = document.createElement('canvas');
-    const W = 1080;
-    const H = 1350; // Формат 4:5
-    canvas.width = W;
-    canvas.height = H;
+    canvas.width = Math.round(W * scale);
+    canvas.height = Math.round(H * scale);
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    ctx.scale(scale, scale);
 
     function roundRect(x, y, w, h, r, fill, stroke, strokeColor, lineWidth = 1) {
       ctx.beginPath();
@@ -259,156 +274,167 @@
       return truncated + '...';
     }
 
-    // 1. Фон глубокий матовый
-    const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
-    bgGrad.addColorStop(0, '#0a0c0e');
-    bgGrad.addColorStop(1, '#11151a');
-    ctx.fillStyle = bgGrad;
+    // 1. Внешний глубокий фон (#0d0f12)
+    ctx.fillStyle = '#0d0f12';
     ctx.fillRect(0, 0, W, H);
 
-    // Радиальный неоновый свет позади кольца
-    const glow = ctx.createRadialGradient(W / 2, 360, 20, W / 2, 360, 360);
-    glow.addColorStop(0, 'rgba(0, 245, 155, 0.16)');
-    glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    ctx.fillStyle = glow;
-    ctx.fillRect(0, 80, W, 650);
+    // 2. Карточка окна отчёта .apple-fitness-report (#000000)
+    const cardX = padOuter;
+    const cardY = padOuter;
+    roundRect(cardX, cardY, cardW, cardH, 22, '#000000', true, 'rgba(255, 255, 255, 0.1)', 1);
 
-    // Рамка карточки
-    roundRect(36, 36, W - 72, H - 72, 38, null, true, 'rgba(255, 255, 255, 0.08)', 2);
+    // 3. Шапка: VIV badge + дата
+    const iconSize = 38;
+    const iconX = cardX + (cardW - iconSize) / 2;
+    const iconY = cardY + cardTopPad;
 
-    // 2. Шапка: VIV (текст или логотип в зависимости от window.AppLogo.mode)
-    let iconImg = null;
-    if (window.AppLogo && window.AppLogo.mode === 'icon') {
-      try {
-        iconImg = await new Promise((resolve) => {
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          img.onload = () => resolve(img);
-          img.onerror = () => resolve(null);
-          img.src = window.AppLogo.iconSrc || 'icon.svg';
-        });
-      } catch (e) {
-        iconImg = null;
-      }
-    }
+    // Отрисовка фирменного бейджа VIV с мягким свечением
+    ctx.save();
+    ctx.shadowColor = 'rgba(255, 255, 255, 0.25)';
+    ctx.shadowBlur = 8;
+    roundRect(iconX, iconY, iconSize, iconSize, 9, '#09090b', true, '#27272a', 1);
+    ctx.restore();
 
-    if (iconImg) {
-      const iconSize = 88;
-      ctx.save();
-      ctx.shadowColor = 'rgba(255, 255, 255, 0.35)';
-      ctx.shadowBlur = 20;
-      ctx.drawImage(iconImg, (W - iconSize) / 2, 64, iconSize, iconSize);
-      ctx.restore();
-    } else {
-      ctx.textAlign = 'center';
-      ctx.font = '900 74px -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
-      ctx.fillStyle = '#ffffff';
-      ctx.shadowColor = 'rgba(255, 255, 255, 0.35)';
-      ctx.shadowBlur = 24;
-      ctx.fillText('VIV', W / 2, 130);
-      ctx.shadowBlur = 0;
-    }
+    ctx.textAlign = 'center';
+    ctx.font = '900 11.5px -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('VIV', iconX + iconSize / 2, iconY + 23);
+    roundRect(iconX + (iconSize - 14) / 2, iconY + 26, 14, 1.8, 0.9, '#22c55e', false, null);
 
     const dateStr = new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
-    ctx.font = '500 21px -apple-system, sans-serif';
+    const dateY = iconY + iconSize + 14;
+    ctx.font = '500 12px -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif';
     ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.fillText(dateStr, W / 2, 178);
+    ctx.textAlign = 'center';
+    ctx.fillText(dateStr, cardX + cardW / 2, dateY);
 
-    // 3. Центральное неоновое кольцо с суммарным тоннажем
-    const ringCenterX = W / 2;
-    const ringCenterY = 355;
-    const ringRadius = 135;
+    // Тонкий разделитель под шапкой
+    const divY1 = dateY + 12;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cardX + cardPad, divY1);
+    ctx.lineTo(cardX + cardW - cardPad, divY1);
+    ctx.stroke();
 
-    // Фоновая окружность
-    ctx.lineWidth = 24;
+    // 4. Карточка кольца тоннажа (.apple-hero-ring-card)
+    const heroX = cardX + cardPad;
+    const heroY = divY1 + gapHero;
+    const heroW = innerW;
+    roundRect(heroX, heroY, heroW, heroH, 22, '#14181c', true, '#1c2229', 1);
+
+    // Кольцо тоннажа
+    const ringCenterX = heroX + heroW / 2;
+    const ringCenterY = heroY + heroH / 2;
+    const ringRadius = 62;
+    const ringStroke = 13;
+
+    // Фоновый круг кольца
+    ctx.lineWidth = ringStroke;
     ctx.beginPath();
     ctx.arc(ringCenterX, ringCenterY, ringRadius, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.07)';
     ctx.stroke();
 
     // Неоновая дуга активности
     const ringGrad = ctx.createLinearGradient(ringCenterX - ringRadius, ringCenterY - ringRadius, ringCenterX + ringRadius, ringCenterY + ringRadius);
     ringGrad.addColorStop(0, '#00F59B');
     ringGrad.addColorStop(1, '#DFFF00');
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 245, 155, 0.45)';
+    ctx.shadowBlur = 12;
     ctx.beginPath();
     ctx.arc(ringCenterX, ringCenterY, ringRadius, -Math.PI / 2, Math.PI * 1.15);
     ctx.strokeStyle = ringGrad;
     ctx.lineCap = 'round';
     ctx.stroke();
-    ctx.lineCap = 'butt';
+    ctx.restore();
 
-    // Текст строго в центре кольца (без наезда на нижнюю дугу)
+    // Число тоннажа и единица строго по центру
     ctx.textAlign = 'center';
-    ctx.font = '900 86px -apple-system, sans-serif';
+    ctx.font = '900 38px -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(`${displayVol}`, ringCenterX, ringCenterY + 16);
+    ctx.fillText(`${displayVol}`, ringCenterX, ringCenterY + 4);
 
-    ctx.font = '800 26px -apple-system, sans-serif';
+    ctx.font = '800 14px -apple-system, sans-serif';
     ctx.fillStyle = '#DFFF00';
-    ctx.letterSpacing = '1px';
-    ctx.fillText(volUnit, ringCenterX, ringCenterY + 58);
+    ctx.letterSpacing = '1.5px';
+    ctx.fillText(volUnit, ringCenterX, ringCenterY + 25);
     ctx.letterSpacing = '0px';
 
-    const listW = W - 140;
-    const listLeft = 70;
-    let rowY = 550;
-    const maxItems = Math.min(7, sortedExercises.length);
-    const cardH = maxItems <= 4 ? 94 : 84;
-    const cardGap = maxItems <= 4 ? 16 : 12;
-
-    if (maxItems === 0) {
-      roundRect(listLeft, rowY, listW, 110, 20, '#13181f', true, 'rgba(255, 255, 255, 0.06)', 1.5);
+    // 5. Карточки упражнений (.tonnage-dist-card)
+    let curExY = heroY + heroH + gapEx;
+    if (!sortedExercises.length) {
+      roundRect(cardX + cardPad, curExY, innerW, 56, 14, '#14181c', true, '#1c2229', 1);
       ctx.textAlign = 'center';
-      ctx.font = '500 20px -apple-system, sans-serif';
+      ctx.font = '500 13px -apple-system, sans-serif';
       ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-      ctx.fillText('Нет завершенных силовых тренировок', W / 2, rowY + 62);
+      ctx.fillText('Нет завершенных силовых тренировок с весом.', cardX + cardW / 2, curExY + 32);
+      curExY += 56 + exGap;
     } else {
-      for (let i = 0; i < maxItems; i++) {
+      for (let i = 0; i < sortedExercises.length; i++) {
         const item = sortedExercises[i];
-        roundRect(listLeft, rowY, listW, cardH, 18, '#13181f', true, 'rgba(255, 255, 255, 0.07)', 1.5);
+        const exX = cardX + cardPad;
+        roundRect(exX, curExY, innerW, exCardH, 14, '#14181c', true, '#1c2229', 1);
 
-        const textY = rowY + (cardH <= 84 ? 37 : 41);
+        const rowTextY = curExY + 22;
 
-        // Тоннаж справа
+        // Вес/тоннаж справа (белый контрастный текст)
         ctx.textAlign = 'right';
-        ctx.font = '800 22px -apple-system, sans-serif';
-        ctx.fillStyle = '#DFFF00';
-        ctx.fillText(item.volStr, listLeft + listW - 24, textY);
+        ctx.font = '800 14px -apple-system, sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(item.volStr, exX + innerW - 14, rowTextY);
         const volW = ctx.measureText(item.volStr).width;
 
-        // Процент левее тоннажа с четким интервалом
+        // Пилл с процентами левее веса
         const pctStr = item.pct + '%';
-        ctx.font = '700 16px -apple-system, sans-serif';
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
-        const pctRight = listLeft + listW - 24 - volW - 14;
-        ctx.fillText(pctStr, pctRight, textY);
+        ctx.font = '700 11px -apple-system, sans-serif';
         const pctW = ctx.measureText(pctStr).width;
+        const pillW = pctW + 12;
+        const pillH = 18;
+        const pillX = exX + innerW - 14 - volW - 8 - pillW;
+        const pillY = rowTextY - 13;
+        roundRect(pillX, pillY, pillW, pillH, 4, 'rgba(255, 255, 255, 0.06)', false, null);
 
-        // Название упражнения слева (с обрезкой через многоточие при превышении ширины)
-        const maxNameW = listW - 48 - volW - pctW - 36;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+        ctx.textAlign = 'center';
+        ctx.fillText(pctStr, pillX + pillW / 2, rowTextY);
+
+        // Название упражнения слева
         ctx.textAlign = 'left';
-        ctx.font = '700 22px -apple-system, sans-serif';
+        ctx.font = '700 14px -apple-system, sans-serif';
         ctx.fillStyle = '#ffffff';
+        const maxNameW = pillX - exX - 22;
         const safeName = fitTextWithEllipsis(item.name, maxNameW);
-        ctx.fillText(safeName, listLeft + 24, textY);
+        ctx.fillText(safeName, exX + 14, rowTextY);
 
-        // Тонкий неоновый прогресс-бар
-        const trackY = rowY + (cardH <= 84 ? 56 : 61);
-        const trackW = listW - 48;
-        const trackX = listLeft + 24;
-        roundRect(trackX, trackY, trackW, 7, 3.5, 'rgba(255, 255, 255, 0.07)', false, null);
+        // Прогресс-бар трек и цветной бар
+        const trackX = exX + 14;
+        const trackY = curExY + 36;
+        const trackW = innerW - 28;
+        roundRect(trackX, trackY, trackW, 6, 3, 'rgba(255, 255, 255, 0.08)', false, null);
 
-        const barW = Math.max(10, Math.round((trackW * item.pct) / 100));
+        const barW = Math.max(6, Math.round((trackW * item.pct) / 100));
         const barGrad = ctx.createLinearGradient(trackX, trackY, trackX + barW, trackY);
         barGrad.addColorStop(0, '#00F59B');
         barGrad.addColorStop(1, '#DFFF00');
-        roundRect(trackX, trackY, barW, 7, 3.5, barGrad, false, null);
+        roundRect(trackX, trackY, barW, 6, 3, barGrad, false, null);
 
-        rowY += cardH + cardGap;
+        curExY += exCardH + exGap;
       }
     }
 
-    // Сохранение и шеринг
+    // 6. Нижний разделитель подвала (.apple-report-footer)
+    const botDivY = curExY - exGap + botDividerPad;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cardX + cardPad, botDivY);
+    ctx.lineTo(cardX + cardW - cardPad, botDivY);
+    ctx.stroke();
+
+    // 7. Сохранение и шеринг
     canvas.toBlob(async (blob) => {
       if (!blob) return;
       const fileName = `viv-tonnage-report-${new Date().toISOString().substring(0, 10)}.png`;
