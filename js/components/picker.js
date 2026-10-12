@@ -100,26 +100,18 @@
         <button type="button" class="wheel-picker-btn-confirm" id="picker-confirm-btn">Готово</button>
       </div>
 
-      <div class="wheel-picker-display-card" id="picker-display-card" title="Нажмите, чтобы ввести число вручную">
-        <div class="wheel-picker-display-val" id="picker-display-val">
-          <span class="wheel-picker-num" id="picker-display-num">${formatValue(_currentValue, step)}</span>
-          ${_activeOptions.unit ? `<span class="wheel-picker-unit">${window.escapeHtml ? window.escapeHtml(_activeOptions.unit) : _activeOptions.unit}</span>` : ''}
-          <svg class="wheel-picker-edit-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-          </svg>
-        </div>
-        <div class="wheel-picker-manual-box hidden" id="picker-manual-box">
-          <input type="number" 
-                 id="picker-manual-input" 
-                 class="wheel-picker-manual-input" 
-                 step="${step}" 
-                 min="${min}" 
-                 max="${max}" 
-                 value="${_currentValue}">
-          ${_activeOptions.unit ? `<span class="wheel-picker-manual-unit">${window.escapeHtml ? window.escapeHtml(_activeOptions.unit) : _activeOptions.unit}</span>` : ''}
-        </div>
-        <div class="wheel-picker-hint" id="picker-hint">Нажмите на значение для ручного ввода с клавиатуры</div>
+      <!-- Единое значение в рамке (без дублирования и карандаша) -->
+      <div class="wheel-picker-framed-box">
+        <input type="number" 
+               id="picker-manual-input" 
+               class="wheel-picker-framed-input" 
+               inputmode="decimal"
+               step="${step}" 
+               min="${min}" 
+               max="${max}" 
+               value="${formatValue(_currentValue, step)}"
+               autocomplete="off">
+        ${_activeOptions.unit ? `<span class="wheel-picker-framed-unit">${window.escapeHtml ? window.escapeHtml(_activeOptions.unit) : _activeOptions.unit}</span>` : ''}
       </div>
 
       ${deltas && deltas.length ? `
@@ -168,11 +160,7 @@
     const drum = document.getElementById('picker-drum');
     const cancelBtn = document.getElementById('picker-cancel-btn');
     const confirmBtn = document.getElementById('picker-confirm-btn');
-    const displayCard = document.getElementById('picker-display-card');
     const manualInput = document.getElementById('picker-manual-input');
-    const manualBox = document.getElementById('picker-manual-box');
-    const displayVal = document.getElementById('picker-display-val');
-    const hintEl = document.getElementById('picker-hint');
 
     const handleCancel = () => {
       if (_activeOptions?.onCancel) _activeOptions.onCancel();
@@ -180,7 +168,12 @@
     };
 
     const handleConfirm = () => {
-      applyManualInputIfActive();
+      if (manualInput) {
+        const parsed = parseFloat(manualInput.value);
+        if (!isNaN(parsed)) {
+          _currentValue = clamp(parsed, _activeOptions.min, _activeOptions.max);
+        }
+      }
       if (_activeOptions?.onConfirm) {
         _activeOptions.onConfirm(_currentValue);
       }
@@ -200,64 +193,25 @@
       };
     }
 
-    // Переключение в режим ручного ввода по тапу на плашку
-    if (displayCard) {
-      displayCard.onclick = (e) => {
-        if (e.target === manualInput) return;
-        switchToManualInput();
-      };
-    }
-
-    function switchToManualInput() {
-      if (_isManualEditing) return;
-      _isManualEditing = true;
-      if (displayVal) {
-        displayVal.classList.add('hidden');
-        displayVal.style.display = 'none';
-      }
-      if (manualBox) {
-        manualBox.classList.remove('hidden');
-        manualBox.style.display = 'inline-flex';
-      }
-      if (hintEl) hintEl.textContent = 'Введите число и нажмите "Готово"';
-      if (manualInput) {
-        manualInput.value = _currentValue;
-        manualInput.focus();
-        manualInput.select();
-      }
-    }
-
-    function applyManualInputIfActive() {
-      if (_isManualEditing && manualInput) {
+    // Слушатели прямого ввода в рамку
+    if (manualInput) {
+      manualInput.addEventListener('input', () => {
         const parsed = parseFloat(manualInput.value);
         if (!isNaN(parsed)) {
           _currentValue = clamp(parsed, _activeOptions.min, _activeOptions.max);
-          updateDisplayNum(_currentValue);
           scrollToValue(_currentValue, false);
         }
-        _isManualEditing = false;
-        if (displayVal) {
-          displayVal.classList.remove('hidden');
-          displayVal.style.display = 'inline-flex';
-        }
-        if (manualBox) {
-          manualBox.classList.add('hidden');
-          manualBox.style.display = 'none';
-        }
-        if (hintEl) hintEl.textContent = 'Нажмите на значение для ручного ввода с клавиатуры';
-      }
-    }
+      });
 
-    if (manualInput) {
       manualInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
-          applyManualInputIfActive();
           handleConfirm();
         }
       });
-      manualInput.addEventListener('blur', () => {
-        applyManualInputIfActive();
+
+      manualInput.addEventListener('focus', () => {
+        manualInput.select();
       });
     }
 
@@ -265,7 +219,11 @@
     container.querySelectorAll('.wheel-picker-delta-chip').forEach(btn => {
       btn.onclick = (e) => {
         e.stopPropagation();
-        applyManualInputIfActive();
+        if (manualInput && document.activeElement === manualInput) {
+          const parsed = parseFloat(manualInput.value);
+          if (!isNaN(parsed)) _currentValue = clamp(parsed, _activeOptions.min, _activeOptions.max);
+          manualInput.blur();
+        }
         const delta = parseFloat(btn.getAttribute('data-delta')) || 0;
         stepValue(delta);
       };
@@ -388,13 +346,9 @@
   }
 
   function updateDisplayNum(val) {
-    const numEl = document.getElementById('picker-display-num');
-    if (numEl && _activeOptions) {
-      numEl.textContent = formatValue(val, _activeOptions.step);
-    }
     const manualInput = document.getElementById('picker-manual-input');
-    if (manualInput && !_isManualEditing) {
-      manualInput.value = val;
+    if (manualInput && document.activeElement !== manualInput && _activeOptions) {
+      manualInput.value = formatValue(val, _activeOptions.step);
     }
   }
 
@@ -408,6 +362,10 @@
   function stepValue(delta) {
     const nextVal = clamp(_currentValue + delta, _activeOptions.min, _activeOptions.max);
     setValue(nextVal, true);
+    const manualInput = document.getElementById('picker-manual-input');
+    if (manualInput) {
+      manualInput.value = formatValue(_currentValue, _activeOptions.step);
+    }
   }
 
   // ---------------------------------------------------------------------------

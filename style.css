@@ -1783,79 +1783,39 @@ canvas {
   border-top: 1px solid var(--border-subtle);
 }
 
-.wheel-picker-display-card {
+.wheel-picker-framed-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.wheel-picker-framed-input {
+  width: 140px;
+  height: 52px;
+  font-size: 30px;
+  font-weight: 800;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  text-align: center;
   background: var(--card-bg-elevated);
-  border: 1px solid var(--border-color);
+  border: 2px solid var(--accent-color, #22c55e);
+  color: var(--text-primary);
   border-radius: 14px;
-  padding: 12px 14px;
-  text-align: center;
-  margin-bottom: 12px;
-  cursor: pointer;
-  transition: border-color 0.2s;
-}
-
-.wheel-picker-display-card:hover {
-  border-color: var(--accent-color);
-}
-
-.wheel-picker-display-val {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
-.wheel-picker-num {
-  font-size: 28px;
-  font-weight: 800;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-  color: var(--text-primary);
-  letter-spacing: -0.5px;
-}
-
-.wheel-picker-unit {
-  font-size: 17px;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.wheel-picker-edit-icon {
-  color: var(--text-secondary);
-  opacity: 0.6;
-  margin-left: 2px;
-}
-
-.wheel-picker-hint {
-  font-size: 11px;
-  color: var(--text-secondary);
-  margin-top: 4px;
-  opacity: 0.8;
-}
-
-.wheel-picker-manual-box {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
-.wheel-picker-manual-input {
-  width: 120px;
-  font-size: 26px;
-  font-weight: 800;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-  text-align: center;
-  background: var(--card-bg);
-  border: 2px solid var(--accent-color);
-  color: var(--text-primary);
-  border-radius: 10px;
-  padding: 4px 8px;
+  padding: 4px 10px;
   outline: none;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-.wheel-picker-manual-unit {
-  font-size: 17px;
-  font-weight: 600;
+.wheel-picker-framed-input:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25);
+}
+
+.wheel-picker-framed-unit {
+  font-size: 19px;
+  font-weight: 700;
   color: var(--text-secondary);
 }
 

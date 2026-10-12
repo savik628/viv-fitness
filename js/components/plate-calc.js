@@ -231,11 +231,20 @@
         ex.sets.forEach((s, sIdx) => {
           s.weight = plateCalcTargetWeight;
           const inp = document.getElementById(`set-input-${plateCalcTargetExIdx}-${sIdx}-weight`);
-          if (inp) inp.value = plateCalcTargetWeight;
+          if (inp) {
+            if (inp.tagName === 'INPUT') {
+              inp.value = plateCalcTargetWeight;
+            } else {
+              inp.textContent = plateCalcTargetWeight;
+              inp.classList.remove('placeholder');
+            }
+          }
         });
         if (window.Storage) window.Storage.saveActiveDraft(window.state.work.activeWorkout);
+        if (window.renderActiveWorkoutScreen) window.renderActiveWorkoutScreen();
       }
     }
+    if (window.triggerHaptic) window.triggerHaptic('success');
     if (window.closeModal) window.closeModal();
   }
 

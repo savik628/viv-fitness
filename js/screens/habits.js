@@ -71,6 +71,15 @@
     renderHabits();
   }
 
+  function shiftHabitWeek(deltaDays) {
+    const cur = getSelectedDate();
+    const [y, m, d] = cur.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    dateObj.setDate(dateObj.getDate() + deltaDays);
+    setSelectedDate(fmtDate(dateObj));
+    if (window.triggerHaptic) window.triggerHaptic('light');
+  }
+
   // ---------------------------------------------------------------------------
   // БЛОК 3. РЕНДЕРИНГ ЭКРАНА ПРИВЫЧЕК (Screen Layout & Habit Cards List)
   // ---------------------------------------------------------------------------
@@ -89,18 +98,40 @@
     const habits = window.Storage ? window.Storage.getHabits() : [];
     const curDateStr = getSelectedDate();
     const todayStr = fmtDate(new Date());
-    const isToday = curDateStr === todayStr;
 
     const weekDays = getCurrentWeekDates(curDateStr);
-    const dailyProgress = window.Storage ? window.Storage.getDailyHabitProgress(curDateStr) : { total: 0, completed: 0, percentage: 0 };
 
-    const [y, m, d] = curDateStr.split('-').map(Number);
-    const dateObj = new Date(y, m - 1, d);
-    const formattedDate = dateObj.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+    const startParts = weekDays[0].dateStr.split('-').map(Number);
+    const endParts = weekDays[6].dateStr.split('-').map(Number);
+    const startDate = new Date(startParts[0], startParts[1] - 1, startParts[2]);
+    const endDate = new Date(endParts[0], endParts[1] - 1, endParts[2]);
+
+    let formattedWeekRange = '';
+    const startMonth = startDate.toLocaleDateString('ru-RU', { month: 'short' });
+    const endMonth = endDate.toLocaleDateString('ru-RU', { month: 'short' });
+
+    if (startDate.getMonth() === endDate.getMonth()) {
+      formattedWeekRange = `${startDate.getDate()} – ${endDate.getDate()} ${endDate.toLocaleDateString('ru-RU', { month: 'long' })}`;
+    } else {
+      formattedWeekRange = `${startDate.getDate()} ${startMonth} – ${endDate.getDate()} ${endMonth}`;
+    }
 
     let html = `
-      <!-- 1. Недельная лента дней -->
-      <div class="habit-week-strip">
+      <!-- 1. Навигация по неделям (как в календаре) -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding:0 2px;">
+        <button class="cal-nav-btn" onclick="shiftHabitWeek(-7)" aria-label="Предыдущая неделя" title="Предыдущая неделя">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <div style="text-align:center;">
+          <div style="font-size:15px; font-weight:700; letter-spacing:-0.2px; color:var(--text-primary); text-transform:capitalize;">${formattedWeekRange}</div>
+        </div>
+        <button class="cal-nav-btn" onclick="shiftHabitWeek(7)" aria-label="Следующая неделя" title="Следующая неделя">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </button>
+      </div>
+
+      <!-- 2. Недельная лента дней -->
+      <div class="habit-week-strip" style="margin-bottom:14px;">
         ${weekDays.map(w => {
           const isSelected = w.dateStr === curDateStr;
           const prog = window.Storage ? window.Storage.getDailyHabitProgress(w.dateStr) : { total: 0, completed: 0 };
@@ -116,31 +147,6 @@
             </button>
           `;
         }).join('')}
-      </div>
-
-      <!-- 2. Сводка дня и прогресс-бар -->
-      <div class="card" style="margin-bottom:12px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <div>
-            <div style="font-weight:700; font-size:15px;">
-              ${isToday ? 'Сегодня' : formattedDate}
-            </div>
-            <div id="habit-summary-sub" style="font-size:12px; color:var(--text-secondary); margin-top:2px;">
-              ${habits.length ? `Выполнено ${dailyProgress.completed} из ${dailyProgress.total}` : 'Нет активных привычек'}
-            </div>
-          </div>
-          <div id="habit-summary-pct" style="font-size:20px; font-weight:800; color:${dailyProgress.percentage === 100 ? 'var(--color-success, #16a34a)' : 'var(--text-primary)'};">
-            ${dailyProgress.percentage}%
-          </div>
-        </div>
-
-        <div class="habit-progress-track">
-          <div 
-            id="habit-progress-bar"
-            class="habit-progress-bar" 
-            style="width:${dailyProgress.percentage}%; ${dailyProgress.percentage === 100 ? 'background:var(--color-success, #16a34a);' : ''}"
-          ></div>
-        </div>
       </div>
     `;
 
@@ -378,6 +384,7 @@
   // ---------------------------------------------------------------------------
   window.renderHabits = renderHabits;
   window.selectHabitDate = setSelectedDate;
+  window.shiftHabitWeek = shiftHabitWeek;
   window.toggleHabitStatus = toggleHabitStatus;
   window.openAddHabitModal = openAddHabitModal;
   window.selectHabitEmoji = selectHabitEmoji;

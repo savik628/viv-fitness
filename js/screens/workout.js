@@ -269,7 +269,7 @@
                 </div>
                 <div style="display:flex; gap:6px; align-items:center; flex-shrink:0;">
                   ${isWeight ? `
-                    <button class="btn btn-outline btn-sm" style="padding:4px 8px; font-size:11.5px;" onclick="openPlateCalculatorModal(null, ${exIdx})">
+                    <button class="btn btn-outline btn-sm" style="padding:4px 8px; font-size:11.5px;" onclick="openPlateCalculatorModal(${(ex.sets?.find(s => !s.completed && parseFloat(s.weight) > 0)?.weight) || (ex.sets?.[0]?.weight) || 'null'}, ${exIdx})">
                       Блины
                     </button>
                   ` : ''}
