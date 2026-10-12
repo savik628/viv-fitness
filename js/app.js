@@ -127,7 +127,11 @@
         if (window.renderWork) window.renderWork();
         break;
       case 'stats':
-        if (window.renderStats) window.renderStats();
+        if (typeof window.renderStats === 'function') {
+          window.renderStats();
+        } else {
+          console.warn('window.renderStats еще не инициализирован');
+        }
         break;
       case 'profile':
         if (window.renderProfile) window.renderProfile();
@@ -164,9 +168,15 @@
 
     // Регистрация Service Worker для PWA и полного автономного режима
     if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+      });
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
-          .then(reg => console.log('VIV ServiceWorker успешно зарегистрирован:', reg.scope))
+          .then(reg => {
+            reg.update();
+            console.log('VIV ServiceWorker успешно зарегистрирован:', reg.scope);
+          })
           .catch(err => console.warn('Ошибка регистрации ServiceWorker:', err));
       });
     }

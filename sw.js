@@ -6,7 +6,7 @@
 // =============================================================================
 
 // БЛОК 1. Идентификатор версии кэша и реестр критических ресурсов
-const CACHE_NAME = 'viv-core-v1.1.9';
+const CACHE_NAME = 'viv-core-v1.2.0';
 
 const CORE_ASSETS = [
   './',
@@ -81,7 +81,7 @@ self.addEventListener('fetch', (event) => {
           return networkResponse;
         })
         .catch(() => {
-          return caches.match(event.request).then((cached) => {
+          return caches.match(event.request, { ignoreSearch: true }).then((cached) => {
             if (cached) return cached;
             if (event.request.mode === 'navigate') {
               return caches.match('./index.html');

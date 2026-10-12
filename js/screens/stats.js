@@ -17,29 +17,54 @@
   }
 
   function renderStats() {
-    if (window.setHeader) window.setHeader('Статистика', false);
-    const mainContent = document.getElementById('main-content');
-    if (!mainContent) return;
+    try {
+      if (window.setHeader) window.setHeader('Статистика', false);
+      const mainContent = document.getElementById('main-content');
+      if (!mainContent) return;
 
-    const validTabs = ['progress', 'calendar', 'report'];
-    if (!validTabs.includes(window.state.stats.activeSubTab)) {
-      window.state.stats.activeSubTab = 'progress';
-    }
+      if (!window.state) window.state = {};
+      if (!window.state.stats) {
+        window.state.stats = {
+          activeSubTab: 'progress',
+          selectedRoutine: null,
+          selectedExercise: null,
+          calYear: new Date().getFullYear(),
+          calMonth: new Date().getMonth(),
+          chartLimit: 10
+        };
+      }
 
-    mainContent.innerHTML = `
-      <div class="sub-tabs">
-        <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'progress' ? 'active' : ''}" onclick="switchStatsSubTab('progress')">Прогресс</button>
-        <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'calendar' ? 'active' : ''}" onclick="switchStatsSubTab('calendar')">Календарь</button>
-        <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'report' ? 'active' : ''}" onclick="switchStatsSubTab('report')" title="VIV" style="display:inline-flex; align-items:center; justify-content:center;"><img src="icon.svg" style="height:14px; width:auto; border:none; vertical-align:middle; background:transparent;" alt="VIV"></button>
-      </div>
-      <div id="stats-tab-content"></div>`;
+      const validTabs = ['progress', 'calendar', 'report'];
+      if (!validTabs.includes(window.state.stats.activeSubTab)) {
+        window.state.stats.activeSubTab = 'progress';
+      }
 
-    if (window.state.stats.activeSubTab === 'report') {
-      renderStatsReportTab();
-    } else if (window.state.stats.activeSubTab === 'calendar') {
-      renderStatsCalendarTab();
-    } else {
-      renderStatsProgressTab();
+      mainContent.innerHTML = `
+        <div class="sub-tabs">
+          <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'progress' ? 'active' : ''}" onclick="switchStatsSubTab('progress')">Прогресс</button>
+          <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'calendar' ? 'active' : ''}" onclick="switchStatsSubTab('calendar')">Календарь</button>
+          <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'report' ? 'active' : ''}" onclick="switchStatsSubTab('report')" title="VIV" style="display:inline-flex; align-items:center; justify-content:center;"><img src="icon.svg" style="height:14px; width:auto; border:none; vertical-align:middle; background:transparent;" alt="VIV"></button>
+        </div>
+        <div id="stats-tab-content"></div>`;
+
+      if (window.state.stats.activeSubTab === 'report') {
+        renderStatsReportTab();
+      } else if (window.state.stats.activeSubTab === 'calendar') {
+        renderStatsCalendarTab();
+      } else {
+        renderStatsProgressTab();
+      }
+    } catch (err) {
+      console.error('Ошибка в renderStats():', err);
+      const mainContent = document.getElementById('main-content');
+      if (mainContent) {
+        mainContent.innerHTML = `
+          <div style="padding:40px 16px; text-align:center; color:var(--text-secondary);">
+            <div style="font-weight:700; font-size:16px; margin-bottom:8px; color:var(--text-primary);">Экран статистики</div>
+            <div style="font-size:12.5px; margin-bottom:16px;">Пожалуйста, обновите страницу.</div>
+            <button class="btn btn-outline btn-sm" onclick="window.location.reload(true)">Обновить</button>
+          </div>`;
+      }
     }
   }
 
