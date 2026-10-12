@@ -228,7 +228,25 @@
         ctx.fillText(shortDate, textX, h - 2);
       }
     });
+
+    _activeChartInstances[canvasId] = { points, valueGetter, unit };
   }
+
+  const _activeChartInstances = {};
+  let _resizeTimer = null;
+
+  window.addEventListener('resize', () => {
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(() => {
+      Object.keys(_activeChartInstances).forEach(id => {
+        const item = _activeChartInstances[id];
+        const canvas = document.getElementById(id);
+        if (canvas && canvas.offsetParent !== null) {
+          drawChart(id, item.points, item.valueGetter, item.unit);
+        }
+      });
+    }, 150);
+  });
 
   // ---------------------------------------------------------------------------
   // БЛОК 8. Экспорт компонента графиков в глобальную область (window)

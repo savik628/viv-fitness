@@ -115,11 +115,11 @@
         <div style="display:flex; gap:10px;">
           <div style="flex:1; min-width:0;">
             <label class="form-label">Рост (см)</label>
-            <input id="prof-height" type="number" step="0.5" class="form-input" placeholder="0" value="${prof.height != null ? prof.height : ''}">
+            <input id="prof-height" type="text" inputmode="decimal" readonly style="cursor:pointer;" class="form-input" placeholder="0" value="${prof.height != null ? prof.height : ''}" onclick="openProfileHeightPicker()">
           </div>
           <div style="flex:1; min-width:0;">
             <label class="form-label">Вес (кг)</label>
-            <input id="prof-weight" type="number" step="0.5" class="form-input" placeholder="0" value="${latestWeight != null ? latestWeight : ''}">
+            <input id="prof-weight" type="text" inputmode="decimal" readonly style="cursor:pointer;" class="form-input" placeholder="0" value="${latestWeight != null ? latestWeight : ''}" onclick="openProfileWeightPicker()">
           </div>
         </div>
         <button class="btn btn-primary" onclick="saveProfile()" style="width:100%; margin-top:14px;">Сохранить параметры</button>
@@ -231,6 +231,82 @@
   // ---------------------------------------------------------------------------
   // БЛОК 2. ОБНОВЛЕНИЕ ПРОФИЛЯ И ТАЙМЕРА (Profile & Timer Settings)
   // ---------------------------------------------------------------------------
+  function openProfileHeightPicker() {
+    const inp = document.getElementById('prof-height');
+    const val = parseFloat(inp?.value) || 175;
+    if (window.openNumberPicker) {
+      window.openNumberPicker({
+        title: 'Рост тела',
+        value: val,
+        min: 100,
+        max: 250,
+        step: 0.5,
+        unit: 'см',
+        deltas: [-10, -5, -1, 1, 5, 10],
+        onConfirm: (newVal) => {
+          if (inp) inp.value = newVal;
+        }
+      });
+    }
+  }
+
+  function openProfileWeightPicker() {
+    const inp = document.getElementById('prof-weight');
+    const val = parseFloat(inp?.value) || 75;
+    if (window.openNumberPicker) {
+      window.openNumberPicker({
+        title: 'Вес тела',
+        value: val,
+        min: 30,
+        max: 300,
+        step: 0.1,
+        unit: 'кг',
+        deltas: [-5, -1, -0.5, 0.5, 1, 5],
+        onConfirm: (newVal) => {
+          if (inp) inp.value = newVal;
+        }
+      });
+    }
+  }
+
+  function openBwWeightPicker() {
+    const inp = document.getElementById('bw-weight');
+    const val = parseFloat(inp?.value) || (window.Storage?.getProfile()?.weight || 75);
+    if (window.openNumberPicker) {
+      window.openNumberPicker({
+        title: 'Вес взвешивания',
+        value: val,
+        min: 30,
+        max: 300,
+        step: 0.1,
+        unit: 'кг',
+        deltas: [-5, -1, -0.5, 0.5, 1, 5],
+        onConfirm: (newVal) => {
+          if (inp) inp.value = newVal;
+        }
+      });
+    }
+  }
+
+  function openMeasurementPicker(inputId, metricTitle) {
+    const inp = document.getElementById(inputId);
+    const val = parseFloat(inp?.value) || 0;
+    if (window.openNumberPicker) {
+      window.openNumberPicker({
+        title: `Замер: ${metricTitle}`,
+        value: val > 0 ? val : 50,
+        min: 10,
+        max: 200,
+        step: 0.5,
+        unit: 'см',
+        deltas: [-5, -2, -0.5, 0.5, 2, 5],
+        onConfirm: (newVal) => {
+          if (inp) inp.value = newVal;
+        }
+      });
+    }
+  }
+
   function saveProfile() {
     const nameInput = document.getElementById('prof-name');
     const levelSelect = document.getElementById('prof-level');
@@ -243,8 +319,10 @@
     const height = parseFloat(heightInput?.value) || null;
 
     if (window.Storage) {
+      const prevProfile = window.Storage.getProfile();
+      const prevWeight = prevProfile?.weight;
       window.state.profile = window.Storage.saveProfile({ name, level, weight, height, notificationsEnabled: true });
-      if (weight) {
+      if (weight && weight !== prevWeight) {
         window.Storage.addBodyweightLog(weight);
       }
     }
@@ -291,7 +369,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">Вес (кг)</label>
-          <input id="bw-weight" type="number" step="0.1" class="form-input" placeholder="0" value="${curW}">
+          <input id="bw-weight" type="text" inputmode="decimal" readonly style="cursor:pointer;" class="form-input" placeholder="0" value="${curW}" onclick="openBwWeightPicker()">
         </div>
         <button class="btn btn-green" style="width:100%; margin-top:10px;" onclick="saveBodyweightEntry()">Записать</button>
       `);
@@ -335,6 +413,7 @@
 
   function deleteWeightLog(id) {
     if (window.Storage) window.Storage.deleteBodyweightLog(id);
+    renderProfile();
     openWeightHistoryModal();
   }
 
@@ -358,19 +437,19 @@
         <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; width:100%; box-sizing:border-box;">
           <div class="form-group" style="min-width:0; margin-bottom:12px;">
             <label class="form-label">Грудь (см)</label>
-            <input id="bm-chest" type="number" step="0.5" class="form-input" style="box-sizing:border-box; width:100%; min-width:0;" placeholder="0" value="${m.chest || ''}">
+            <input id="bm-chest" type="text" inputmode="decimal" readonly style="box-sizing:border-box; width:100%; min-width:0; cursor:pointer;" class="form-input" placeholder="0" value="${m.chest || ''}" onclick="openMeasurementPicker('bm-chest', 'Грудь')">
           </div>
           <div class="form-group" style="min-width:0; margin-bottom:12px;">
             <label class="form-label">Талия (см)</label>
-            <input id="bm-waist" type="number" step="0.5" class="form-input" style="box-sizing:border-box; width:100%; min-width:0;" placeholder="0" value="${m.waist || ''}">
+            <input id="bm-waist" type="text" inputmode="decimal" readonly style="box-sizing:border-box; width:100%; min-width:0; cursor:pointer;" class="form-input" placeholder="0" value="${m.waist || ''}" onclick="openMeasurementPicker('bm-waist', 'Талия')">
           </div>
           <div class="form-group" style="min-width:0; margin-bottom:12px;">
             <label class="form-label">Бицепс (см)</label>
-            <input id="bm-bicep" type="number" step="0.5" class="form-input" style="box-sizing:border-box; width:100%; min-width:0;" placeholder="0" value="${m.bicep || ''}">
+            <input id="bm-bicep" type="text" inputmode="decimal" readonly style="box-sizing:border-box; width:100%; min-width:0; cursor:pointer;" class="form-input" placeholder="0" value="${m.bicep || ''}" onclick="openMeasurementPicker('bm-bicep', 'Бицепс')">
           </div>
           <div class="form-group" style="min-width:0; margin-bottom:12px;">
             <label class="form-label">Бедро (см)</label>
-            <input id="bm-thigh" type="number" step="0.5" class="form-input" style="box-sizing:border-box; width:100%; min-width:0;" placeholder="0" value="${m.thigh || ''}">
+            <input id="bm-thigh" type="text" inputmode="decimal" readonly style="box-sizing:border-box; width:100%; min-width:0; cursor:pointer;" class="form-input" placeholder="0" value="${m.thigh || ''}" onclick="openMeasurementPicker('bm-thigh', 'Бедро')">
           </div>
         </div>
         <button class="btn btn-green" style="width:100%; margin-top:8px;" onclick="saveMeasurementEntry()">Сохранить замер</button>
@@ -385,6 +464,10 @@
     const waist = parseFloat(document.getElementById('bm-waist')?.value) || 0;
     const bicep = parseFloat(document.getElementById('bm-bicep')?.value) || 0;
     const thigh = parseFloat(document.getElementById('bm-thigh')?.value) || 0;
+
+    if (chest <= 0 && waist <= 0 && bicep <= 0 && thigh <= 0) {
+      return alert('Введите хотя бы один замер');
+    }
 
     if (window.Storage) window.Storage.addMeasurement({ date, chest, waist, bicep, thigh });
     if (window.closeModal) window.closeModal();
@@ -421,6 +504,7 @@
 
   function deleteMeasurementLog(id) {
     if (window.Storage) window.Storage.deleteMeasurement(id);
+    renderProfile();
     openMeasurementHistoryModal();
   }
 
@@ -669,4 +753,8 @@
   window.resetUserLocalData = resetUserLocalData;
   window.renderShop = renderShop;
   window.openExternal = openExternal;
+  window.openProfileHeightPicker = openProfileHeightPicker;
+  window.openProfileWeightPicker = openProfileWeightPicker;
+  window.openBwWeightPicker = openBwWeightPicker;
+  window.openMeasurementPicker = openMeasurementPicker;
 })();

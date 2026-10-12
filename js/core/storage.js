@@ -36,6 +36,7 @@ const DEFAULT_ROUTINES = [];
 // БЛОК 3. НИЗКОУРОВНЕВЫЙ ДВИЖОК ПЕРСИСТЕНТНОСТИ И УТИЛИТЫ (Helpers)
 // -----------------------------------------------------------------------------
 const _memStore = {};
+const _cache = {};
 
 function getLocalDateStr(d = new Date()) {
   const dateObj = (d instanceof Date && !isNaN(d)) ? d : new Date();
@@ -56,12 +57,19 @@ function escapeHtml(str) {
 }
 
 const getStore = (key, fallback) => {
+  if (_cache[key] !== undefined) {
+    return _cache[key];
+  }
   try {
+    let val;
     if (typeof localStorage !== 'undefined') {
       const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : fallback;
+      val = raw ? JSON.parse(raw) : fallback;
+    } else {
+      val = _memStore[key] ? JSON.parse(_memStore[key]) : fallback;
     }
-    return _memStore[key] ? JSON.parse(_memStore[key]) : fallback;
+    _cache[key] = val;
+    return val;
   } catch {
     return fallback;
   }
@@ -69,6 +77,7 @@ const getStore = (key, fallback) => {
 
 const setStore = (key, val) => {
   try {
+    _cache[key] = val;
     const serialized = JSON.stringify(val);
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(key, serialized);
@@ -145,6 +154,7 @@ const Storage = {
   },
 
   clearActiveDraft() {
+    delete _cache[KEYS.ACTIVE_DRAFT];
     if (typeof localStorage !== 'undefined') localStorage.removeItem(KEYS.ACTIVE_DRAFT);
   },
 
@@ -158,6 +168,29 @@ const Storage = {
   saveHistory(history) {
     setStore(KEYS.HISTORY, history);
     return history;
+  },
+
+  getLastExerciseSets(exerciseName) {
+    if (!exerciseName) return null;
+    const targetName = exerciseName.trim().toLowerCase();
+    const history = this.getHistory();
+    for (const h of history) {
+      if (Array.isArray(h.sets)) {
+        const matching = h.sets.filter(s => s.exerciseName && s.exerciseName.trim().toLowerCase() === targetName);
+        if (matching.length > 0) {
+          return matching.map((s, idx) => ({
+            setNumber: idx + 1,
+            weight: parseFloat(s.weight) || 0,
+            reps: parseInt(s.reps, 10) || 0,
+            distance: parseFloat(s.distance) || 0,
+            duration: parseInt(s.duration, 10) || 0,
+            rpe: s.rpe || '',
+            completed: false,
+          }));
+        }
+      }
+    }
+    return null;
   },
 
   addWorkoutRecord(record) {
@@ -206,29 +239,41 @@ const Storage = {
     const priorHistory = this.getHistory().filter(h => String(h.id) !== String(historyRecord.id));
     const prs = [];
 
+    // Находим максимальный вес для каждого упражнения в текущей тренировке
+    const currentMaxWeights = {};
     historyRecord.sets?.forEach(s => {
+      const isWeight = s.exerciseType === 'weight_reps' || !s.exerciseType;
       const w = parseFloat(s.weight) || 0;
-      if (w > 0 && s.exerciseName) {
-        let maxPriorW = 0;
-        priorHistory.forEach(h => {
-          h.sets?.forEach(ps => {
-            if (ps.exerciseName === s.exerciseName) {
-              const pw = parseFloat(ps.weight) || 0;
-              if (pw > maxPriorW) maxPriorW = pw;
-            }
-          });
-        });
-
-        if (w > maxPriorW && maxPriorW > 0) {
-          if (!prs.some(p => p.exerciseName === s.exerciseName)) {
-            prs.push({
-              exerciseName: s.exerciseName,
-              weight: w,
-              priorWeight: maxPriorW,
-              diff: Math.round((w - maxPriorW) * 10) / 10
-            });
-          }
+      if (isWeight && w > 0 && s.exerciseName) {
+        const name = s.exerciseName.trim();
+        if (!currentMaxWeights[name] || w > currentMaxWeights[name]) {
+          currentMaxWeights[name] = w;
         }
+      }
+    });
+
+    // Сравниваем максимальный вес текущей тренировки с абсолютным максимумом прошлого
+    Object.keys(currentMaxWeights).forEach(exName => {
+      const currentMax = currentMaxWeights[exName];
+      let maxPriorW = 0;
+      const lowerName = exName.toLowerCase();
+
+      priorHistory.forEach(h => {
+        h.sets?.forEach(ps => {
+          if (ps.exerciseName && ps.exerciseName.trim().toLowerCase() === lowerName) {
+            const pw = parseFloat(ps.weight) || 0;
+            if (pw > maxPriorW) maxPriorW = pw;
+          }
+        });
+      });
+
+      if (currentMax > maxPriorW && maxPriorW > 0) {
+        prs.push({
+          exerciseName: exName,
+          weight: currentMax,
+          priorWeight: maxPriorW,
+          diff: Math.round((currentMax - maxPriorW) * 10) / 10
+        });
       }
     });
 
@@ -374,12 +419,22 @@ const Storage = {
     const logs = this.getBodyweightHistory();
     const w = Math.round(parseFloat(weight) * 10) / 10;
     const d = date || getLocalDateStr();
-    const entry = { id: Date.now(), date: d, weight: w };
-    logs.push(entry);
+
+    const existingIdx = logs.findIndex(l => l.date === d);
+    let entry;
+    if (existingIdx !== -1) {
+      logs[existingIdx].weight = w;
+      entry = logs[existingIdx];
+    } else {
+      entry = { id: Date.now(), date: d, weight: w };
+      logs.push(entry);
+    }
     setStore(KEYS.WEIGHT_LOG, logs);
 
+    logs.sort((a, b) => new Date(a.date) - new Date(b.date));
+    const latest = logs[logs.length - 1];
     const profile = this.getProfile();
-    profile.weight = w;
+    profile.weight = latest ? latest.weight : w;
     this.saveProfile(profile);
 
     return entry;
@@ -388,6 +443,15 @@ const Storage = {
   deleteBodyweightLog(id) {
     const logs = this.getBodyweightHistory().filter(l => String(l.id) !== String(id));
     setStore(KEYS.WEIGHT_LOG, logs);
+
+    const profile = this.getProfile();
+    if (logs.length > 0) {
+      logs.sort((a, b) => new Date(a.date) - new Date(b.date));
+      profile.weight = logs[logs.length - 1].weight;
+    } else {
+      profile.weight = null;
+    }
+    this.saveProfile(profile);
     return true;
   },
 
@@ -602,6 +666,7 @@ const Storage = {
   importBackup(jsonStr) {
     try {
       const data = JSON.parse(jsonStr);
+      Object.keys(_cache).forEach(k => delete _cache[k]);
       if (data.profile) this.saveProfile(data.profile);
       if (Array.isArray(data.routines)) this.saveRoutines(data.routines);
       if (Array.isArray(data.history)) this.saveHistory(data.history);
@@ -616,6 +681,7 @@ const Storage = {
   },
 
   resetAllData() {
+    Object.keys(_cache).forEach(k => delete _cache[k]);
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem(KEYS.PROFILE);
       localStorage.removeItem(KEYS.ROUTINES);

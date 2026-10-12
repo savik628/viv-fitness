@@ -42,7 +42,7 @@
           <div class="plate-weight-display-box">
             <button class="stepper-btn" style="width:34px; height:34px; border:1px solid var(--border-color); border-radius:8px;" onclick="changePlateTargetWeight(-5)">-5</button>
             <button class="stepper-btn" style="width:34px; height:34px; border:1px solid var(--border-color); border-radius:8px;" onclick="changePlateTargetWeight(-2.5)">-2.5</button>
-            <div id="plate-calc-val" class="plate-weight-val">${plateCalcTargetWeight} кг</div>
+            <div id="plate-calc-val" class="plate-weight-val" style="cursor:pointer;" onclick="openPlateTargetWeightPicker()" title="Нажмите для барабанного или клавиатурного ввода">${plateCalcTargetWeight} кг</div>
             <button class="stepper-btn" style="width:34px; height:34px; border:1px solid var(--border-color); border-radius:8px;" onclick="changePlateTargetWeight(2.5)">+2.5</button>
             <button class="stepper-btn" style="width:34px; height:34px; border:1px solid var(--border-color); border-radius:8px;" onclick="changePlateTargetWeight(5)">+5</button>
           </div>
@@ -197,10 +197,29 @@
     if (window.closeModal) window.closeModal();
   }
 
+  function openPlateTargetWeightPicker() {
+    if (window.openNumberPicker) {
+      window.openNumberPicker({
+        title: 'Целевой вес штанги',
+        value: plateCalcTargetWeight,
+        min: 20,
+        max: 400,
+        step: 2.5,
+        unit: 'кг',
+        deltas: [-10, -5, -2.5, 2.5, 5, 10],
+        onConfirm: (newW) => {
+          plateCalcTargetWeight = Math.max(plateCalcBarWeight, newW);
+          updatePlateCalculatorUI();
+        }
+      });
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // БЛОК 5. Экспорт функций калькулятора блинов в глобальную область (window)
   // ---------------------------------------------------------------------------
   window.openPlateCalculatorModal = openPlateCalculatorModal;
+  window.openPlateTargetWeightPicker = openPlateTargetWeightPicker;
   window.updatePlateCalculatorUI = updatePlateCalculatorUI;
   window.changePlateTargetWeight = changePlateTargetWeight;
   window.setPlateQuickWeight = setPlateQuickWeight;

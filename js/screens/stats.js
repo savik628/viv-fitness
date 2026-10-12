@@ -85,21 +85,21 @@
     } else if (isWeightReps) {
       chartsHtml = `
         <div class="card" style="margin-bottom:12px;">
-          <div style="font-weight:bold; font-size:15px; margin-bottom:2px;">${window.state.stats.selectedExercise}</div>
+          <div style="font-weight:bold; font-size:15px; margin-bottom:2px;">${esc(window.state.stats.selectedExercise)}</div>
           <div style="font-size:11.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:12px;">Максимальный вес (кг)</div>
           <div class="chart-container">
             <canvas id="progressCanvasMaxWeight"></canvas>
           </div>
         </div>
         <div class="card" style="margin-bottom:12px;">
-          <div style="font-weight:bold; font-size:15px; margin-bottom:2px;">${window.state.stats.selectedExercise}</div>
+          <div style="font-weight:bold; font-size:15px; margin-bottom:2px;">${esc(window.state.stats.selectedExercise)}</div>
           <div style="font-size:11.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:12px;">Расчётный 1RM (кг)</div>
           <div class="chart-container">
             <canvas id="progressCanvas1RM"></canvas>
           </div>
         </div>
         <div class="card">
-          <div style="font-weight:bold; font-size:15px; margin-bottom:2px;">${window.state.stats.selectedExercise}</div>
+          <div style="font-weight:bold; font-size:15px; margin-bottom:2px;">${esc(window.state.stats.selectedExercise)}</div>
           <div style="font-size:11.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:12px;">Суммарный тоннаж (кг)</div>
           <div class="chart-container">
             <canvas id="progressCanvasTotalVolume"></canvas>
@@ -109,7 +109,7 @@
     } else if (exType === 'bodyweight') {
       chartsHtml = `
         <div class="card">
-          <div style="font-weight:bold; font-size:15px; margin-bottom:2px;">${window.state.stats.selectedExercise}</div>
+          <div style="font-weight:bold; font-size:15px; margin-bottom:2px;">${esc(window.state.stats.selectedExercise)}</div>
           <div style="font-size:11.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:12px;">Максимальное количество повторений</div>
           <div class="chart-container">
             <canvas id="progressCanvasSingle"></canvas>
@@ -119,7 +119,7 @@
     } else if (exType === 'distance') {
       chartsHtml = `
         <div class="card">
-          <div style="font-weight:bold; font-size:15px; margin-bottom:2px;">${window.state.stats.selectedExercise}</div>
+          <div style="font-weight:bold; font-size:15px; margin-bottom:2px;">${esc(window.state.stats.selectedExercise)}</div>
           <div style="font-size:11.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:12px;">Суммарная дистанция (км)</div>
           <div class="chart-container">
             <canvas id="progressCanvasSingle"></canvas>
@@ -129,7 +129,7 @@
     } else {
       chartsHtml = `
         <div class="card">
-          <div style="font-weight:bold; font-size:15px; margin-bottom:2px;">${window.state.stats.selectedExercise}</div>
+          <div style="font-weight:bold; font-size:15px; margin-bottom:2px;">${esc(window.state.stats.selectedExercise)}</div>
           <div style="font-size:11.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:12px;">Время под нагрузкой (сек)</div>
           <div class="chart-container">
             <canvas id="progressCanvasSingle"></canvas>
@@ -272,7 +272,7 @@
             <div class="card">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <div>
-                  <div style="font-weight:bold; font-size:16px;">${r.routineName}</div>
+                  <div style="font-weight:bold; font-size:16px;">${esc(r.routineName)}</div>
                   <div style="font-size:12px; color:var(--text-secondary);">${r.date}</div>
                 </div>
                 <button class="btn btn-danger btn-sm" onclick="deleteHistoryRecord(${r.id})">Удалить</button>
@@ -280,7 +280,7 @@
               <div style="background-color:var(--card-bg-subtle, rgba(120,120,128,0.06)); border-radius:10px; padding:10px;">
                 ${r.sets.map(s => `
                   <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:4px;">
-                    <span>${s.exerciseName} (сет ${s.setNumber})</span>
+                    <span>${esc(s.exerciseName)} (сет ${s.setNumber})</span>
                     <span style="color:var(--text-primary); font-weight:600;">
                       ${s.exerciseType === 'bodyweight' ? `${s.reps} повторений` :
                         s.exerciseType === 'distance' ? `${s.distance} км` :
@@ -393,7 +393,7 @@
               <div class="card" style="margin-bottom:12px; border-left:3px solid var(--green-btn);">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                   <div>
-                    <div style="font-weight:700; font-size:16px;">${r.routineName}</div>
+                    <div style="font-weight:700; font-size:16px;">${esc(r.routineName)}</div>
                     <div style="font-size:11.5px; color:var(--text-secondary);">${r.sets.length} выполненных подходов</div>
                   </div>
                   <button class="btn btn-danger btn-sm" onclick="deleteHistoryRecord(${r.id}); closeModal();">Удалить</button>
@@ -404,7 +404,7 @@
                     const exSets = grouped[exName];
                     return `
                       <div style="background-color:var(--card-bg-subtle, rgba(120,120,128,0.06)); border:1px solid var(--border-color); border-radius:8px; padding:8px 10px;">
-                        <div style="font-weight:600; font-size:13.5px; margin-bottom:6px; color:var(--text-primary);">${exName}</div>
+                        <div style="font-weight:600; font-size:13.5px; margin-bottom:6px; color:var(--text-primary);">${esc(exName)}</div>
                         <div style="display:flex; flex-direction:column; gap:4px; font-size:12px;">
                           ${exSets.map((s, idx) => `
                             <div style="display:flex; justify-content:space-between; color:var(--text-secondary);">

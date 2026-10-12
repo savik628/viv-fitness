@@ -125,17 +125,18 @@
             <div style="font-weight:700; font-size:15px;">
               ${isToday ? 'Сегодня' : formattedDate}
             </div>
-            <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">
+            <div id="habit-summary-sub" style="font-size:12px; color:var(--text-secondary); margin-top:2px;">
               ${habits.length ? `Выполнено ${dailyProgress.completed} из ${dailyProgress.total}` : 'Нет активных привычек'}
             </div>
           </div>
-          <div style="font-size:20px; font-weight:800; color:${dailyProgress.percentage === 100 ? 'var(--color-success, #16a34a)' : 'var(--text-primary)'};">
+          <div id="habit-summary-pct" style="font-size:20px; font-weight:800; color:${dailyProgress.percentage === 100 ? 'var(--color-success, #16a34a)' : 'var(--text-primary)'};">
             ${dailyProgress.percentage}%
           </div>
         </div>
 
         <div class="habit-progress-track">
           <div 
+            id="habit-progress-bar"
             class="habit-progress-bar" 
             style="width:${dailyProgress.percentage}%; ${dailyProgress.percentage === 100 ? 'background:var(--color-success, #16a34a);' : ''}"
           ></div>
@@ -162,14 +163,14 @@
             const isDone = window.Storage ? window.Storage.isHabitCompleted(curDateStr, h.id) : false;
             const stats = window.Storage ? window.Storage.getHabitStats(h.id) : { currentStreak: 0, bestStreak: 0, totalCompleted: 0 };
             return `
-              <div class="habit-card ${isDone ? 'completed' : ''}">
+              <div class="habit-card ${isDone ? 'completed' : ''}" data-habit-id="${h.id}">
                 <div class="habit-card-left" onclick="openAddHabitModal(${h.id})" style="cursor:pointer;">
                   <div class="habit-icon-wrap">
                     ${getHabitEmoji(h)}
                   </div>
                   <div class="habit-info">
                     <div class="habit-title">${esc(h.title)}</div>
-                    <div class="habit-meta">
+                    <div class="habit-meta" id="habit-meta-${h.id}">
                       ${stats.currentStreak > 0 
                         ? `<span class="habit-streak-badge active">🔥 ${stats.currentStreak} дн.</span>` 
                         : `<span class="habit-streak-badge">0 дн.</span>`
@@ -180,11 +181,12 @@
                 </div>
 
                 <button 
+                  id="habit-check-btn-${h.id}"
                   class="habit-checkbox-btn ${isDone ? 'checked' : ''}" 
                   onclick="toggleHabitStatus(${h.id})"
                   aria-label="Отметить выполнение"
                 >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <svg class="${isDone ? 'check-bounce-svg' : ''}" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="20 6 9 17 4 12"></polyline>
                   </svg>
                 </button>
@@ -218,7 +220,49 @@
     if (window.triggerHaptic) {
       window.triggerHaptic(isDone ? 'success' : 'light');
     }
-    renderHabits();
+
+    const card = document.querySelector(`.habit-card[data-habit-id="${habitId}"]`);
+    const btn = document.getElementById(`habit-check-btn-${habitId}`);
+    if (card && btn) {
+      card.classList.toggle('completed', isDone);
+      btn.classList.toggle('checked', isDone);
+      const svg = btn.querySelector('svg');
+      if (svg) {
+        svg.className = isDone ? 'check-bounce-svg' : '';
+      }
+      const stats = window.Storage.getHabitStats(habitId);
+      const meta = document.getElementById(`habit-meta-${habitId}`);
+      if (meta) {
+        meta.innerHTML = `
+          ${stats.currentStreak > 0 
+            ? `<span class="habit-streak-badge active">🔥 ${stats.currentStreak} дн.</span>` 
+            : `<span class="habit-streak-badge">0 дн.</span>`
+          }
+          <span>Всего: ${stats.totalCompleted}</span>
+        `;
+      }
+      const prog = window.Storage.getDailyHabitProgress(curDateStr);
+      const barFill = document.getElementById('habit-progress-bar');
+      const progVal = document.getElementById('habit-summary-sub');
+      const progPct = document.getElementById('habit-summary-pct');
+      if (barFill) {
+        barFill.style.width = `${prog.percentage}%`;
+        barFill.style.background = prog.percentage === 100 ? 'var(--color-success, #16a34a)' : '';
+      }
+      if (progVal) progVal.textContent = `Выполнено ${prog.completed} из ${prog.total}`;
+      if (progPct) {
+        progPct.textContent = `${prog.percentage}%`;
+        progPct.style.color = prog.percentage === 100 ? 'var(--color-success, #16a34a)' : 'var(--text-primary)';
+      }
+
+      const activePill = document.querySelector('.habit-day-pill.active .habit-day-dot');
+      if (activePill) {
+        const isFull = prog.total > 0 && prog.completed === prog.total;
+        activePill.className = `habit-day-dot ${isFull ? 'full' : prog.completed > 0 ? 'partial' : ''}`;
+      }
+    } else {
+      renderHabits();
+    }
   }
 
   // ---------------------------------------------------------------------------

@@ -34,15 +34,94 @@
     }
   }
 
-  function renderStepper(value, onMinus, onPlus, onChange, step = 1, inputId = '') {
+  function renderStepper(value, onMinus, onPlus, onChange, step = 1, inputId = '', onInputClick = '') {
     const valDisplay = (value !== 0 && value !== '0' && value !== null && value !== undefined && !isNaN(value)) ? value : '';
     return `
       <div class="stepper-container col-stepper">
-        <button class="stepper-btn" onclick="${onMinus}">-</button>
-        <input ${inputId ? `id="${inputId}"` : ''} class="stepper-input" type="number" step="${step}" value="${valDisplay}" placeholder="0" onchange="${onChange}">
-        <button class="stepper-btn" onclick="${onPlus}">+</button>
+        <button type="button" class="stepper-btn" onclick="${onMinus}">-</button>
+        <input ${inputId ? `id="${inputId}"` : ''} 
+               class="stepper-input" 
+               type="text" 
+               inputmode="decimal" 
+               readonly 
+               value="${valDisplay}" 
+               placeholder="0" 
+               ${onInputClick ? `onclick="${onInputClick}" style="cursor:pointer;"` : `onchange="${onChange}"`}>
+        <button type="button" class="stepper-btn" onclick="${onPlus}">+</button>
       </div>
     `;
+  }
+
+  function openSetPicker(exIdx, sIdx, field) {
+    const aw = window.state.work.activeWorkout;
+    if (!aw || !aw.exercises[exIdx] || !aw.exercises[exIdx].sets[sIdx]) return;
+    const set = aw.exercises[exIdx].sets[sIdx];
+    const val = parseFloat(set[field]) || 0;
+
+    let cfg = {
+      title: 'Значение',
+      value: val,
+      min: 0,
+      max: 100,
+      step: 1,
+      unit: '',
+      deltas: [-5, -1, 1, 5]
+    };
+
+    if (field === 'weight') {
+      cfg = {
+        title: 'Вес подхода',
+        value: val,
+        min: 0,
+        max: 400,
+        step: 0.5,
+        unit: 'кг',
+        deltas: [-10, -5, -2.5, 2.5, 5, 10]
+      };
+    } else if (field === 'reps') {
+      cfg = {
+        title: 'Повторения',
+        value: val,
+        min: 0,
+        max: 100,
+        step: 1,
+        unit: 'повт',
+        deltas: [-5, -2, -1, 1, 2, 5]
+      };
+    } else if (field === 'distance') {
+      cfg = {
+        title: 'Дистанция',
+        value: val,
+        min: 0,
+        max: 50,
+        step: 0.1,
+        unit: 'км',
+        deltas: [-2, -1, -0.5, 0.5, 1, 2]
+      };
+    } else if (field === 'duration') {
+      cfg = {
+        title: 'Время',
+        value: val,
+        min: 0,
+        max: 600,
+        step: 5,
+        unit: 'сек',
+        deltas: [-30, -10, -5, 5, 10, 30]
+      };
+    }
+
+    if (window.openNumberPicker) {
+      window.openNumberPicker({
+        ...cfg,
+        onConfirm: (newVal) => {
+          setVal(exIdx, sIdx, field, newVal);
+          const inpEl = document.getElementById(`set-input-${exIdx}-${sIdx}-${field}`);
+          if (inpEl) {
+            inpEl.value = newVal !== 0 ? newVal : '';
+          }
+        }
+      });
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -108,12 +187,27 @@
     window.state.work.activeWorkout = {
       routineName: routine.name,
       startTime: Date.now(),
-      exercises: routine.exercises.map(e => ({
-        name: e.name,
-        type: e.type || 'weight_reps',
-        primaryMuscle: e.primaryMuscle || 'chest',
-        sets: [{ setNumber: 1, reps: 0, weight: 0, distance: 0, duration: 0, completed: false }]
-      }))
+      exercises: routine.exercises.map(e => {
+        const lastSets = window.Storage?.getLastExerciseSets ? window.Storage.getLastExerciseSets(e.name) : null;
+        const sets = (lastSets && lastSets.length > 0)
+          ? lastSets.map((s, idx) => ({
+              setNumber: idx + 1,
+              reps: s.reps || 0,
+              weight: s.weight || 0,
+              distance: s.distance || 0,
+              duration: s.duration || 0,
+              rpe: s.rpe || '',
+              completed: false,
+            }))
+          : [{ setNumber: 1, reps: 0, weight: 0, distance: 0, duration: 0, completed: false }];
+
+        return {
+          name: e.name,
+          type: e.type || 'weight_reps',
+          primaryMuscle: e.primaryMuscle || 'chest',
+          sets
+        };
+      })
     };
     syncActiveDraft();
     renderActiveWorkoutScreen();
@@ -197,12 +291,12 @@
                   </div>
                   <div class="col-set-num">${s.setNumber}</div>
                   ${isWeight ? `
-                    ${renderStepper(s.weight, `stepVal(${exIdx},${sIdx},'weight',-2.5)`, `stepVal(${exIdx},${sIdx},'weight',2.5)`, `setVal(${exIdx},${sIdx},'weight',this.value)`, 0.5, `set-input-${exIdx}-${sIdx}-weight`)}
-                    ${renderStepper(s.reps, `stepVal(${exIdx},${sIdx},'reps',-1)`, `stepVal(${exIdx},${sIdx},'reps',1)`, `setVal(${exIdx},${sIdx},'reps',this.value)`, 1, `set-input-${exIdx}-${sIdx}-reps`)}
+                    ${renderStepper(s.weight, `stepVal(${exIdx},${sIdx},'weight',-2.5)`, `stepVal(${exIdx},${sIdx},'weight',2.5)`, `setVal(${exIdx},${sIdx},'weight',this.value)`, 0.5, `set-input-${exIdx}-${sIdx}-weight`, `openSetPicker(${exIdx},${sIdx},'weight')`)}
+                    ${renderStepper(s.reps, `stepVal(${exIdx},${sIdx},'reps',-1)`, `stepVal(${exIdx},${sIdx},'reps',1)`, `setVal(${exIdx},${sIdx},'reps',this.value)`, 1, `set-input-${exIdx}-${sIdx}-reps`, `openSetPicker(${exIdx},${sIdx},'reps')`)}
                   ` : ''}
-                  ${isBodyweight ? renderStepper(s.reps, `stepVal(${exIdx},${sIdx},'reps',-1)`, `stepVal(${exIdx},${sIdx},'reps',1)`, `setVal(${exIdx},${sIdx},'reps',this.value)`, 1, `set-input-${exIdx}-${sIdx}-reps`) : ''}
-                  ${isDist ? renderStepper(s.distance, `stepVal(${exIdx},${sIdx},'distance',-0.5)`, `stepVal(${exIdx},${sIdx},'distance',0.5)`, `setVal(${exIdx},${sIdx},'distance',this.value)`, 0.1, `set-input-${exIdx}-${sIdx}-distance`) : ''}
-                  ${isDur ? renderStepper(s.duration, `stepVal(${exIdx},${sIdx},'duration',-10)`, `stepVal(${exIdx},${sIdx},'duration',10)`, `setVal(${exIdx},${sIdx},'duration',this.value)`, 5, `set-input-${exIdx}-${sIdx}-duration`) : ''}
+                  ${isBodyweight ? renderStepper(s.reps, `stepVal(${exIdx},${sIdx},'reps',-1)`, `stepVal(${exIdx},${sIdx},'reps',1)`, `setVal(${exIdx},${sIdx},'reps',this.value)`, 1, `set-input-${exIdx}-${sIdx}-reps`, `openSetPicker(${exIdx},${sIdx},'reps')`) : ''}
+                  ${isDist ? renderStepper(s.distance, `stepVal(${exIdx},${sIdx},'distance',-0.5)`, `stepVal(${exIdx},${sIdx},'distance',0.5)`, `setVal(${exIdx},${sIdx},'distance',this.value)`, 0.1, `set-input-${exIdx}-${sIdx}-distance`, `openSetPicker(${exIdx},${sIdx},'distance')`) : ''}
+                  ${isDur ? renderStepper(s.duration, `stepVal(${exIdx},${sIdx},'duration',-10)`, `stepVal(${exIdx},${sIdx},'duration',10)`, `setVal(${exIdx},${sIdx},'duration',this.value)`, 5, `set-input-${exIdx}-${sIdx}-duration`, `openSetPicker(${exIdx},${sIdx},'duration')`) : ''}
                   <div class="col-action">
                     <button class="modal-close-btn" style="width:24px; height:24px; font-size:14px;" onclick="removeSet(${exIdx}, ${sIdx})">✕</button>
                   </div>
@@ -323,9 +417,12 @@
       sets: []
     };
 
+    const anyCompleted = aw.exercises.some(ex => ex.sets.some(s => s.completed));
+
     aw.exercises.forEach(ex => {
       let validSetIdx = 0;
       ex.sets.forEach(s => {
+        if (anyCompleted && !s.completed) return;
         if (!isSetMeaningful(s)) return;
         validSetIdx++;
         totalSetsCount++;
@@ -583,4 +680,5 @@
   window.promptAddExercise = promptAddExercise;
   window.removeEditorEx = removeEditorEx;
   window.saveEditorRoutine = saveEditorRoutine;
+  window.openSetPicker = openSetPicker;
 })();

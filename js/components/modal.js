@@ -22,22 +22,41 @@
   // ---------------------------------------------------------------------------
   // БЛОК 2. Методы управления показом и скрытием (Open / Close)
   // ---------------------------------------------------------------------------
+  let _closeTimeout = null;
+
   function openModal(content) {
+    if (_closeTimeout) {
+      clearTimeout(_closeTimeout);
+      _closeTimeout = null;
+    }
     const container = getContainer();
     const overlay = getOverlay();
-    const wasAlreadyOpen = overlay && !overlay.classList.contains('hidden');
+    const wasAlreadyOpen = overlay && !overlay.classList.contains('hidden') && !overlay.classList.contains('closing');
     if (container) {
       container.style.animation = wasAlreadyOpen ? 'none' : '';
       container.innerHTML = content;
     }
-    if (overlay) overlay.classList.remove('hidden');
+    if (overlay) {
+      overlay.classList.remove('closing');
+      overlay.classList.remove('hidden');
+    }
   }
 
   function closeModal() {
     const overlay = getOverlay();
     const container = getContainer();
-    if (overlay) overlay.classList.add('hidden');
-    if (container) container.style.animation = '';
+    if (!overlay || overlay.classList.contains('hidden')) return;
+    overlay.classList.add('closing');
+    if (_closeTimeout) clearTimeout(_closeTimeout);
+    _closeTimeout = setTimeout(() => {
+      overlay.classList.add('hidden');
+      overlay.classList.remove('closing');
+      if (container) {
+        container.style.animation = '';
+        container.innerHTML = '';
+      }
+      _closeTimeout = null;
+    }, 180);
   }
 
   // ---------------------------------------------------------------------------

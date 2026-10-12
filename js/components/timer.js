@@ -15,6 +15,7 @@
   const restTimerState = {
     totalSeconds: 90,
     remainingSeconds: 0,
+    endTime: 0,
     intervalId: null,
     isPaused: false,
   };
@@ -35,6 +36,7 @@
     const sec = seconds !== undefined ? seconds : (window.Storage ? window.Storage.getRestTimerSeconds() : 90);
     restTimerState.totalSeconds = sec;
     restTimerState.remainingSeconds = sec;
+    restTimerState.endTime = Date.now() + sec * 1000;
     restTimerState.isPaused = false;
 
     if (restTimerState.intervalId) {
@@ -46,8 +48,11 @@
     restTimerState.intervalId = setInterval(() => {
       if (restTimerState.isPaused) return;
 
-      restTimerState.remainingSeconds--;
-      if (restTimerState.remainingSeconds <= 0) {
+      const now = Date.now();
+      const left = Math.max(0, Math.ceil((restTimerState.endTime - now) / 1000));
+      restTimerState.remainingSeconds = left;
+
+      if (left <= 0) {
         clearInterval(restTimerState.intervalId);
         restTimerState.intervalId = null;
         restTimerState.remainingSeconds = 0;
@@ -56,11 +61,11 @@
         if (window.triggerHaptic) window.triggerHaptic('success');
       } else {
         updateRestTimerWidget();
-        if (restTimerState.remainingSeconds <= 3) {
+        if (left <= 3) {
           if (window.playTimerBeep) window.playTimerBeep(659, 0.1);
         }
       }
-    }, 1000);
+    }, 500);
   }
 
   function stopRestTimer() {
@@ -69,17 +74,22 @@
       restTimerState.intervalId = null;
     }
     restTimerState.remainingSeconds = 0;
+    restTimerState.endTime = 0;
     updateRestTimerWidget();
   }
 
   function togglePauseRestTimer() {
     if (!restTimerState.intervalId && restTimerState.remainingSeconds === 0) return;
     restTimerState.isPaused = !restTimerState.isPaused;
+    if (!restTimerState.isPaused) {
+      restTimerState.endTime = Date.now() + restTimerState.remainingSeconds * 1000;
+    }
     updateRestTimerWidget();
   }
 
   function addRestTimerTime(secs = 30) {
     restTimerState.remainingSeconds += secs;
+    restTimerState.endTime += secs * 1000;
     restTimerState.totalSeconds = Math.max(restTimerState.totalSeconds, restTimerState.remainingSeconds);
     updateRestTimerWidget();
   }
@@ -153,7 +163,25 @@
   }
 
   // ---------------------------------------------------------------------------
-  // БЛОК 5. Экспорт функций таймера в глобальную область (window)
+  // БЛОК 5. Синхронизация при возвращении приложения из фона (Visibility Sync)
+  // ---------------------------------------------------------------------------
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && restTimerState.intervalId && !restTimerState.isPaused) {
+      const now = Date.now();
+      const left = Math.max(0, Math.ceil((restTimerState.endTime - now) / 1000));
+      restTimerState.remainingSeconds = left;
+      updateRestTimerWidget();
+      if (left <= 0) {
+        clearInterval(restTimerState.intervalId);
+        restTimerState.intervalId = null;
+        if (window.playTimerFinishSequence) window.playTimerFinishSequence();
+        if (window.triggerHaptic) window.triggerHaptic('success');
+      }
+    }
+  });
+
+  // ---------------------------------------------------------------------------
+  // БЛОК 6. Экспорт функций таймера в глобальную область (window)
   // ---------------------------------------------------------------------------
   window.restTimerState = restTimerState;
   window.formatTimerSeconds = formatTimerSeconds;

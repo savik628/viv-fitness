@@ -11,11 +11,29 @@
   // ---------------------------------------------------------------------------
   // БЛОК 1. Синтезатор звукового сигнала (Web Audio Oscillator Beep)
   // ---------------------------------------------------------------------------
+  let _sharedAudioCtx = null;
+
+  function getAudioContext() {
+    try {
+      if (!_sharedAudioCtx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) {
+          _sharedAudioCtx = new AudioCtx();
+        }
+      }
+      if (_sharedAudioCtx && _sharedAudioCtx.state === 'suspended') {
+        _sharedAudioCtx.resume().catch(() => {});
+      }
+      return _sharedAudioCtx;
+    } catch {
+      return null;
+    }
+  }
+
   function playTimerBeep(freq = 880, duration = 0.18) {
     try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
+      const ctx = getAudioContext();
+      if (!ctx) return;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
 
@@ -50,12 +68,16 @@
       if (window.Telegram?.WebApp?.HapticFeedback) {
         if (type === 'success') {
           window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+        } else if (type === 'light') {
+          window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
         } else {
           window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
         }
       } else if (navigator.vibrate) {
         if (type === 'success') {
           navigator.vibrate([150, 80, 150]);
+        } else if (type === 'light') {
+          navigator.vibrate(10);
         } else {
           navigator.vibrate(60);
         }
