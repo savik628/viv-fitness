@@ -107,6 +107,9 @@
       })
       .sort((a, b) => b.volume - a.volume);
 
+    const topExercise = sortedExercises[0];
+    const topContribStr = topExercise ? (topExercise.pct + '%') : '—';
+
     const todayDateStr = new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
     const logoHtml = window.AppLogo ? window.AppLogo.render({ className: 'apple-report-logo-text' }) : 'VIV';
 
@@ -145,8 +148,23 @@
               <div class="apple-ring-center-info">
                 <div class="apple-ring-center-num">${displayVol}</div>
                 <div class="apple-ring-center-unit">${volUnit}</div>
-                <div class="apple-ring-center-label">СУММАРНЫЙ ТОННАЖ</div>
               </div>
+            </div>
+          </div>
+
+          <!-- СУММАРНЫЕ KPI-МЕТРИКИ (3 карточки в ряд) -->
+          <div class="apple-kpi-grid">
+            <div class="apple-kpi-card">
+              <div class="apple-kpi-val">${totalPureSets}</div>
+              <div class="apple-kpi-lbl">Подходов</div>
+            </div>
+            <div class="apple-kpi-card">
+              <div class="apple-kpi-val">${sortedExercises.length}</div>
+              <div class="apple-kpi-lbl">Упражнений</div>
+            </div>
+            <div class="apple-kpi-card">
+              <div class="apple-kpi-val">${topContribStr}</div>
+              <div class="apple-kpi-lbl">Топ вклад</div>
             </div>
           </div>
 
@@ -154,15 +172,17 @@
           <div class="tonnage-dist-section">
             <div class="tonnage-dist-header-row">
               <div class="tonnage-dist-section-title">Распределение тоннажа</div>
-              <span class="tonnage-dist-badge">Только силовой вес</span>
             </div>
             ${sortedExercises.length ? `
               <div class="tonnage-dist-list">
                 ${sortedExercises.map(item => `
                   <div class="tonnage-dist-card">
                     <div class="tonnage-dist-row">
-                      <span class="tonnage-dist-name">${esc(item.name)}</span>
-                      <span class="tonnage-dist-stats">${item.volStr} <span class="tonnage-dist-pct">(${item.pct}%)</span></span>
+                      <span class="tonnage-dist-name" title="${esc(item.name)}">${esc(item.name)}</span>
+                      <div class="tonnage-dist-stats">
+                        <span class="tonnage-dist-pct">${item.pct}%</span>
+                        <span class="tonnage-dist-vol">${item.volStr}</span>
+                      </div>
                     </div>
                     <div class="tonnage-dist-track">
                       <div class="tonnage-dist-bar" style="width:${Math.max(4, item.pct)}%;"></div>
@@ -254,6 +274,15 @@
       if (stroke) { ctx.strokeStyle = strokeColor; ctx.lineWidth = lineWidth; ctx.stroke(); }
     }
 
+    function fitTextWithEllipsis(text, maxW) {
+      if (ctx.measureText(text).width <= maxW) return text;
+      let truncated = text;
+      while (truncated.length > 1 && ctx.measureText(truncated + '...').width > maxW) {
+        truncated = truncated.slice(0, -1);
+      }
+      return truncated + '...';
+    }
+
     // 1. Фон глубокий матовый
     const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
     bgGrad.addColorStop(0, '#0a0c0e');
@@ -262,14 +291,14 @@
     ctx.fillRect(0, 0, W, H);
 
     // Радиальный неоновый свет позади кольца
-    const glow = ctx.createRadialGradient(W / 2, 420, 30, W / 2, 420, 380);
-    glow.addColorStop(0, 'rgba(0, 245, 155, 0.14)');
+    const glow = ctx.createRadialGradient(W / 2, 360, 20, W / 2, 360, 360);
+    glow.addColorStop(0, 'rgba(0, 245, 155, 0.16)');
     glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
     ctx.fillStyle = glow;
-    ctx.fillRect(0, 100, W, 700);
+    ctx.fillRect(0, 80, W, 650);
 
     // Рамка карточки
-    roundRect(32, 32, W - 64, H - 64, 40, null, true, 'rgba(255, 255, 255, 0.08)', 2);
+    roundRect(36, 36, W - 72, H - 72, 38, null, true, 'rgba(255, 255, 255, 0.08)', 2);
 
     // 2. Шапка: VIV (текст или логотип в зависимости от window.AppLogo.mode)
     let iconImg = null;
@@ -288,34 +317,34 @@
     }
 
     if (iconImg) {
-      const iconSize = 92;
+      const iconSize = 88;
       ctx.save();
       ctx.shadowColor = 'rgba(255, 255, 255, 0.35)';
       ctx.shadowBlur = 20;
-      ctx.drawImage(iconImg, (W - iconSize) / 2, 65, iconSize, iconSize);
+      ctx.drawImage(iconImg, (W - iconSize) / 2, 64, iconSize, iconSize);
       ctx.restore();
     } else {
       ctx.textAlign = 'center';
-      ctx.font = '900 76px -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
+      ctx.font = '900 74px -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
       ctx.fillStyle = '#ffffff';
       ctx.shadowColor = 'rgba(255, 255, 255, 0.35)';
       ctx.shadowBlur = 24;
-      ctx.fillText('VIV', W / 2, 135);
+      ctx.fillText('VIV', W / 2, 130);
       ctx.shadowBlur = 0;
     }
 
     const dateStr = new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
-    ctx.font = '500 22px -apple-system, sans-serif';
+    ctx.font = '500 21px -apple-system, sans-serif';
     ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.fillText(dateStr, W / 2, 185);
+    ctx.fillText(dateStr, W / 2, 178);
 
     // 3. Центральное неоновое кольцо с суммарным тоннажем
     const ringCenterX = W / 2;
-    const ringCenterY = 410;
-    const ringRadius = 145;
+    const ringCenterY = 355;
+    const ringRadius = 135;
 
     // Фоновая окружность
-    ctx.lineWidth = 26;
+    ctx.lineWidth = 24;
     ctx.beginPath();
     ctx.arc(ringCenterX, ringCenterY, ringRadius, 0, Math.PI * 2);
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
@@ -326,96 +355,128 @@
     ringGrad.addColorStop(0, '#00F59B');
     ringGrad.addColorStop(1, '#DFFF00');
     ctx.beginPath();
-    ctx.arc(ringCenterX, ringCenterY, ringRadius, -Math.PI / 2, Math.PI * 1.18);
+    ctx.arc(ringCenterX, ringCenterY, ringRadius, -Math.PI / 2, Math.PI * 1.15);
     ctx.strokeStyle = ringGrad;
     ctx.lineCap = 'round';
     ctx.stroke();
     ctx.lineCap = 'butt';
 
-    // Текст внутри кольца
+    // Текст строго в центре кольца (без наезда на нижнюю дугу)
     ctx.textAlign = 'center';
-    ctx.font = '900 84px -apple-system, sans-serif';
+    ctx.font = '900 86px -apple-system, sans-serif';
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(`${displayVol}`, ringCenterX, ringCenterY + 18);
+    ctx.fillText(`${displayVol}`, ringCenterX, ringCenterY + 16);
 
-    ctx.font = '800 28px -apple-system, sans-serif';
+    ctx.font = '800 26px -apple-system, sans-serif';
     ctx.fillStyle = '#DFFF00';
-    ctx.fillText(volUnit, ringCenterX, ringCenterY + 62);
-
-    ctx.font = '700 15px -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
-    ctx.letterSpacing = '2px';
-    ctx.fillText('СУММАРНЫЙ ТОННАЖ', ringCenterX, ringCenterY + 95);
+    ctx.letterSpacing = '1px';
+    ctx.fillText(volUnit, ringCenterX, ringCenterY + 58);
     ctx.letterSpacing = '0px';
 
-    // 4. Список распределения тоннажа по убыванию (Дизайн 1)
-    const listTopY = 640;
+    // 4. Сетка из 3 суммарных KPI-карточек (заполнение пространства и информативность)
     const listW = W - 140;
     const listLeft = 70;
+    const kpiY = 520;
+    const kpiH = 84;
+    const kpiW = Math.round((listW - 20) / 3);
+
+    const kpiItems = [
+      { val: totalPureSets, lbl: 'ПОДХОДОВ', color: '#ffffff' },
+      { val: sortedExercises.length, lbl: 'УПРАЖНЕНИЙ', color: '#ffffff' },
+      { val: topExercise ? topExercise.pct + '%' : '—', lbl: 'ТОП ВКЛАД', color: '#DFFF00' }
+    ];
+
+    for (let k = 0; k < 3; k++) {
+      const item = kpiItems[k];
+      const kX = listLeft + k * (kpiW + 10);
+      roundRect(kX, kpiY, kpiW, kpiH, 18, '#13181f', true, 'rgba(255, 255, 255, 0.07)', 1.5);
+
+      ctx.textAlign = 'center';
+      ctx.font = '900 32px -apple-system, sans-serif';
+      ctx.fillStyle = item.color;
+      ctx.fillText(String(item.val), kX + kpiW / 2, kpiY + 42);
+
+      ctx.font = '700 12px -apple-system, sans-serif';
+      ctx.fillStyle = '#a1a1aa';
+      ctx.letterSpacing = '0.5px';
+      ctx.fillText(item.lbl, kX + kpiW / 2, kpiY + 68);
+      ctx.letterSpacing = '0px';
+    }
+
+    // 5. Список распределения тоннажа по убыванию (Дизайн 1)
+    const listTopY = 642;
 
     ctx.textAlign = 'left';
-    ctx.font = '800 22px -apple-system, sans-serif';
+    ctx.font = '800 21px -apple-system, sans-serif';
     ctx.fillStyle = '#ffffff';
+    ctx.letterSpacing = '0.5px';
     ctx.fillText('РАСПРЕДЕЛЕНИЕ ТОННАЖА', listLeft, listTopY);
+    ctx.letterSpacing = '0px';
 
-    ctx.textAlign = 'right';
-    ctx.font = '600 16px -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
-    ctx.fillText('ТОЛЬКО СИЛОВОЙ ВЕС', listLeft + listW, listTopY);
-
-    let rowY = listTopY + 24;
-    const maxItems = Math.min(5, sortedExercises.length);
+    let rowY = listTopY + 20;
+    const maxItems = Math.min(6, sortedExercises.length);
+    const cardH = maxItems <= 4 ? 90 : 80;
+    const cardGap = maxItems <= 4 ? 14 : 10;
 
     if (maxItems === 0) {
-      roundRect(listLeft, rowY, listW, 100, 22, '#13181f', true, 'rgba(255, 255, 255, 0.06)', 1.5);
+      roundRect(listLeft, rowY, listW, 110, 20, '#13181f', true, 'rgba(255, 255, 255, 0.06)', 1.5);
       ctx.textAlign = 'center';
       ctx.font = '500 20px -apple-system, sans-serif';
       ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-      ctx.fillText('Нет завершенных силовых тренировок', W / 2, rowY + 58);
+      ctx.fillText('Нет завершенных силовых тренировок', W / 2, rowY + 62);
     } else {
       for (let i = 0; i < maxItems; i++) {
         const item = sortedExercises[i];
-        const cardH = 92;
-        roundRect(listLeft, rowY, listW, cardH, 20, '#13181f', true, 'rgba(255, 255, 255, 0.07)', 1.5);
+        roundRect(listLeft, rowY, listW, cardH, 18, '#13181f', true, 'rgba(255, 255, 255, 0.07)', 1.5);
 
-        // Название упражнения
-        ctx.textAlign = 'left';
-        ctx.font = '700 24px -apple-system, sans-serif';
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText(item.name, listLeft + 24, rowY + 42);
+        const textY = rowY + (cardH <= 80 ? 35 : 39);
 
-        // Тоннаж и процент
+        // Тоннаж справа
         ctx.textAlign = 'right';
-        ctx.font = '800 22px -apple-system, sans-serif';
+        ctx.font = '800 21px -apple-system, sans-serif';
         ctx.fillStyle = '#DFFF00';
-        ctx.fillText(item.volStr, listLeft + listW - 24, rowY + 42);
-        const valW = ctx.measureText(item.volStr).width;
+        ctx.fillText(item.volStr, listLeft + listW - 24, textY);
+        const volW = ctx.measureText(item.volStr).width;
 
-        ctx.font = '500 18px -apple-system, sans-serif';
+        // Процент левее тоннажа с четким интервалом
+        const pctStr = item.pct + '%';
+        ctx.font = '700 15px -apple-system, sans-serif';
         ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
-        ctx.fillText(` (${item.pct}%)`, listLeft + listW - 24 - valW, rowY + 42);
+        const pctRight = listLeft + listW - 24 - volW - 14;
+        ctx.fillText(pctStr, pctRight, textY);
+        const pctW = ctx.measureText(pctStr).width;
+
+        // Название упражнения слева (с обрезкой через многоточие при превышении ширины)
+        const maxNameW = listW - 48 - volW - pctW - 36;
+        ctx.textAlign = 'left';
+        ctx.font = '700 21px -apple-system, sans-serif';
+        ctx.fillStyle = '#ffffff';
+        const safeName = fitTextWithEllipsis(item.name, maxNameW);
+        ctx.fillText(safeName, listLeft + 24, textY);
 
         // Тонкий неоновый прогресс-бар
-        const trackY = rowY + 62;
+        const trackY = rowY + (cardH <= 80 ? 53 : 58);
         const trackW = listW - 48;
         const trackX = listLeft + 24;
-        roundRect(trackX, trackY, trackW, 8, 4, 'rgba(255, 255, 255, 0.08)', false, null);
+        roundRect(trackX, trackY, trackW, 7, 3.5, 'rgba(255, 255, 255, 0.07)', false, null);
 
-        const barW = Math.max(8, Math.round((trackW * item.pct) / 100));
+        const barW = Math.max(10, Math.round((trackW * item.pct) / 100));
         const barGrad = ctx.createLinearGradient(trackX, trackY, trackX + barW, trackY);
         barGrad.addColorStop(0, '#00F59B');
         barGrad.addColorStop(1, '#DFFF00');
-        roundRect(trackX, trackY, barW, 8, 4, barGrad, false, null);
+        roundRect(trackX, trackY, barW, 7, 3.5, barGrad, false, null);
 
-        rowY += cardH + 16;
+        rowY += cardH + cardGap;
       }
     }
 
-    // 5. Водяной знак
+    // 6. Водяной знак
     ctx.textAlign = 'center';
-    ctx.font = '700 15px -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
-    ctx.fillText('VIV  •  ATHLETIC PERFORMANCE SYSTEM', W / 2, H - 48);
+    ctx.font = '700 14px -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
+    ctx.letterSpacing = '1px';
+    ctx.fillText('VIV  •  ATHLETIC PERFORMANCE SYSTEM', W / 2, H - 42);
+    ctx.letterSpacing = '0px';
 
     // Сохранение и шеринг
     canvas.toBlob(async (blob) => {

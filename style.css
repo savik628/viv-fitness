@@ -2334,11 +2334,12 @@ canvas {
   background: var(--card-bg, #14181c);
   border: 1px solid var(--border-color, #1c2229);
   border-radius: 22px;
-  padding: 24px 16px;
+  padding: 22px 16px;
   display: flex;
   justify-content: center;
   align-items: center;
   width: 100%;
+  margin-bottom: 12px;
   box-sizing: border-box;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
@@ -2385,27 +2386,18 @@ canvas {
 }
 
 .apple-ring-center-num {
-  font-size: 34px;
+  font-size: 38px;
   font-weight: 900;
   color: #ffffff;
   line-height: 1;
 }
 
 .apple-ring-center-unit {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
   color: var(--accent-color, #DFFF00);
-  margin-top: 3px;
-  letter-spacing: 1px;
-}
-
-.apple-ring-center-label {
-  font-size: 9px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.45);
   margin-top: 4px;
   letter-spacing: 1.5px;
-  text-transform: uppercase;
 }
 
 /* Секция распределения тоннажа */
@@ -2459,33 +2451,83 @@ canvas {
   box-sizing: border-box;
 }
 
+.apple-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 12px;
+  box-sizing: border-box;
+}
+
+.apple-kpi-card {
+  background: var(--card-bg-elevated, #14181c);
+  border: 1px solid var(--border-color, #1c2229);
+  border-radius: 12px;
+  padding: 10px 6px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.apple-kpi-val {
+  font-size: 18px;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1.1;
+}
+
+.apple-kpi-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary, #a1a1aa);
+  margin-top: 3px;
+}
+
 .tonnage-dist-row {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  gap: 8px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
 }
 
 .tonnage-dist-name {
-  font-size: 14.5px;
+  font-size: 14px;
   font-weight: 700;
   color: #ffffff;
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .tonnage-dist-stats {
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--accent-color, #DFFF00);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
   white-space: nowrap;
 }
 
 .tonnage-dist-pct {
-  font-size: 12px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.tonnage-dist-vol {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--accent-color, #DFFF00);
 }
 
 .tonnage-dist-track {
