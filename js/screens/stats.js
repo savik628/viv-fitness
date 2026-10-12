@@ -113,22 +113,18 @@
     container.innerHTML = `
       <div class="report-tab-wrapper">
         <div id="viv-athlete-pdf-document" class="printable-athlete-doc apple-fitness-report">
-          <!-- Шапка ПО ЦЕНТРУ с чистым белым логотипом VIV (двойной клик сохраняет PNG) -->
+          <!-- Шапка ПО ЦЕНТРУ с чистым логотипом VIV (двойной клик сохраняет PNG) -->
           <div class="apple-report-branding">
             <div class="apple-report-logo-interactive viv-logo-target" 
                  id="viv-report-logo-btn" 
                  role="button" 
                  tabindex="0"
+                 title="Двойной клик для сохранения отчёта"
                  ondblclick="exportVivReportPng()"
-                 onclick="handleVivLogoClick(event)">
+                 onclick="handleVivLogoTouch(event)">
               ${logoHtml}
             </div>
             <div class="apple-report-date">${todayDateStr}</div>
-            <button type="button" class="btn btn-outline viv-report-download-btn" 
-                    style="margin-top:8px; font-size:11px; padding:4px 14px; border-radius:16px; border:1px solid rgba(255,255,255,0.2); background:transparent; color:inherit; font-weight:600; cursor:pointer;" 
-                    onclick="exportVivReportPng()">
-              Скачать PNG
-            </button>
           </div>
 
           <!-- ГЛАВНЫЙ АКЦЕНТ: МОНОХРОМНОЕ КОЛЬЦО ТОННАЖА ПО ЦЕНТРУ -->
@@ -183,8 +179,15 @@
     `;
   }
 
-  function handleVivLogoClick(e) {
-    exportVivReportPng();
+  let lastLogoTapTime = 0;
+  function handleVivLogoTouch(e) {
+    const now = Date.now();
+    if (now - lastLogoTapTime < 400) {
+      exportVivReportPng();
+      lastLogoTapTime = 0;
+    } else {
+      lastLogoTapTime = now;
+    }
   }
 
   async function exportVivReportPng() {
@@ -278,16 +281,35 @@
       return truncated + '...';
     }
 
-    // Динамическая загрузка icon.svg: при любой замене svg пользователем отчет обновляется автоматически
-    const loadSvgImage = (src) => new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = () => resolve(null);
-      img.src = src;
-    });
-    const logoImg = await loadSvgImage('icon.svg');
-
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+
+    // Динамическая загрузка icon.svg: при светлой теме пути SVG подменяются на черный цвет
+    const loadSvgImage = async (src, isLightMode) => {
+      let resolvedSrc = src;
+      try {
+        const resp = await fetch(src);
+        if (resp.ok) {
+          let svgText = await resp.text();
+          if (isLightMode) {
+            svgText = svgText
+              .replace(/fill\s*=\s*["']white["']/gi, 'fill="#000000"')
+              .replace(/fill\s*=\s*["']#ffffff["']/gi, 'fill="#000000"')
+              .replace(/fill\s*=\s*["']#fff["']/gi, 'fill="#000000"');
+          }
+          const blob = new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' });
+          resolvedSrc = URL.createObjectURL(blob);
+        }
+      } catch (e) {}
+
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = resolvedSrc;
+      });
+    };
+    const logoImg = await loadSvgImage('icon.svg', isLight);
+
     const cOuterBg = isLight ? '#f1f5f9' : '#0d0f12';
     const cCardBg = isLight ? '#ffffff' : '#000000';
     const cCardBorder = isLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.1)';
@@ -320,12 +342,26 @@
     const logoY = cardY + cardTopPad + 4;
 
     if (logoImg) {
-      ctx.save();
       if (isLight) {
-        ctx.filter = 'invert(1)';
+        // Гарантированная кроссбраузерная заливка черным для белой темы
+        const offCanvas = document.createElement('canvas');
+        const offW = Math.max(1, Math.round(logoW * scale));
+        const offH = Math.max(1, Math.round(logoH * scale));
+        offCanvas.width = offW;
+        offCanvas.height = offH;
+        const offCtx = offCanvas.getContext('2d');
+        if (offCtx) {
+          offCtx.drawImage(logoImg, 0, 0, offW, offH);
+          offCtx.globalCompositeOperation = 'source-in';
+          offCtx.fillStyle = '#000000';
+          offCtx.fillRect(0, 0, offW, offH);
+          ctx.drawImage(offCanvas, logoX, logoY, logoW, logoH);
+        } else {
+          ctx.drawImage(logoImg, logoX, logoY, logoW, logoH);
+        }
+      } else {
+        ctx.drawImage(logoImg, logoX, logoY, logoW, logoH);
       }
-      ctx.drawImage(logoImg, logoX, logoY, logoW, logoH);
-      ctx.restore();
     }
 
     const dateStr = new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
