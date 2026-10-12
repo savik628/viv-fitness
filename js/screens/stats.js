@@ -30,7 +30,7 @@
       <div class="sub-tabs">
         <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'progress' ? 'active' : ''}" onclick="switchStatsSubTab('progress')">Прогресс</button>
         <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'calendar' ? 'active' : ''}" onclick="switchStatsSubTab('calendar')">Календарь</button>
-        <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'report' ? 'active' : ''}" onclick="switchStatsSubTab('report')" title="VIV" style="display:inline-flex; align-items:center; justify-content:center; gap:6px;"><img src="icon.svg" style="height:12px; width:auto; border:none; vertical-align:middle; background:transparent;" alt="VIV"><span>VIV</span></button>
+        <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'report' ? 'active' : ''}" onclick="switchStatsSubTab('report')" title="VIV" style="display:inline-flex; align-items:center; justify-content:center;"><img src="icon.svg" style="height:14px; width:auto; border:none; vertical-align:middle; background:transparent;" alt="VIV"></button>
       </div>
       <div id="stats-tab-content"></div>`;
 
@@ -283,14 +283,28 @@
     });
     const logoImg = await loadSvgImage('icon.svg');
 
-    // 1. Внешний глубокий фон (#0d0f12)
-    ctx.fillStyle = '#0d0f12';
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    const cOuterBg = isLight ? '#f1f5f9' : '#0d0f12';
+    const cCardBg = isLight ? '#ffffff' : '#000000';
+    const cCardBorder = isLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.1)';
+    const cSubCardBg = isLight ? '#f8fafc' : '#14181c';
+    const cSubCardBorder = isLight ? 'rgba(0, 0, 0, 0.08)' : '#1c2229';
+    const cTextPrimary = isLight ? '#000000' : '#ffffff';
+    const cTextSecondary = isLight ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.5)';
+    const cTextMuted = isLight ? 'rgba(0, 0, 0, 0.4)' : 'rgba(255, 255, 255, 0.4)';
+    const cDivider = isLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)';
+    const cRingBg = isLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.07)';
+    const cTrackBg = isLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)';
+    const cPillBg = isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.06)';
+
+    // 1. Внешний фон
+    ctx.fillStyle = cOuterBg;
     ctx.fillRect(0, 0, W, H);
 
-    // 2. Карточка окна отчёта .apple-fitness-report (#000000)
+    // 2. Карточка окна отчёта .apple-fitness-report
     const cardX = padOuter;
     const cardY = padOuter;
-    roundRect(cardX, cardY, cardW, cardH, 22, '#000000', true, 'rgba(255, 255, 255, 0.1)', 1);
+    roundRect(cardX, cardY, cardW, cardH, 22, cCardBg, true, cCardBorder, 1);
 
     // 3. Шапка: спортивный логотип VIV из icon.svg без рамок + дата
     const logoH = 20;
@@ -302,19 +316,24 @@
     const logoY = cardY + cardTopPad + 4;
 
     if (logoImg) {
+      ctx.save();
+      if (isLight) {
+        ctx.filter = 'invert(1)';
+      }
       ctx.drawImage(logoImg, logoX, logoY, logoW, logoH);
+      ctx.restore();
     }
 
     const dateStr = new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
     const dateY = logoY + logoH + 16;
     ctx.font = '500 12px -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.fillStyle = cTextSecondary;
     ctx.textAlign = 'center';
     ctx.fillText(dateStr, cardX + cardW / 2, dateY);
 
     // Тонкий разделитель под шапкой
     const divY1 = dateY + 12;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.strokeStyle = cDivider;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(cardX + cardPad, divY1);
@@ -325,7 +344,7 @@
     const heroX = cardX + cardPad;
     const heroY = divY1 + gapHero;
     const heroW = innerW;
-    roundRect(heroX, heroY, heroW, heroH, 22, '#14181c', true, '#1c2229', 1);
+    roundRect(heroX, heroY, heroW, heroH, 22, cSubCardBg, true, cSubCardBorder, 1);
 
     // Кольцо тоннажа
     const ringCenterX = heroX + heroW / 2;
@@ -337,7 +356,7 @@
     ctx.lineWidth = ringStroke;
     ctx.beginPath();
     ctx.arc(ringCenterX, ringCenterY, ringRadius, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.07)';
+    ctx.strokeStyle = cRingBg;
     ctx.stroke();
 
     // Неоновая дуга активности
@@ -358,11 +377,11 @@
     // Число тоннажа и единица строго по центру
     ctx.textAlign = 'center';
     ctx.font = '900 38px -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = cTextPrimary;
     ctx.fillText(`${displayVol}`, ringCenterX, ringCenterY + 4);
 
     ctx.font = '800 14px -apple-system, sans-serif';
-    ctx.fillStyle = '#DFFF00';
+    ctx.fillStyle = isLight ? '#059669' : '#DFFF00';
     ctx.letterSpacing = '1.5px';
     ctx.fillText(volUnit, ringCenterX, ringCenterY + 25);
     ctx.letterSpacing = '0px';
@@ -370,24 +389,24 @@
     // 5. Карточки упражнений (.tonnage-dist-card)
     let curExY = heroY + heroH + gapEx;
     if (!sortedExercises.length) {
-      roundRect(cardX + cardPad, curExY, innerW, 56, 14, '#14181c', true, '#1c2229', 1);
+      roundRect(cardX + cardPad, curExY, innerW, 56, 14, cSubCardBg, true, cSubCardBorder, 1);
       ctx.textAlign = 'center';
       ctx.font = '500 13px -apple-system, sans-serif';
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.fillStyle = cTextMuted;
       ctx.fillText('Нет завершенных силовых тренировок с весом.', cardX + cardW / 2, curExY + 32);
       curExY += 56 + exGap;
     } else {
       for (let i = 0; i < sortedExercises.length; i++) {
         const item = sortedExercises[i];
         const exX = cardX + cardPad;
-        roundRect(exX, curExY, innerW, exCardH, 14, '#14181c', true, '#1c2229', 1);
+        roundRect(exX, curExY, innerW, exCardH, 14, cSubCardBg, true, cSubCardBorder, 1);
 
         const rowTextY = curExY + 22;
 
-        // Вес/тоннаж справа (белый контрастный текст)
+        // Вес/тоннаж справа
         ctx.textAlign = 'right';
         ctx.font = '800 14px -apple-system, sans-serif';
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = cTextPrimary;
         ctx.fillText(item.volStr, exX + innerW - 14, rowTextY);
         const volW = ctx.measureText(item.volStr).width;
 
@@ -399,16 +418,16 @@
         const pillH = 18;
         const pillX = exX + innerW - 14 - volW - 8 - pillW;
         const pillY = rowTextY - 13;
-        roundRect(pillX, pillY, pillW, pillH, 4, 'rgba(255, 255, 255, 0.06)', false, null);
+        roundRect(pillX, pillY, pillW, pillH, 4, cPillBg, false, null);
 
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+        ctx.fillStyle = cTextSecondary;
         ctx.textAlign = 'center';
         ctx.fillText(pctStr, pillX + pillW / 2, rowTextY);
 
         // Название упражнения слева
         ctx.textAlign = 'left';
         ctx.font = '700 14px -apple-system, sans-serif';
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = cTextPrimary;
         const maxNameW = pillX - exX - 22;
         const safeName = fitTextWithEllipsis(item.name, maxNameW);
         ctx.fillText(safeName, exX + 14, rowTextY);
@@ -417,7 +436,7 @@
         const trackX = exX + 14;
         const trackY = curExY + 36;
         const trackW = innerW - 28;
-        roundRect(trackX, trackY, trackW, 6, 3, 'rgba(255, 255, 255, 0.08)', false, null);
+        roundRect(trackX, trackY, trackW, 6, 3, cTrackBg, false, null);
 
         const barW = Math.max(6, Math.round((trackW * item.pct) / 100));
         const barGrad = ctx.createLinearGradient(trackX, trackY, trackX + barW, trackY);
@@ -431,7 +450,7 @@
 
     // 6. Нижний разделитель подвала (.apple-report-footer)
     const botDivY = curExY - exGap + botDividerPad;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.strokeStyle = cDivider;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(cardX + cardPad, botDivY);
@@ -467,7 +486,6 @@
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       if (window.triggerHaptic) window.triggerHaptic('success');
-      alert('Отчёт VIV успешно сохранён в PNG! ✨');
     }, 'image/png');
   }
 

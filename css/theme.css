@@ -297,3 +297,114 @@
 [data-theme="light"] .modal-card {
   box-shadow: var(--modal-card-shadow);
 }
+
+/* ---------------------------------------------------------------------------
+   БЛОК: Инверсия всех иконок VIV в белой теме (становятся чистым черным #000)
+   --------------------------------------------------------------------------- */
+[data-theme="light"] img[src*="icon.svg"],
+[data-theme="light"] .app-logo-badge,
+[data-theme="light"] .nav-item-logo img,
+[data-theme="light"] .apple-report-logo-interactive img,
+[data-theme="light"] .sub-tab-btn img[src*="icon.svg"] {
+  filter: invert(1) !important;
+}
+
+/* ---------------------------------------------------------------------------
+   БЛОК: Бело-черная адаптация отчёта VIV (Apple Fitness Style) в белой теме
+   --------------------------------------------------------------------------- */
+[data-theme="light"] .apple-fitness-report {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #000000 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .apple-report-branding {
+  border-bottom-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .apple-report-hint {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .apple-report-date {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .apple-hero-ring-card {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="light"] .apple-ring-bg-lg {
+  stroke: #e2e8f0 !important;
+}
+
+[data-theme="light"] .apple-ring-bar-lg {
+  stroke: #0f172a !important;
+  filter: drop-shadow(0 0 6px rgba(15, 23, 42, 0.25)) !important;
+}
+
+[data-theme="light"] .apple-ring-center-num {
+  color: #000000 !important;
+}
+
+[data-theme="light"] .apple-ring-center-unit {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .tonnage-dist-section-title {
+  color: #000000 !important;
+}
+
+[data-theme="light"] .tonnage-dist-badge {
+  color: #0f172a !important;
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .apple-kpi-card {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .apple-kpi-val {
+  color: #000000 !important;
+}
+
+[data-theme="light"] .apple-kpi-lbl {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .tonnage-dist-card {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .tonnage-dist-name {
+  color: #000000 !important;
+}
+
+[data-theme="light"] .tonnage-dist-vol {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .tonnage-dist-pct {
+  background: #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+[data-theme="light"] .tonnage-dist-track {
+  background: #e2e8f0 !important;
+}
+
+[data-theme="light"] .tonnage-dist-bar {
+  background: linear-gradient(90deg, #0f172a 0%, #334155 100%) !important;
+}
+
+[data-theme="light"] .apple-athlete-pill {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #334155 !important;
+}

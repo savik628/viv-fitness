@@ -117,7 +117,6 @@
         <button type="button" class="wheel-picker-btn-confirm" id="picker-confirm-btn">Готово</button>
       </div>
 
-      <!-- Единое значение в рамке (без дублирования и карандаша) -->
       <div class="wheel-picker-framed-box">
         <input type="number" 
                id="picker-manual-input" 
@@ -128,7 +127,6 @@
                max="${max}" 
                value="${formatValue(_currentValue, step)}"
                autocomplete="off">
-        ${_activeOptions.unit ? `<span class="wheel-picker-framed-unit">${window.escapeHtml ? window.escapeHtml(_activeOptions.unit) : _activeOptions.unit}</span>` : ''}
       </div>
 
 

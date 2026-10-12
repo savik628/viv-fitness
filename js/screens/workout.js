@@ -73,12 +73,12 @@
 
     if (field === 'weight') {
       cfg = {
-        title: 'Вес подхода',
+        title: 'Вес',
         value: val,
         min: 0,
         max: 400,
         step: 0.5,
-        unit: 'кг',
+        unit: '',
         deltas: [-10, -5, -2.5, 2.5, 5, 10]
       };
     } else if (field === 'reps') {
@@ -88,7 +88,7 @@
         min: 0,
         max: 100,
         step: 1,
-        unit: 'повт',
+        unit: '',
         deltas: [-5, -2, -1, 1, 2, 5]
       };
     } else if (field === 'distance') {
@@ -288,7 +288,7 @@
               <div class="sets-table-header">
                 <div class="col-check">✓</div>
                 <div class="col-set-num">Сет</div>
-                ${isWeight ? '<div class="col-stepper">Вес (кг)</div><div class="col-stepper">Повторы</div>' : ''}
+                ${isWeight ? '<div class="col-stepper">Вес</div><div class="col-stepper">Повторы</div>' : ''}
                 ${isBodyweight ? '<div class="col-stepper">Повторы</div>' : ''}
                 ${isDist ? '<div class="col-stepper">Дистанция (км)</div>' : ''}
                 ${isDur ? '<div class="col-stepper">Время (сек)</div>' : ''}
@@ -449,30 +449,19 @@
     window.openModal(`
       <div style="padding:4px 0;">
         <div style="font-size:18px; font-weight:800; margin-bottom:14px; text-align:center;">Добавить упражнение</div>
-        <div style="margin-bottom:12px;">
+        <div style="margin-bottom:16px;">
           <label style="display:block; font-size:12px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; margin-bottom:6px;">Название</label>
-          <input id="active-new-ex-name" class="form-input" placeholder="Например: Жим гантелей лёжа" autocomplete="off" autofocus onkeydown="if(event.key==='Enter'){event.preventDefault();confirmAddActiveExercise();}">
-        </div>
-
-        <div style="margin-bottom:14px;">
-          <div style="font-size:11.5px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; margin-bottom:6px;">Быстрый выбор:</div>
-          <div style="display:flex; flex-wrap:wrap; gap:6px; max-height:115px; overflow-y:auto; padding:2px;">
-            ${quickExercises.map(q => `
-              <button type="button" class="filter-chip" style="font-size:11.5px; padding:4px 8px;" onclick="selectQuickActiveExercise('${esc(q.name)}', '${q.type}', '${q.muscle}')">
-                ${esc(q.name)}
-              </button>
-            `).join('')}
-          </div>
+          <input id="active-new-ex-name" class="form-input" placeholder="Название упражнения" autocomplete="off" autofocus onkeydown="if(event.key==='Enter'){event.preventDefault();confirmAddActiveExercise();}">
         </div>
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:18px;">
           <div>
             <label style="display:block; font-size:12px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; margin-bottom:6px;">Тип нагрузки</label>
             <select id="active-new-ex-type" class="form-select">
-              <option value="weight_reps">С весом (кг + повт)</option>
-              <option value="bodyweight">Свой вес (повторы)</option>
-              <option value="distance">Дистанция (км)</option>
-              <option value="duration">Время (сек)</option>
+              <option value="weight_reps">С весом</option>
+              <option value="bodyweight">Свой вес</option>
+              <option value="distance">Дистанция</option>
+              <option value="duration">Время</option>
             </select>
           </div>
           <div>
