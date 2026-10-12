@@ -49,7 +49,7 @@
   }
 
   // ---------------------------------------------------------------------------
-  // БЛОК 1.1. АТЛЕТИЧЕСКИЙ ОТЧЁТ (VIV Athlete Performance Report - Apple / Nike Style)
+  // БЛОК 1.1. АТЛЕТИЧЕСКИЙ ОТЧЁТ VIV
   // ---------------------------------------------------------------------------
   function plural(n, forms) {
     const num = Math.abs(Math.round(n || 0));
@@ -118,8 +118,6 @@
         <!-- Верхняя панель экспорта в PDF -->
         <div class="apple-report-action-bar">
           <div class="apple-report-title-box">
-            <div class="apple-report-top-title">Атлетический отчёт</div>
-            <div class="apple-report-top-sub">Apple Fitness & Nike Athletic Style</div>
           </div>
           <button class="btn btn-green apple-export-btn" onclick="triggerPrintReport()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
@@ -132,7 +130,6 @@
           <!-- Шапка ПО ЦЕНТРУ с логотипом VIV -->
           <div class="apple-report-branding">
             <div class="apple-report-logo">VIV</div>
-            <div class="apple-report-tagline">ATHLETIC PERFORMANCE REPORT</div>
             <div class="apple-report-date">${todayDateStr}</div>
             <div class="apple-athlete-pill">
               <span class="apple-athlete-name">${esc(prof.name || 'Атлет')}</span>
@@ -271,8 +268,6 @@
 
           <!-- ЛАКОНИЧНЫЙ ЦЕНТРИРОВАННЫЙ ПОДВАЛ -->
           <div class="apple-report-footer">
-            <div class="apple-footer-brand">VIV</div>
-            <div class="apple-footer-text">ATHLETIC PERFORMANCE SYSTEM</div>
           </div>
         </div>
       </div>
