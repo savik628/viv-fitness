@@ -23,27 +23,26 @@
   // ---------------------------------------------------------------------------
   // БЛОК 2. Глобальное состояние приложения (Application State Store)
   // ---------------------------------------------------------------------------
+  const todayLocal = window.getLocalDateStr ? window.getLocalDateStr() : new Date().toISOString().substring(0, 10);
+
   const state = {
     currentTab: 'work', // Стартовый активный экран: 'work' (Тренировки)
     work: {
       routines: [],
-      activeWorkout: null
+      activeWorkout: window.Storage ? window.Storage.getActiveDraft() : null
     },
     stats: {
-      activeSubTab: 'progress', // 'progress', 'calendar', 'habits'
-      selectedHabitDate: new Date().toISOString().substring(0, 10),
+      activeSubTab: 'progress', // 'progress' | 'calendar'
+      selectedHabitDate: todayLocal,
       routines: [],
       selectedRoutine: null,
       exercises: [],
       selectedExercise: null,
       chartPoints: [],
-      historyRecords: [],
-      selectedMetric: 'maxWeight',
       calYear: new Date().getFullYear(),
       calMonth: new Date().getMonth()
     },
     profile: window.Storage ? window.Storage.getProfile() : {},
-    animTimer: null,
   };
 
   window.state = state;
@@ -62,17 +61,18 @@
   }
 
   function switchTab(tab) {
-    state.currentTab = tab;
-    document.querySelectorAll('.nav-item').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.tab === tab);
-    });
-
     // Защита от случайной потери несохраненной тренировки при уходе на другую вкладку
     if (tab !== 'work' && state.work.activeWorkout) {
       if (!confirm('Прервать текущую активную тренировку?')) return;
       state.work.activeWorkout = null;
+      if (window.Storage) window.Storage.clearActiveDraft();
       if (window.stopRestTimer) window.stopRestTimer();
     }
+
+    state.currentTab = tab;
+    document.querySelectorAll('.nav-item').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === tab);
+    });
 
     render();
   }
@@ -116,6 +116,7 @@
         if (state.currentTab === 'work' && state.work.activeWorkout) {
           if (confirm('Прервать текущую тренировку без сохранения?')) {
             state.work.activeWorkout = null;
+            if (window.Storage) window.Storage.clearActiveDraft();
             if (window.stopRestTimer) window.stopRestTimer();
             render();
           }

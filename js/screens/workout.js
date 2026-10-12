@@ -21,6 +21,19 @@
 
   const getExerciseTypeLabel = (t) => TYPE_LABELS[t] || 'С весом';
 
+  function esc(str) {
+    return window.escapeHtml ? window.escapeHtml(str) : (str || '');
+  }
+
+  function syncActiveDraft() {
+    if (!window.Storage) return;
+    if (window.state?.work?.activeWorkout) {
+      window.Storage.saveActiveDraft(window.state.work.activeWorkout);
+    } else {
+      window.Storage.clearActiveDraft();
+    }
+  }
+
   function renderStepper(value, onMinus, onPlus, onChange, step = 1) {
     const valDisplay = (value !== 0 && value !== '0' && value !== null && value !== undefined && !isNaN(value)) ? value : '';
     return `
@@ -70,7 +83,7 @@
           <div class="card">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:8px;">
               <div style="min-width:0; flex:1;">
-                <div style="font-size:17px; font-weight:bold; word-break:break-word;">${r.name}</div>
+                <div style="font-size:17px; font-weight:bold; word-break:break-word;">${esc(r.name)}</div>
                 <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">${r.exercises.length} упражнений</div>
               </div>
               <div style="display:flex; gap:6px; flex-shrink:0;">
@@ -79,7 +92,7 @@
               </div>
             </div>
             <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px;">
-              ${r.exercises.slice(0, 4).map(e => `<span class="badge">${e.name}</span>`).join('')}
+              ${r.exercises.slice(0, 4).map(e => `<span class="badge">${esc(e.name)}</span>`).join('')}
               ${r.exercises.length > 4 ? `<span style="font-size:11px; color:var(--text-secondary)">+ еще ${r.exercises.length - 4}</span>` : ''}
             </div>
             <button class="btn btn-green" onclick="startWorkout(${r.id})" style="width:100%;">Начать тренировку</button>
@@ -102,6 +115,7 @@
         sets: [{ setNumber: 1, reps: 0, weight: 0, distance: 0, duration: 0, completed: false }]
       }))
     };
+    syncActiveDraft();
     renderActiveWorkoutScreen();
   }
 
@@ -123,6 +137,8 @@
       renderWork();
       return;
     }
+
+    syncActiveDraft();
 
     if (window.setHeader) {
       window.setHeader(aw.routineName, true, `<button class="btn btn-green btn-sm" onclick="finishWorkout()">Завершить</button>`);
@@ -154,7 +170,7 @@
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </button>
                   </div>
-                  <strong style="font-size:15.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${ex.name}</strong>
+                  <strong style="font-size:15.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(ex.name)}</strong>
                 </div>
                 <div style="display:flex; gap:6px; align-items:center; flex-shrink:0;">
                   ${isWeight ? `
@@ -239,6 +255,7 @@
     const set = window.state.work.activeWorkout.exercises[exIdx].sets[sIdx];
     const num = Math.max(0, parseFloat(val) || 0);
     set[field] = (field === 'reps' || field === 'duration') ? Math.round(num) : num;
+    syncActiveDraft();
   }
 
   function addSet(exIdx) {
@@ -259,6 +276,14 @@
   // ---------------------------------------------------------------------------
   // БЛОК 5. ЗАВЕРШЕНИЕ ТРЕНИРОВКИ И РЕКОРДЫ (Finish Workout & PR Detection)
   // ---------------------------------------------------------------------------
+  function isSetMeaningful(s) {
+    const w = parseFloat(s.weight) || 0;
+    const r = parseInt(s.reps, 10) || 0;
+    const dist = parseFloat(s.distance) || 0;
+    const dur = parseInt(s.duration, 10) || 0;
+    return w > 0 || r > 0 || dist > 0 || dur > 0;
+  }
+
   function finishWorkout() {
     const aw = window.state.work.activeWorkout;
     if (!aw) return;
@@ -267,37 +292,42 @@
     let totalVolume = 0;
     let totalSetsCount = 0;
 
-    aw.exercises.forEach(ex => {
-      ex.sets.forEach(s => {
-        totalSetsCount++;
-        if (ex.type === 'weight_reps') {
-          totalVolume += (parseFloat(s.weight) || 0) * (parseInt(s.reps, 10) || 0);
-        }
-      });
-    });
-
     const record = {
       id: Date.now(),
       routineName: aw.routineName,
-      date: new Date().toISOString().substring(0, 10),
+      date: window.getLocalDateStr ? window.getLocalDateStr() : new Date().toISOString().substring(0, 10),
       duration: durationMin,
       sets: []
     };
 
     aw.exercises.forEach(ex => {
+      let validSetIdx = 0;
       ex.sets.forEach(s => {
+        if (!isSetMeaningful(s)) return;
+        validSetIdx++;
+        totalSetsCount++;
+        const w = parseFloat(s.weight) || 0;
+        const r = parseInt(s.reps, 10) || 0;
+        if (ex.type === 'weight_reps') {
+          totalVolume += w * r;
+        }
         record.sets.push({
           exerciseName: ex.name,
           exerciseType: ex.type,
           primaryMuscle: ex.primaryMuscle || 'chest',
-          setNumber: s.setNumber,
-          weight: s.weight,
-          reps: s.reps,
-          distance: s.distance,
-          duration: s.duration,
+          setNumber: validSetIdx,
+          weight: w,
+          reps: r,
+          distance: parseFloat(s.distance) || 0,
+          duration: parseInt(s.duration, 10) || 0,
         });
       });
     });
+
+    if (record.sets.length === 0) {
+      alert('Заполните хотя бы один подход (вес, повторы, дистанцию или время) перед сохранением тренировки.');
+      return;
+    }
 
     const prs = window.Storage ? window.Storage.checkWorkoutPRs(record) : [];
 
@@ -308,7 +338,7 @@
             Успешно завершено
           </div>
           <div class="modal-title" style="font-size:20px; margin-bottom:4px; letter-spacing:0.3px;">
-            ${aw.routineName.toUpperCase()}
+            ${esc(aw.routineName.toUpperCase())}
           </div>
           <div style="color:var(--text-secondary); font-size:12.5px; margin-bottom:14px;">
             Результаты зафиксированы
@@ -333,7 +363,7 @@
             <div class="pr-banner">
               <div class="pr-badge">ЛИЧНЫЙ РЕКОРД</div>
               <div style="font-size:13px; color:var(--text-primary); margin-top:4px;">
-                ${prs.map(p => `<div><strong>${p.exerciseName}</strong>: ${p.weight} кг <span style="color:#eab308; font-weight:700;">(+${p.diff} кг)</span></div>`).join('')}
+                ${prs.map(p => `<div><strong>${esc(p.exerciseName)}</strong>: ${p.weight} кг <span style="color:#eab308; font-weight:700;">(+${p.diff} кг)</span></div>`).join('')}
               </div>
             </div>
           ` : ''}
@@ -355,6 +385,7 @@
     }
     if (window.stopRestTimer) window.stopRestTimer();
     window.state.work.activeWorkout = null;
+    syncActiveDraft();
     if (window.closeModal) window.closeModal();
     if (window.triggerHaptic) window.triggerHaptic('success');
     if (window.switchTab) window.switchTab('stats');
@@ -414,7 +445,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">Название программы</label>
-          <input id="we-name" class="form-input" placeholder="Название программы" value="${editorState.name}">
+          <input id="we-name" class="form-input" placeholder="Название программы" value="${esc(editorState.name)}">
         </div>
         <div style="margin-bottom:8px;">
           <div style="font-size:13px; font-weight:bold; text-transform:uppercase; color:var(--text-secondary); letter-spacing:0.5px;">
@@ -441,7 +472,7 @@
               <div style="flex:1; min-width:0;">
                 <div style="display:flex; align-items:center; gap:6px;">
                   <span style="font-size:12px; font-weight:700; color:var(--text-secondary);">${idx + 1}.</span>
-                  <div style="font-weight:600; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${e.name}</div>
+                  <div style="font-weight:600; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(e.name)}</div>
                 </div>
                 <select id="we-type-${idx}" class="form-select" style="padding:4px 8px; font-size:12px; margin-top:4px;" onchange="editorState.exercises[${idx}].type = this.value">
                   <option value="weight_reps" ${e.type === 'weight_reps' ? 'selected' : ''}>С весом (кг + повторения)</option>

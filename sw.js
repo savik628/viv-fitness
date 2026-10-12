@@ -6,7 +6,7 @@
 // =============================================================================
 
 // БЛОК 1. Идентификатор версии кэша и реестр критических ресурсов
-const CACHE_NAME = 'viv-core-v35';
+const CACHE_NAME = 'viv-core-v36';
 
 const CORE_ASSETS = [
   '/',
@@ -14,6 +14,7 @@ const CORE_ASSETS = [
   '/style.css',
   '/css/theme.css',
   '/manifest.json',
+  '/icon.svg',
   '/js/app.js',
   '/js/core/storage.js',
   '/js/core/theme.js',

@@ -34,6 +34,14 @@
   // ---------------------------------------------------------------------------
   // БЛОК 2. НЕДЕЛЬНАЯ ЛЕНТА ДАТ И УПРАВЛЕНИЕ ВЫБОРОМ ДНЯ (Week Dates & State)
   // ---------------------------------------------------------------------------
+  function fmtDate(d = new Date()) {
+    return window.getLocalDateStr ? window.getLocalDateStr(d) : d.toISOString().substring(0, 10);
+  }
+
+  function esc(str) {
+    return window.escapeHtml ? window.escapeHtml(str) : (str || '');
+  }
+
   function getCurrentWeekDates(refDateStr) {
     const ref = refDateStr ? new Date(refDateStr + 'T12:00:00') : new Date();
     const dayOfWeek = ref.getDay();
@@ -44,12 +52,12 @@
 
     const week = [];
     const weekdaysNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-    const todayStr = new Date().toISOString().substring(0, 10);
+    const todayStr = fmtDate(new Date());
 
     for (let i = 0; i < 7; i++) {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
-      const iso = d.toISOString().substring(0, 10);
+      const iso = fmtDate(d);
       week.push({
         dateStr: iso,
         dayNum: d.getDate(),
@@ -61,9 +69,9 @@
   }
 
   function getSelectedDate() {
-    if (!window.state) return new Date().toISOString().substring(0, 10);
+    if (!window.state) return fmtDate(new Date());
     if (!window.state.stats.selectedHabitDate) {
-      window.state.stats.selectedHabitDate = new Date().toISOString().substring(0, 10);
+      window.state.stats.selectedHabitDate = fmtDate(new Date());
     }
     return window.state.stats.selectedHabitDate;
   }
@@ -92,7 +100,7 @@
 
     const habits = window.Storage ? window.Storage.getHabits() : [];
     const curDateStr = getSelectedDate();
-    const todayStr = new Date().toISOString().substring(0, 10);
+    const todayStr = fmtDate(new Date());
     const isToday = curDateStr === todayStr;
 
     const weekDays = getCurrentWeekDates(curDateStr);
@@ -172,7 +180,7 @@
                     ${getHabitEmoji(h)}
                   </div>
                   <div class="habit-info">
-                    <div class="habit-title">${h.title}</div>
+                    <div class="habit-title">${esc(h.title)}</div>
                     <div class="habit-meta">
                       ${stats.currentStreak > 0 
                         ? `<span class="habit-streak-badge active">🔥 ${stats.currentStreak} дн.</span>` 
@@ -246,7 +254,7 @@
 
         <div style="margin-bottom:14px;">
           <label style="display:block; font-size:13px; color:var(--text-secondary); margin-bottom:6px;">Название</label>
-          <input id="habit-title-input" class="form-input" placeholder="Название привычки" value="${habit.title || ''}">
+          <input id="habit-title-input" class="form-input" placeholder="Название привычки" value="${esc(habit.title)}">
         </div>
 
         <!-- Сетка 12 минималистичных иконок -->

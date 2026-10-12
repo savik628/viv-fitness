@@ -12,12 +12,16 @@
   // ---------------------------------------------------------------------------
   // БЛОК 1. ДИСПЕТЧЕР ПОДВКЛАДОК СТАТИСТИКИ (Sub-tabs Router)
   // ---------------------------------------------------------------------------
+  function esc(str) {
+    return window.escapeHtml ? window.escapeHtml(str) : (str || '');
+  }
+
   function renderStats() {
     if (window.setHeader) window.setHeader('Статистика', false);
     const mainContent = document.getElementById('main-content');
     if (!mainContent) return;
 
-    const validTabs = ['progress', 'calendar', 'habits'];
+    const validTabs = ['progress', 'calendar'];
     if (!validTabs.includes(window.state.stats.activeSubTab)) {
       window.state.stats.activeSubTab = 'progress';
     }
@@ -26,14 +30,11 @@
       <div class="sub-tabs">
         <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'progress' ? 'active' : ''}" onclick="switchStatsSubTab('progress')">Прогресс</button>
         <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'calendar' ? 'active' : ''}" onclick="switchStatsSubTab('calendar')">Календарь</button>
-        <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'habits' ? 'active' : ''}" onclick="switchStatsSubTab('habits')">Привычки</button>
       </div>
       <div id="stats-tab-content"></div>`;
 
     if (window.state.stats.activeSubTab === 'calendar') {
       renderStatsCalendarTab();
-    } else if (window.state.stats.activeSubTab === 'habits') {
-      if (window.renderHabitsTab) window.renderHabitsTab();
     } else {
       renderStatsProgressTab();
     }
@@ -142,13 +143,13 @@
         <div class="form-group">
           <label class="form-label">Программа</label>
           <select class="form-select" onchange="changeStatsRoutine(this.value)">
-            ${routines.map(r => `<option value="${r}" ${r === window.state.stats.selectedRoutine ? 'selected' : ''}>${r}</option>`).join('')}
+            ${routines.map(r => `<option value="${esc(r)}" ${r === window.state.stats.selectedRoutine ? 'selected' : ''}>${esc(r)}</option>`).join('')}
           </select>
         </div>
         <div class="form-group" style="margin-bottom:0">
           <label class="form-label">Упражнение</label>
           <select class="form-select" onchange="changeStatsExercise(this.value)">
-            ${exercises.map(e => `<option value="${e}" ${e === window.state.stats.selectedExercise ? 'selected' : ''}>${e}</option>`).join('')}
+            ${exercises.map(e => `<option value="${esc(e)}" ${e === window.state.stats.selectedExercise ? 'selected' : ''}>${esc(e)}</option>`).join('')}
           </select>
         </div>
       </div>
@@ -217,7 +218,7 @@
       cells.push('<div class="cal-cell" style="background:none; border:none;"></div>');
     }
 
-    const todayStr = new Date().toISOString().substring(0, 10);
+    const todayStr = window.getLocalDateStr ? window.getLocalDateStr() : new Date().toISOString().substring(0, 10);
 
     for (let d = 1; d <= daysInMonth; d++) {
       const ds = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
@@ -441,7 +442,6 @@
   window.addEventListener('viv-theme-changed', () => {
     if (window.state && window.state.currentTab === 'stats') {
       if (window.state.stats.activeSubTab === 'progress') renderStatsProgressTab();
-      else if (window.state.stats.activeSubTab === 'habits' && window.renderHabitsTab) window.renderHabitsTab();
     }
   });
 

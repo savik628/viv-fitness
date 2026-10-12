@@ -13,7 +13,6 @@ const KEYS = {
   PROFILE: 'viv_user_profile',
   ROUTINES: 'viv_user_routines',
   HISTORY: 'viv_user_history',
-  CATALOG: 'viv_catalog_cache',
   WEIGHT_LOG: 'viv_user_weight_log',
   MEASUREMENTS: 'viv_user_measurements',
   SETTINGS: 'viv_user_settings',
@@ -99,9 +98,27 @@ const DEFAULT_ROUTINES = [];
 })();
 
 // -----------------------------------------------------------------------------
-// БЛОК 3. НИЗКОУРОВНЕВЫЙ ДВИЖОК ПЕРСИСТЕНТНОСТИ (Storage Engine Helpers)
+// БЛОК 3. НИЗКОУРОВНЕВЫЙ ДВИЖОК ПЕРСИСТЕНТНОСТИ И УТИЛИТЫ (Helpers)
 // -----------------------------------------------------------------------------
 const _memStore = {};
+
+function getLocalDateStr(d = new Date()) {
+  const dateObj = (d instanceof Date && !isNaN(d)) ? d : new Date();
+  const y = dateObj.getFullYear();
+  const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 const getStore = (key, fallback) => {
   try {
@@ -169,7 +186,7 @@ const Storage = {
       routine = {
         ...routine,
         id: Date.now(),
-        createdAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
+        createdAt: getLocalDateStr(),
       };
       routines.unshift(routine);
     }
@@ -235,7 +252,7 @@ const Storage = {
     const newRecord = {
       id: record.id || Date.now(),
       routineName: record.routineName || 'Тренировка',
-      date: record.date || new Date().toISOString().replace('T', ' ').substring(0, 16),
+      date: record.date || getLocalDateStr(),
       duration: record.duration || 0,
       sets,
     };
@@ -351,65 +368,7 @@ const Storage = {
     });
   },
 
-  getMuscleDistribution(days = 30) {
-    const history = this.getHistory();
-    const cutoff = days && days < 365 ? (Date.now() - (days * 86400000)) : 0;
-    const counts = { chest: 0, back: 0, legs: 0, shoulders: 0, arms: 0, core: 0 };
-
-    function parseDateMs(dateStr) {
-      if (!dateStr) return 0;
-      if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) return new Date(dateStr).getTime();
-      if (/^\d{2}\.\d{2}\.\d{4}/.test(dateStr)) {
-        const p = dateStr.split(/[.,\s]/);
-        return new Date(`${p[2]}-${p[1]}-${p[0]}`).getTime();
-      }
-      const parsed = new Date(dateStr).getTime();
-      return isNaN(parsed) ? 0 : parsed;
-    }
-
-    let totalSets = 0;
-
-    history.forEach(h => {
-      const hTime = parseDateMs(h.date);
-      if (!cutoff || hTime === 0 || hTime >= cutoff) {
-        h.sets?.forEach(s => {
-          totalSets++;
-          let targetGroup = null;
-          const name = (s.exerciseName || '').toLowerCase();
-
-          if (/присед|выпад|ног|бедр|квадрицепс|икр|ягодиц|голен|жим ногами|сгибан.*ног|разгибан.*ног/.test(name)) targetGroup = 'legs';
-          else if (/подтяг|тяг.*блок|тяг.*штан|становая|тяг.*гантел|гиперэкстен|широчайш|спин/.test(name)) targetGroup = 'back';
-          else if (/жим.*стоя|армейск|махи|разведен.*сторон|дельт|плеч|шраг/.test(name)) targetGroup = 'shoulders';
-          else if (/бицепс|трицепс|руки|брахи|предплеч|французск|молотк|брусья|сгибан.*рук|разгибан.*рук/.test(name)) targetGroup = 'arms';
-          else if (/пресс|скручиван|планк|кор|живот|подъем ног/.test(name)) targetGroup = 'core';
-          else if (/жим.*лежа|отжим|груд|кроссовер|разводк.*гантел|бабочк|пуловер/.test(name)) targetGroup = 'chest';
-
-          if (!targetGroup) targetGroup = 'chest';
-          counts[targetGroup] = (counts[targetGroup] || 0) + 1;
-        });
-      }
-    });
-
-    const groupLabels = {
-      chest: 'Грудные',
-      back: 'Спина',
-      legs: 'Ноги',
-      shoulders: 'Плечи',
-      arms: 'Руки',
-      core: 'Пресс / Кор'
-    };
-
-    const groups = Object.keys(counts).map(k => ({
-      key: k,
-      name: groupLabels[k] || k,
-      sets: counts[k],
-      percentage: totalSets > 0 ? Math.round((counts[k] / totalSets) * 100) : 0,
-    })).sort((a, b) => b.sets - a.sets);
-
-    return { groups, totalSets };
-  },
-
-  getActivityCalendar(year, month) {
+  getActivityCalendar() {
     const history = this.getHistory();
     const daysMap = {};
 
@@ -479,7 +438,7 @@ const Storage = {
   addBodyweightLog(weight, date) {
     const logs = this.getBodyweightHistory();
     const w = Math.round(parseFloat(weight) * 10) / 10;
-    const d = date || new Date().toISOString().substring(0, 10);
+    const d = date || getLocalDateStr();
     const entry = { id: Date.now(), date: d, weight: w };
     logs.push(entry);
     setStore(KEYS.WEIGHT_LOG, logs);
@@ -509,7 +468,7 @@ const Storage = {
     const list = this.getMeasurements();
     const entry = {
       id: Date.now(),
-      date: data.date || new Date().toISOString().substring(0, 10),
+      date: data.date || getLocalDateStr(),
       chest: parseFloat(data.chest) || 0,
       waist: parseFloat(data.waist) || 0,
       bicep: parseFloat(data.bicep) || 0,
@@ -544,7 +503,7 @@ const Storage = {
       }
     } else {
       habit.id = Date.now() + Math.floor(Math.random() * 10000);
-      habit.createdAt = new Date().toISOString().substring(0, 10);
+      habit.createdAt = getLocalDateStr();
       habits.push(habit);
     }
     setStore(KEYS.HABITS, habits);
@@ -606,7 +565,7 @@ const Storage = {
     });
 
     const totalCompleted = completedDates.size;
-    const toDateStr = d => d.toISOString().substring(0, 10);
+    const toDateStr = d => getLocalDateStr(d);
     const prevDay = d => {
       const copy = new Date(d);
       copy.setDate(copy.getDate() - 1);
@@ -772,5 +731,9 @@ const Storage = {
 // -----------------------------------------------------------------------------
 // БЛОК 13. ЭКСПОРТ МОДУЛЯ (Module Interface Export)
 // -----------------------------------------------------------------------------
-if (typeof window !== 'undefined') window.Storage = Storage;
+if (typeof window !== 'undefined') {
+  window.Storage = Storage;
+  window.getLocalDateStr = getLocalDateStr;
+  window.escapeHtml = escapeHtml;
+}
 if (typeof module !== 'undefined') module.exports = Storage;

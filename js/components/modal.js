@@ -30,11 +30,6 @@
   }
 
   function closeModal() {
-    // Безопасная остановка активных интервалов анимаций при закрытии окна
-    if (window.state && window.state.animTimer) {
-      clearInterval(window.state.animTimer);
-      window.state.animTimer = null;
-    }
     const overlay = getOverlay();
     if (overlay) overlay.classList.add('hidden');
   }

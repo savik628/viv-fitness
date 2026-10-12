@@ -12,6 +12,14 @@
   // ---------------------------------------------------------------------------
   // БЛОК 1. ГЛАВНЫЙ РЕНДЕР ЭКРАНА ПРОФИЛЯ (Profile Layout & Cards)
   // ---------------------------------------------------------------------------
+  function fmtDate(d = new Date()) {
+    return window.getLocalDateStr ? window.getLocalDateStr(d) : d.toISOString().substring(0, 10);
+  }
+
+  function esc(str) {
+    return window.escapeHtml ? window.escapeHtml(str) : (str || '');
+  }
+
   function renderProfile() {
     if (window.setHeader) window.setHeader('Профиль', false);
     const mainContent = document.getElementById('main-content');
@@ -33,10 +41,10 @@
     const currentTheme = window.Storage ? window.Storage.getTheme() : 'dark';
 
     mainContent.innerHTML = `
-      <div class="avatar-circle">${initial}</div>
+      <div class="avatar-circle">${esc(initial)}</div>
       <div style="text-align:center; margin-bottom:20px;">
-        <div style="font-size:20px; font-weight:bold;">${prof.name || 'Атлет'}</div>
-        <div style="font-size:13px; color:var(--text-secondary);">${prof.level || 'Начинающий'}</div>
+        <div style="font-size:20px; font-weight:bold;">${esc(prof.name || 'Атлет')}</div>
+        <div style="font-size:13px; color:var(--text-secondary);">${esc(prof.level || 'Начинающий')}</div>
       </div>
 
       <!-- 1. ТЕМА ОФОРМЛЕНИЯ (Dark / Light / Auto) -->
@@ -94,7 +102,7 @@
       <div class="card">
         <div class="form-group">
           <label class="form-label">Имя</label>
-          <input id="prof-name" class="form-input" placeholder="Имя" value="${prof.name || ''}">
+          <input id="prof-name" class="form-input" placeholder="Имя" value="${esc(prof.name)}">
         </div>
         <div class="form-group">
           <label class="form-label">Уровень подготовки</label>
@@ -271,7 +279,7 @@
   }
 
   function openAddWeightModal() {
-    const today = new Date().toISOString().substring(0, 10);
+    const today = fmtDate();
     const curW = (window.Storage ? window.Storage.getProfile()?.weight : '') || '';
 
     if (window.openModal) {
@@ -296,7 +304,7 @@
   function saveBodyweightEntry() {
     const dateInput = document.getElementById('bw-date');
     const weightInput = document.getElementById('bw-weight');
-    const date = dateInput ? dateInput.value : new Date().toISOString().substring(0, 10);
+    const date = dateInput ? dateInput.value : fmtDate();
     const weight = parseFloat(weightInput ? weightInput.value : 0);
     if (!weight || weight < 30 || weight > 300) return alert('Введите корректный вес');
 
@@ -337,7 +345,7 @@
   // БЛОК 4. ДНЕВНИК ЗАМЕРОВ ТЕЛА (Body Measurements Modals)
   // ---------------------------------------------------------------------------
   function openAddMeasurementModal() {
-    const today = new Date().toISOString().substring(0, 10);
+    const today = fmtDate();
     const m = (window.Storage ? window.Storage.getMeasurements()[0] : null) || {};
 
     if (window.openModal) {
@@ -375,7 +383,7 @@
 
   function saveMeasurementEntry() {
     const dateInput = document.getElementById('bm-date');
-    const date = dateInput ? dateInput.value : new Date().toISOString().substring(0, 10);
+    const date = dateInput ? dateInput.value : fmtDate();
     const chest = parseFloat(document.getElementById('bm-chest')?.value) || 0;
     const waist = parseFloat(document.getElementById('bm-waist')?.value) || 0;
     const bicep = parseFloat(document.getElementById('bm-bicep')?.value) || 0;
@@ -466,9 +474,9 @@
           </div>
 
           <div style="margin-bottom:12px;">
-            <div style="font-weight:bold; font-size:14px; margin-bottom:3px;">${prof.name || 'Атлет'}</div>
+            <div style="font-weight:bold; font-size:14px; margin-bottom:3px;">${esc(prof.name || 'Атлет')}</div>
             <div style="font-size:12px; color:var(--text-secondary);">
-              Уровень: ${prof.level || 'Начинающий'}${prof.height ? ` • Рост: ${prof.height} см` : ''}${latestW ? ` • Вес: ${latestW} кг` : ''}
+              Уровень: ${esc(prof.level || 'Начинающий')}${prof.height ? ` • Рост: ${prof.height} см` : ''}${latestW ? ` • Вес: ${latestW} кг` : ''}
             </div>
           </div>
 
@@ -500,7 +508,7 @@
             <div style="display:flex; flex-direction:column; gap:5px; font-size:12.5px;">
               ${bestsList.map(b => `
                 <div style="display:flex; justify-content:space-between; border-bottom:1px dashed var(--border-color); padding-bottom:3px;">
-                  <span>${b.name}</span>
+                  <span>${esc(b.name)}</span>
                   <strong>${b.weight} кг × ${b.reps}</strong>
                 </div>
               `).join('')}
@@ -528,7 +536,7 @@
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `viv_fitness_backup_${new Date().toISOString().substring(0, 10)}.json`;
+    a.download = `viv_fitness_backup_${fmtDate()}.json`;
     a.click();
     URL.revokeObjectURL(url);
   }

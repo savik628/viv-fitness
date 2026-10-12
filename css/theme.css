@@ -138,10 +138,8 @@
    Light Theme Refinements & Micro-Interactions (Apple HIG / NTC)
    ========================================================= */
 [data-theme="light"] .card,
-[data-theme="light"] .tile-card,
 [data-theme="light"] .list-card,
 [data-theme="light"] .social-btn,
-[data-theme="light"] .muscle-heatmap-card,
 [data-theme="light"] .plate-summary-card {
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03);
 }
@@ -192,17 +190,6 @@
 [data-theme="light"] .form-select:focus {
   border-color: #0f172a;
   box-shadow: 0 0 0 1px #0f172a;
-}
-
-[data-theme="light"] .search-input {
-  background-color: #ffffff;
-  border-color: #cbd5e1;
-  color: #0f172a;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
-}
-
-[data-theme="light"] .search-input:focus {
-  border-color: #0f172a;
 }
 
 [data-theme="light"] .stepper-container {
@@ -265,12 +252,6 @@
   border-color: rgba(234, 179, 8, 0.4);
 }
 
-[data-theme="light"] .exercise-anim-box {
-  background-color: #ffffff;
-  border-color: #e2e8f0;
-  box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.03);
-}
-
 [data-theme="light"] .barbell-visual {
   background-color: #ffffff;
   border-color: #e2e8f0;
@@ -301,10 +282,6 @@
   background-color: #0f172a;
   color: #ffffff;
   border-color: #0f172a;
-}
-
-[data-theme="light"] .muscle-bar-bg {
-  background-color: #e2e8f0;
 }
 
 [data-theme="light"] .badge {
