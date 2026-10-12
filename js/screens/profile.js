@@ -667,11 +667,14 @@
   }
 
   function openExternal(url, e) {
-    const isTelegram = !!(window.Telegram?.WebApp?.initData && window.Telegram?.WebApp?.platform && window.Telegram.WebApp.platform !== 'unknown');
-    if (isTelegram && typeof window.Telegram?.WebApp?.openLink === 'function') {
+    if (window.Telegram?.WebApp && typeof window.Telegram.WebApp.openLink === 'function') {
       if (e && e.preventDefault) e.preventDefault();
-      window.Telegram.WebApp.openLink(url);
-      return false;
+      try {
+        window.Telegram.WebApp.openLink(url);
+        return false;
+      } catch (err) {
+        console.warn('Telegram openLink error:', err);
+      }
     }
     // В стандартном браузере или PWA позволяем нативному переходу сработать
     if (e && e.type === 'click') {
@@ -703,7 +706,6 @@
   window.openMeasurementHistoryModal = openMeasurementHistoryModal;
   window.deleteMeasurementLog = deleteMeasurementLog;
   window.openCoachReportModal = openCoachReportModal;
-  window.triggerPrintReport = triggerPrintReport;
   window.saveProfile = saveProfile;
   window.exportUserData = exportUserData;
   window.triggerImportUserData = triggerImportUserData;
