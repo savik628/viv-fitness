@@ -292,14 +292,13 @@
     ctx.save();
     ctx.shadowColor = 'rgba(255, 255, 255, 0.25)';
     ctx.shadowBlur = 8;
-    roundRect(iconX, iconY, iconSize, iconSize, 9, '#09090b', true, '#27272a', 1);
+    roundRect(iconX, iconY, iconSize, iconSize, 9, '#000000', true, '#27272a', 1);
     ctx.restore();
 
     ctx.textAlign = 'center';
-    ctx.font = '900 11.5px -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
+    ctx.font = '900 13px -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
     ctx.fillStyle = '#ffffff';
-    ctx.fillText('VIV', iconX + iconSize / 2, iconY + 23);
-    roundRect(iconX + (iconSize - 14) / 2, iconY + 26, 14, 1.8, 0.9, '#22c55e', false, null);
+    ctx.fillText('VIV', iconX + iconSize / 2, iconY + 24);
 
     const dateStr = new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
     const dateY = iconY + iconSize + 14;
