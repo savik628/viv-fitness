@@ -131,15 +131,7 @@
         ${_activeOptions.unit ? `<span class="wheel-picker-framed-unit">${window.escapeHtml ? window.escapeHtml(_activeOptions.unit) : _activeOptions.unit}</span>` : ''}
       </div>
 
-      ${deltas && deltas.length ? `
-        <div class="wheel-picker-deltas-row">
-          ${deltas.map(d => `
-            <button type="button" class="wheel-picker-delta-chip" data-delta="${d}">
-              ${d > 0 ? `+${d}` : d}
-            </button>
-          `).join('')}
-        </div>
-      ` : ''}
+
 
       <div class="wheel-picker-wheel-wrap">
         <div class="wheel-picker-lens"></div>

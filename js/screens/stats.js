@@ -30,7 +30,7 @@
       <div class="sub-tabs">
         <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'progress' ? 'active' : ''}" onclick="switchStatsSubTab('progress')">Прогресс</button>
         <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'calendar' ? 'active' : ''}" onclick="switchStatsSubTab('calendar')">Календарь</button>
-        <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'report' ? 'active' : ''}" onclick="switchStatsSubTab('report')">Отчёт VIV</button>
+        <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'report' ? 'active' : ''}" onclick="switchStatsSubTab('report')" title="VIV" style="display:inline-flex; align-items:center; justify-content:center; gap:5px;"><img src="icon.svg" style="width:16px; height:16px; border-radius:4px; vertical-align:middle;" alt="VIV"><span>VIV</span></button>
       </div>
       <div id="stats-tab-content"></div>`;
 
@@ -107,9 +107,6 @@
       })
       .sort((a, b) => b.volume - a.volume);
 
-    const topExercise = sortedExercises[0];
-    const topContribStr = topExercise ? (topExercise.pct + '%') : '—';
-
     const todayDateStr = new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
     const logoHtml = window.AppLogo ? window.AppLogo.render({ className: 'apple-report-logo-text' }) : 'VIV';
 
@@ -122,12 +119,10 @@
                  id="viv-report-logo-btn" 
                  role="button" 
                  tabindex="0"
-                 title="Нажмите дважды для сохранения в PNG"
                  ondblclick="exportVivReportPng()"
                  onclick="handleVivLogoClick(event)">
               ${logoHtml}
             </div>
-            <div class="apple-report-hint">Дважды нажмите на VIV для сохранения PNG</div>
             <div class="apple-report-date">${todayDateStr}</div>
           </div>
 
@@ -152,27 +147,8 @@
             </div>
           </div>
 
-          <!-- СУММАРНЫЕ KPI-МЕТРИКИ (3 карточки в ряд) -->
-          <div class="apple-kpi-grid">
-            <div class="apple-kpi-card">
-              <div class="apple-kpi-val">${totalPureSets}</div>
-              <div class="apple-kpi-lbl">Подходов</div>
-            </div>
-            <div class="apple-kpi-card">
-              <div class="apple-kpi-val">${sortedExercises.length}</div>
-              <div class="apple-kpi-lbl">Упражнений</div>
-            </div>
-            <div class="apple-kpi-card">
-              <div class="apple-kpi-val">${topContribStr}</div>
-              <div class="apple-kpi-lbl">Топ вклад</div>
-            </div>
-          </div>
-
           <!-- СПИСОК РАСПРЕДЕЛЕНИЯ СИЛОВОГО ТОННАЖА ПО УБЫВАНИЮ -->
-          <div class="tonnage-dist-section">
-            <div class="tonnage-dist-header-row">
-              <div class="tonnage-dist-section-title">Распределение тоннажа</div>
-            </div>
+          <div class="tonnage-dist-section" style="margin-top:6px;">
             ${sortedExercises.length ? `
               <div class="tonnage-dist-list">
                 ${sortedExercises.map(item => `
@@ -373,50 +349,12 @@
     ctx.fillText(volUnit, ringCenterX, ringCenterY + 58);
     ctx.letterSpacing = '0px';
 
-    // 4. Сетка из 3 суммарных KPI-карточек (заполнение пространства и информативность)
     const listW = W - 140;
     const listLeft = 70;
-    const kpiY = 520;
-    const kpiH = 84;
-    const kpiW = Math.round((listW - 20) / 3);
-
-    const kpiItems = [
-      { val: totalPureSets, lbl: 'ПОДХОДОВ', color: '#ffffff' },
-      { val: sortedExercises.length, lbl: 'УПРАЖНЕНИЙ', color: '#ffffff' },
-      { val: topExercise ? topExercise.pct + '%' : '—', lbl: 'ТОП ВКЛАД', color: '#DFFF00' }
-    ];
-
-    for (let k = 0; k < 3; k++) {
-      const item = kpiItems[k];
-      const kX = listLeft + k * (kpiW + 10);
-      roundRect(kX, kpiY, kpiW, kpiH, 18, '#13181f', true, 'rgba(255, 255, 255, 0.07)', 1.5);
-
-      ctx.textAlign = 'center';
-      ctx.font = '900 32px -apple-system, sans-serif';
-      ctx.fillStyle = item.color;
-      ctx.fillText(String(item.val), kX + kpiW / 2, kpiY + 42);
-
-      ctx.font = '700 12px -apple-system, sans-serif';
-      ctx.fillStyle = '#a1a1aa';
-      ctx.letterSpacing = '0.5px';
-      ctx.fillText(item.lbl, kX + kpiW / 2, kpiY + 68);
-      ctx.letterSpacing = '0px';
-    }
-
-    // 5. Список распределения тоннажа по убыванию (Дизайн 1)
-    const listTopY = 642;
-
-    ctx.textAlign = 'left';
-    ctx.font = '800 21px -apple-system, sans-serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.letterSpacing = '0.5px';
-    ctx.fillText('РАСПРЕДЕЛЕНИЕ ТОННАЖА', listLeft, listTopY);
-    ctx.letterSpacing = '0px';
-
-    let rowY = listTopY + 20;
-    const maxItems = Math.min(6, sortedExercises.length);
-    const cardH = maxItems <= 4 ? 90 : 80;
-    const cardGap = maxItems <= 4 ? 14 : 10;
+    let rowY = 550;
+    const maxItems = Math.min(7, sortedExercises.length);
+    const cardH = maxItems <= 4 ? 94 : 84;
+    const cardGap = maxItems <= 4 ? 16 : 12;
 
     if (maxItems === 0) {
       roundRect(listLeft, rowY, listW, 110, 20, '#13181f', true, 'rgba(255, 255, 255, 0.06)', 1.5);
@@ -429,18 +367,18 @@
         const item = sortedExercises[i];
         roundRect(listLeft, rowY, listW, cardH, 18, '#13181f', true, 'rgba(255, 255, 255, 0.07)', 1.5);
 
-        const textY = rowY + (cardH <= 80 ? 35 : 39);
+        const textY = rowY + (cardH <= 84 ? 37 : 41);
 
         // Тоннаж справа
         ctx.textAlign = 'right';
-        ctx.font = '800 21px -apple-system, sans-serif';
+        ctx.font = '800 22px -apple-system, sans-serif';
         ctx.fillStyle = '#DFFF00';
         ctx.fillText(item.volStr, listLeft + listW - 24, textY);
         const volW = ctx.measureText(item.volStr).width;
 
         // Процент левее тоннажа с четким интервалом
         const pctStr = item.pct + '%';
-        ctx.font = '700 15px -apple-system, sans-serif';
+        ctx.font = '700 16px -apple-system, sans-serif';
         ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
         const pctRight = listLeft + listW - 24 - volW - 14;
         ctx.fillText(pctStr, pctRight, textY);
@@ -449,13 +387,13 @@
         // Название упражнения слева (с обрезкой через многоточие при превышении ширины)
         const maxNameW = listW - 48 - volW - pctW - 36;
         ctx.textAlign = 'left';
-        ctx.font = '700 21px -apple-system, sans-serif';
+        ctx.font = '700 22px -apple-system, sans-serif';
         ctx.fillStyle = '#ffffff';
         const safeName = fitTextWithEllipsis(item.name, maxNameW);
         ctx.fillText(safeName, listLeft + 24, textY);
 
         // Тонкий неоновый прогресс-бар
-        const trackY = rowY + (cardH <= 80 ? 53 : 58);
+        const trackY = rowY + (cardH <= 84 ? 56 : 61);
         const trackW = listW - 48;
         const trackX = listLeft + 24;
         roundRect(trackX, trackY, trackW, 7, 3.5, 'rgba(255, 255, 255, 0.07)', false, null);
@@ -469,14 +407,6 @@
         rowY += cardH + cardGap;
       }
     }
-
-    // 6. Водяной знак
-    ctx.textAlign = 'center';
-    ctx.font = '700 14px -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
-    ctx.letterSpacing = '1px';
-    ctx.fillText('VIV  •  ATHLETIC PERFORMANCE SYSTEM', W / 2, H - 42);
-    ctx.letterSpacing = '0px';
 
     // Сохранение и шеринг
     canvas.toBlob(async (blob) => {
@@ -559,21 +489,21 @@
       chartsHtml = `
         <div class="card" style="margin-bottom:12px;">
           <div style="font-weight:bold; font-size:15px; margin-bottom:2px;">${esc(window.state.stats.selectedExercise)}</div>
-          <div style="font-size:11.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:12px;">Максимальный вес (кг)</div>
+          <div style="font-size:11.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:12px;">MAX</div>
           <div class="chart-container">
             <canvas id="progressCanvasMaxWeight"></canvas>
           </div>
         </div>
         <div class="card" style="margin-bottom:12px;">
           <div style="font-weight:bold; font-size:15px; margin-bottom:2px;">${esc(window.state.stats.selectedExercise)}</div>
-          <div style="font-size:11.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:12px;">Расчётный 1RM (кг)</div>
+          <div style="font-size:11.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:12px;">1RM</div>
           <div class="chart-container">
             <canvas id="progressCanvas1RM"></canvas>
           </div>
         </div>
         <div class="card">
           <div style="font-weight:bold; font-size:15px; margin-bottom:2px;">${esc(window.state.stats.selectedExercise)}</div>
-          <div style="font-size:11.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:12px;">Суммарный тоннаж (кг)</div>
+          <div style="font-size:11.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:12px;">SUM</div>
           <div class="chart-container">
             <canvas id="progressCanvasTotalVolume"></canvas>
           </div>
@@ -583,7 +513,7 @@
       chartsHtml = `
         <div class="card">
           <div style="font-weight:bold; font-size:15px; margin-bottom:2px;">${esc(window.state.stats.selectedExercise)}</div>
-          <div style="font-size:11.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:12px;">Максимальное количество повторений</div>
+          <div style="font-size:11.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:12px;">MAX</div>
           <div class="chart-container">
             <canvas id="progressCanvasSingle"></canvas>
           </div>
@@ -593,7 +523,7 @@
       chartsHtml = `
         <div class="card">
           <div style="font-weight:bold; font-size:15px; margin-bottom:2px;">${esc(window.state.stats.selectedExercise)}</div>
-          <div style="font-size:11.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:12px;">Суммарная дистанция (км)</div>
+          <div style="font-size:11.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:12px;">DIST</div>
           <div class="chart-container">
             <canvas id="progressCanvasSingle"></canvas>
           </div>
@@ -603,7 +533,7 @@
       chartsHtml = `
         <div class="card">
           <div style="font-weight:bold; font-size:15px; margin-bottom:2px;">${esc(window.state.stats.selectedExercise)}</div>
-          <div style="font-size:11.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:12px;">Время под нагрузкой (сек)</div>
+          <div style="font-size:11.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:12px;">TIME</div>
           <div class="chart-container">
             <canvas id="progressCanvasSingle"></canvas>
           </div>

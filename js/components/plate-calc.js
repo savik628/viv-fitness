@@ -40,13 +40,9 @@
         </div>
         <div class="plate-calc-container">
           <!-- Интерактивная плашка выбора веса (барабанное колесо / ввод) -->
-          <div class="plate-wheel-trigger-card" onclick="openPlateTargetWeightPicker()" role="button" tabindex="0" title="Нажмите для вращения колеса или ввода с клавиатуры">
-            <div style="font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; color:var(--text-secondary);">Целевой вес штанги</div>
+          <div class="plate-wheel-trigger-card" onclick="openPlateTargetWeightPicker()" role="button" tabindex="0">
+            <div style="font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; color:var(--text-secondary);">Общий вес</div>
             <div id="plate-calc-val" class="plate-weight-val">${plateCalcTargetWeight} кг</div>
-            <div class="plate-wheel-hint">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-              <span>Крутить колесо прокрутки</span>
-            </div>
           </div>
 
           <!-- Быстрые дельты без стрелок -->
@@ -65,10 +61,11 @@
             `).join('')}
           </div>
 
-          <!-- Выбор веса грифа (мужской 20 кг / женский 15 кг) -->
+          <!-- Выбор веса грифа (20 кг / 15 кг / 10 кг) -->
           <div style="display:flex; justify-content:center; gap:8px; margin-bottom:12px;">
             <button id="plate-bar-20" class="filter-chip ${plateCalcBarWeight === 20 ? 'active' : ''}" onclick="setPlateBarWeight(20)">Гриф 20 кг</button>
             <button id="plate-bar-15" class="filter-chip ${plateCalcBarWeight === 15 ? 'active' : ''}" onclick="setPlateBarWeight(15)">Гриф 15 кг</button>
+            <button id="plate-bar-10" class="filter-chip ${plateCalcBarWeight === 10 ? 'active' : ''}" onclick="setPlateBarWeight(10)">Гриф 10 кг</button>
           </div>
 
           <!-- Визуализация грифа и надетых блинов С ДВУХ СТОРОН -->
@@ -136,8 +133,10 @@
     // Обновление подсветки веса грифа
     const b20 = document.getElementById('plate-bar-20');
     const b15 = document.getElementById('plate-bar-15');
+    const b10 = document.getElementById('plate-bar-10');
     if (b20) b20.classList.toggle('active', plateCalcBarWeight === 20);
     if (b15) b15.classList.toggle('active', plateCalcBarWeight === 15);
+    if (b10) b10.classList.toggle('active', plateCalcBarWeight === 10);
 
     const plateClassMap = {
       25: 'plate-25',

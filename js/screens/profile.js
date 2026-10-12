@@ -44,15 +44,14 @@
       <div class="avatar-circle">${esc(initial)}</div>
       <div style="text-align:center; margin-bottom:20px;">
         <div style="font-size:20px; font-weight:bold;">${esc(prof.name || 'Атлет')}</div>
-        <div style="font-size:13px; color:var(--text-secondary);">${esc(prof.level || 'Начинающий')}</div>
       </div>
 
-      <!-- 1. ТЕМА ОФОРМЛЕНИЯ (Dark / Light / Auto) -->
+      <!-- 1. ТЕМА ОФОРМЛЕНИЯ (Dark / Light) -->
       <div class="card">
         <div style="font-weight:bold; font-size:14px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:12px;">
           Тема оформления
         </div>
-        <div class="theme-switcher-grid" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;">
+        <div class="theme-switcher-grid" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:8px;">
           <button 
             class="btn-theme-select ${currentTheme === 'dark' ? 'theme-active' : ''}" 
             data-theme-btn="dark"
@@ -82,44 +81,6 @@
             </svg>
             <span>Светлая</span>
           </button>
-
-          <button 
-            class="btn-theme-select ${currentTheme === 'auto' ? 'theme-active' : ''}" 
-            data-theme-btn="auto"
-            onclick="setAppTheme('auto')"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom:2px;">
-              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-              <line x1="8" y1="21" x2="16" y2="21"></line>
-              <line x1="12" y1="17" x2="12" y2="21"></line>
-            </svg>
-            <span>Авто (OS)</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- 1.1. ОТОБРАЖЕНИЕ БРЕНДА VIV (Текст / Иконка приложения) -->
-      <div class="card">
-        <div style="font-weight:bold; font-size:14px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:12px;">
-          Логотип VIV в приложении
-        </div>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-          <button 
-            type="button"
-            class="btn-theme-select ${(!window.AppLogo || window.AppLogo.mode !== 'icon') ? 'theme-active' : ''}" 
-            onclick="window.AppLogo && window.AppLogo.setMode('text')"
-          >
-            <span style="font-weight:900; font-size:15px; letter-spacing:1px; color:#ffffff;">VIV</span>
-            <span style="font-size:11px; color:var(--text-secondary); margin-top:2px;">Текст</span>
-          </button>
-          <button 
-            type="button"
-            class="btn-theme-select ${window.AppLogo?.mode === 'icon' ? 'theme-active' : ''}" 
-            onclick="window.AppLogo && window.AppLogo.setMode('icon')"
-          >
-            <img src="icon.svg" style="width:22px; height:22px; border-radius:4px; margin-bottom:2px; object-fit:contain;" alt="Icon">
-            <span style="font-size:11px; color:var(--text-secondary); margin-top:2px;">Иконка</span>
-          </button>
         </div>
       </div>
 
@@ -128,14 +89,6 @@
         <div class="form-group">
           <label class="form-label">Имя</label>
           <input id="prof-name" class="form-input" placeholder="Имя" value="${esc(prof.name)}">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Уровень подготовки</label>
-          <select id="prof-level" class="form-select">
-            <option value="Начинающий" ${prof.level === 'Начинающий' ? 'selected' : ''}>Начинающий</option>
-            <option value="Средний" ${prof.level === 'Средний' ? 'selected' : ''}>Средний</option>
-            <option value="Продвинутый" ${prof.level === 'Продвинутый' ? 'selected' : ''}>Продвинутый</option>
-          </select>
         </div>
         <div class="form-group">
           <label class="form-label">Рост (см)</label>
@@ -318,18 +271,16 @@
 
   function saveProfile() {
     const nameInput = document.getElementById('prof-name');
-    const levelSelect = document.getElementById('prof-level');
     const heightInput = document.getElementById('prof-height');
 
     const name = nameInput?.value.trim() || '';
-    const level = levelSelect?.value || 'Начинающий';
     const height = parseFloat(heightInput?.value) || null;
 
     if (window.Storage) {
       const prevProfile = window.Storage.getProfile();
       window.state.profile = window.Storage.saveProfile({
         name,
-        level,
+        level: prevProfile?.level || '',
         weight: prevProfile?.weight ?? null,
         height,
         notificationsEnabled: true

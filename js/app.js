@@ -23,33 +23,22 @@
   // ---------------------------------------------------------------------------
   // БЛОК 1.1. Централизованный модуль управления логотипом VIV (App Logo)
   // ---------------------------------------------------------------------------
-  const savedLogoMode = (typeof localStorage !== 'undefined' && localStorage.getItem('viv_logo_mode')) || 'text';
-
   window.AppLogo = {
-    mode: savedLogoMode === 'icon' ? 'icon' : 'text', // 'text' (чистый белый текст "VIV") | 'icon' (иконка приложения icon.svg)
+    mode: 'icon', // Везде используется официальный логотип (иконка приложения icon.svg)
     iconSrc: 'icon.svg',
     render(options = {}) {
       const cls = options.className || '';
       const style = options.style || '';
-      if (this.mode === 'icon' && !options.textOnly) {
-        const height = options.small ? '14px' : (options.height || 'auto');
-        return `<img src="${this.iconSrc}" alt="VIV" class="app-logo-badge ${cls}" style="display:inline-block; vertical-align:middle; height:${height}; ${style}">`;
-      }
-      return `<span class="app-logo-brand ${cls}" style="${style}">VIV</span>`;
+      const height = options.small ? '16px' : (options.height || '26px');
+      return `<img src="${this.iconSrc}" alt="VIV" class="app-logo-badge ${cls}" style="display:inline-block; vertical-align:middle; height:${height}; border-radius:6px; ${style}">`;
     },
     getText() {
       return 'VIV';
     },
     setMode(mode) {
-      this.mode = mode === 'icon' ? 'icon' : 'text';
-      try {
-        localStorage.setItem('viv_logo_mode', this.mode);
-      } catch (e) {}
-      this.syncAll();
+      this.mode = 'icon';
     },
-    toggleMode() {
-      this.setMode(this.mode === 'icon' ? 'text' : 'icon');
-    },
+    toggleMode() {},
     syncAll() {
       document.querySelectorAll('.viv-logo-target').forEach(el => {
         const isSmall = el.dataset.logoSmall === 'true';
