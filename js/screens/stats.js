@@ -544,7 +544,8 @@
     }
   }
 
-  window.handleVivLogoClick = handleVivLogoClick;
+  window.handleVivLogoTouch = handleVivLogoTouch;
+  window.handleVivLogoClick = handleVivLogoTouch;
   window.exportVivReportPng = exportVivReportPng;
 
   // ---------------------------------------------------------------------------
@@ -987,7 +988,7 @@
   window.renderStats = renderStats;
   window.switchStatsSubTab = switchStatsSubTab;
   window.renderStatsReportTab = renderStatsReportTab;
-  window.triggerPrintReport = triggerPrintReport;
+  window.triggerPrintReport = exportVivReportPng;
   window.renderStatsProgressTab = renderStatsProgressTab;
   window.changeStatsRoutine = changeStatsRoutine;
   window.changeStatsExercise = changeStatsExercise;
