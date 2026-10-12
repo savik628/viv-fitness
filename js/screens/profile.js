@@ -221,10 +221,7 @@
           </button>
           <input type="file" id="import-backup-file" accept=".json,application/json" style="display:none;" onchange="handleImportFile(event)">
         </div>
-        <div style="display:flex; flex-direction:column; gap:8px;">
-          <button class="btn btn-outline" onclick="copyBackupToClipboard()">Скопировать в буфер обмена</button>
-          <button class="btn btn-outline" onclick="resetUserLocalData()" style="color:#ef4444; border-color:rgba(239,68,68,0.3);">Сбросить локальные данные</button>
-        </div>
+        <button class="btn btn-outline" onclick="resetUserLocalData()" style="width:100%; color:#ef4444; border-color:rgba(239,68,68,0.3);">Сбросить локальные данные</button>
       </div>
     `;
 
@@ -575,41 +572,6 @@
     reader.readAsText(file);
   }
 
-  function copyBackupToClipboard() {
-    if (!window.Storage) return;
-    try {
-      const data = window.Storage.exportBackup();
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(data).then(() => {
-          alert('Резервная копия скопирована в буфер обмена!');
-        }).catch(() => {
-          fallbackCopyText(data);
-        });
-      } else {
-        fallbackCopyText(data);
-      }
-    } catch (e) {
-      alert('Ошибка при копировании в буфер обмена.');
-    }
-  }
-
-  function fallbackCopyText(text) {
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-9999px';
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    try {
-      document.execCommand('copy');
-      alert('Резервная копия скопирована в буфер обмена!');
-    } catch (err) {
-      alert('Не удалось скопировать данные. Попробуйте использовать экспорт в файл.');
-    }
-    document.body.removeChild(textArea);
-  }
-
   function resetUserLocalData() {
     if (confirm('Сбросить все тренировки и настройки к начальному состоянию?')) {
       if (window.Storage) window.Storage.resetAllData();
@@ -704,7 +666,6 @@
   window.exportUserData = exportUserData;
   window.triggerImportUserData = triggerImportUserData;
   window.handleImportFile = handleImportFile;
-  window.copyBackupToClipboard = copyBackupToClipboard;
   window.resetUserLocalData = resetUserLocalData;
   window.renderShop = renderShop;
   window.openExternal = openExternal;

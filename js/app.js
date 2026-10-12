@@ -27,13 +27,15 @@
 
   const state = {
     currentTab: 'work', // Стартовый активный экран: 'work' (Тренировки)
+    habits: {
+      selectedDate: todayLocal
+    },
     work: {
       routines: [],
       activeWorkout: window.Storage ? window.Storage.getActiveDraft() : null
     },
     stats: {
       activeSubTab: 'progress', // 'progress' | 'calendar'
-      selectedHabitDate: todayLocal,
       routines: [],
       selectedRoutine: null,
       exercises: [],

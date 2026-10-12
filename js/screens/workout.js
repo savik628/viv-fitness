@@ -409,8 +409,7 @@
       name: r.name,
       exercises: r.exercises.map(e => ({
         name: e.name,
-        type: e.type || 'weight_reps',
-        primaryMuscle: e.primaryMuscle || 'chest'
+        type: e.type || 'weight_reps'
       }))
     };
     renderWorkoutEditorModal();
@@ -495,7 +494,7 @@
     const name = prompt('Введите название упражнения:');
     if (name?.trim()) {
       syncEditorFormValues();
-      editorState.exercises.push({ name: name.trim(), type: 'weight_reps', primaryMuscle: 'chest' });
+      editorState.exercises.push({ name: name.trim(), type: 'weight_reps' });
       renderWorkoutEditorModal();
     }
   }

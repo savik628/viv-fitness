@@ -20,7 +20,6 @@ const KEYS = {
   THEME: 'viv_theme',
   HABITS: 'viv_user_habits',
   HABIT_LOGS: 'viv_user_habit_logs',
-  SEED_CLEANED: 'viv_clean_state_v1',
 };
 
 const DEFAULT_PROFILE = {
@@ -32,70 +31,6 @@ const DEFAULT_PROFILE = {
 };
 
 const DEFAULT_ROUTINES = [];
-
-// -----------------------------------------------------------------------------
-// БЛОК 2. ОЧИСТКА ДЕМО-ДАННЫХ ПРИ ПЕРВОМ ЗАПУСКЕ (Auto-Purge Seed State)
-// -----------------------------------------------------------------------------
-(function autoPurgeDefaults() {
-  try {
-    if (typeof localStorage === 'undefined') return;
-    if (localStorage.getItem(KEYS.SEED_CLEANED)) return;
-
-    // 1. Очистка старых тестовых программ
-    const rawRoutines = localStorage.getItem(KEYS.ROUTINES);
-    if (rawRoutines) {
-      try {
-        const parsed = JSON.parse(rawRoutines);
-        if (Array.isArray(parsed) && parsed.some(r => r.id === 1 || r.id === 2 || r.id === 3)) {
-          localStorage.setItem(KEYS.ROUTINES, JSON.stringify([]));
-        }
-      } catch (_) {}
-    } else {
-      localStorage.setItem(KEYS.ROUTINES, JSON.stringify([]));
-    }
-
-    // 2. Очистка предустановленных тестовых записей веса
-    const rawWeight = localStorage.getItem(KEYS.WEIGHT_LOG);
-    if (rawWeight) {
-      try {
-        const parsed = JSON.parse(rawWeight);
-        if (Array.isArray(parsed) && parsed.some(w => w.id === 1 || w.id === 2 || w.id === 3)) {
-          localStorage.setItem(KEYS.WEIGHT_LOG, JSON.stringify([]));
-        }
-      } catch (_) {}
-    } else {
-      localStorage.setItem(KEYS.WEIGHT_LOG, JSON.stringify([]));
-    }
-
-    // 3. Очистка предустановленных тестовых замеров тела
-    const rawMeas = localStorage.getItem(KEYS.MEASUREMENTS);
-    if (rawMeas) {
-      try {
-        const parsed = JSON.parse(rawMeas);
-        if (Array.isArray(parsed) && (parsed.length === 0 || (parsed.length === 1 && parsed[0].chest === 104))) {
-          localStorage.setItem(KEYS.MEASUREMENTS, JSON.stringify([]));
-        }
-      } catch (_) {}
-    } else {
-      localStorage.setItem(KEYS.MEASUREMENTS, JSON.stringify([]));
-    }
-
-    // 4. Очистка предустановленного профиля
-    const rawProf = localStorage.getItem(KEYS.PROFILE);
-    if (rawProf) {
-      try {
-        const parsed = JSON.parse(rawProf);
-        if (parsed && (parsed.name === 'Пользователь' || parsed.weight === 70)) {
-          localStorage.setItem(KEYS.PROFILE, JSON.stringify(DEFAULT_PROFILE));
-        }
-      } catch (_) {}
-    }
-
-    localStorage.setItem(KEYS.SEED_CLEANED, 'true');
-  } catch (e) {
-    console.warn('Auto-purge error:', e);
-  }
-})();
 
 // -----------------------------------------------------------------------------
 // БЛОК 3. НИЗКОУРОВНЕВЫЙ ДВИЖОК ПЕРСИСТЕНТНОСТИ И УТИЛИТЫ (Helpers)
@@ -554,7 +489,7 @@ const Storage = {
   getHabitStats(habitId) {
     const habits = this.getHabits();
     const habit = habits.find(h => String(h.id) === String(habitId));
-    if (!habit) return { currentStreak: 0, bestStreak: 0, totalCompleted: 0, weeklyRate: 0 };
+    if (!habit) return { currentStreak: 0, totalCompleted: 0 };
 
     const logs = this.getHabitLogs();
     const completedDates = new Set();
@@ -592,38 +527,7 @@ const Storage = {
       checkDate = prevDay(checkDate);
     }
 
-    const sortedDates = Array.from(completedDates).sort();
-    let bestStreak = 0;
-    let tempStreak = 0;
-    let lastTime = null;
-
-    sortedDates.forEach(dStr => {
-      const curTime = new Date(dStr + 'T00:00:00').getTime();
-      if (lastTime === null) {
-        tempStreak = 1;
-      } else {
-        const diffDays = Math.round((curTime - lastTime) / (1000 * 60 * 60 * 24));
-        if (diffDays === 1) {
-          tempStreak++;
-        } else if (diffDays > 1) {
-          tempStreak = 1;
-        }
-      }
-      lastTime = curTime;
-      if (tempStreak > bestStreak) bestStreak = tempStreak;
-    });
-
-    bestStreak = Math.max(bestStreak, currentStreak);
-
-    let last7Completed = 0;
-    let d = new Date();
-    for (let i = 0; i < 7; i++) {
-      if (completedDates.has(toDateStr(d))) last7Completed++;
-      d = prevDay(d);
-    }
-    const weeklyRate = Math.round((last7Completed / 7) * 100);
-
-    return { currentStreak, bestStreak, totalCompleted, weeklyRate };
+    return { currentStreak, totalCompleted };
   },
 
   getDailyHabitProgress(dateStr) {

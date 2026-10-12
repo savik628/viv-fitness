@@ -10,25 +10,12 @@
   'use strict';
 
   // ---------------------------------------------------------------------------
-  // БЛОК 1. КОНСТАНТЫ ИКОНОК И ОБРАТНАЯ СОВМЕСТИМОСТЬ (Habit Icons Registry)
+  // БЛОК 1. КОНСТАНТЫ ИКОНОК ПРИВЫЧЕК (Habit Icons Registry)
   // ---------------------------------------------------------------------------
   const HABIT_EMOJIS = ['✅', '🛑', '🌙', '⏱️', '⚡', '💧', '🔥', '🎯', '❄️', '☀️', '🌿', '➡️'];
 
-  const LEGACY_CATEGORY_MAP = {
-    water: '💧',
-    sleep: '🌙',
-    nutrition: '🍏',
-    sport: '🏋️',
-    recovery: '🧘',
-    steps: '🏃'
-  };
-
   function getHabitEmoji(habit) {
-    if (habit && habit.emoji) return habit.emoji;
-    if (habit && habit.category && LEGACY_CATEGORY_MAP[habit.category]) {
-      return LEGACY_CATEGORY_MAP[habit.category];
-    }
-    return '⚡';
+    return (habit && habit.emoji) ? habit.emoji : '⚡';
   }
 
   // ---------------------------------------------------------------------------
@@ -70,27 +57,28 @@
 
   function getSelectedDate() {
     if (!window.state) return fmtDate(new Date());
-    if (!window.state.stats.selectedHabitDate) {
-      window.state.stats.selectedHabitDate = fmtDate(new Date());
+    if (!window.state.habits) window.state.habits = {};
+    if (!window.state.habits.selectedDate) {
+      window.state.habits.selectedDate = fmtDate(new Date());
     }
-    return window.state.stats.selectedHabitDate;
+    return window.state.habits.selectedDate;
   }
 
   function setSelectedDate(dateStr) {
     if (!window.state) return;
-    window.state.stats.selectedHabitDate = dateStr;
-    renderHabitsTab();
+    if (!window.state.habits) window.state.habits = {};
+    window.state.habits.selectedDate = dateStr;
+    renderHabits();
   }
 
   // ---------------------------------------------------------------------------
   // БЛОК 3. РЕНДЕРИНГ ЭКРАНА ПРИВЫЧЕК (Screen Layout & Habit Cards List)
   // ---------------------------------------------------------------------------
-  function renderHabitsTab(targetContainer) {
-    const isMainTab = window.state?.currentTab === 'habits';
-    const container = targetContainer || (isMainTab ? document.getElementById('main-content') : document.getElementById('stats-tab-content'));
+  function renderHabits() {
+    const container = document.getElementById('main-content');
     if (!container) return;
 
-    if (isMainTab && window.setHeader) {
+    if (window.setHeader) {
       window.setHeader('Привычки', false, `
         <button class="header-icon-btn" onclick="openAddHabitModal()" title="Добавить привычку">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -228,7 +216,7 @@
     if (window.triggerHaptic) {
       window.triggerHaptic(isDone ? 'success' : 'light');
     }
-    renderHabitsTab();
+    renderHabits();
   }
 
   // ---------------------------------------------------------------------------
@@ -327,7 +315,7 @@
     }
 
     if (window.closeModal) window.closeModal();
-    renderHabitsTab();
+    renderHabits();
   }
 
   function deleteHabitModal(habitId) {
@@ -336,14 +324,13 @@
       window.Storage.deleteHabit(habitId);
     }
     if (window.closeModal) window.closeModal();
-    renderHabitsTab();
+    renderHabits();
   }
 
   // ---------------------------------------------------------------------------
   // БЛОК 6. ЭКСПОРТ ФУНКЦИЙ ЭКРАНА В GLOBAL WINDOW (Module Exports)
   // ---------------------------------------------------------------------------
-  window.renderHabits = renderHabitsTab;
-  window.renderHabitsTab = renderHabitsTab;
+  window.renderHabits = renderHabits;
   window.selectHabitDate = setSelectedDate;
   window.toggleHabitStatus = toggleHabitStatus;
   window.openAddHabitModal = openAddHabitModal;
