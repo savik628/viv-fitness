@@ -6,27 +6,27 @@
 // =============================================================================
 
 // БЛОК 1. Идентификатор версии кэша и реестр критических ресурсов
-const CACHE_NAME = 'viv-core-v38';
+const CACHE_NAME = 'viv-core-v39';
 
 const CORE_ASSETS = [
-  '/',
-  '/index.html',
-  '/style.css',
-  '/css/theme.css',
-  '/manifest.json',
-  '/icon.svg',
-  '/js/app.js',
-  '/js/core/storage.js',
-  '/js/core/theme.js',
-  '/js/core/audio.js',
-  '/js/components/modal.js',
-  '/js/components/timer.js',
-  '/js/components/chart.js',
-  '/js/components/plate-calc.js',
-  '/js/screens/habits.js',
-  '/js/screens/workout.js',
-  '/js/screens/stats.js',
-  '/js/screens/profile.js'
+  './',
+  './index.html',
+  './style.css',
+  './css/theme.css',
+  './manifest.json',
+  './icon.svg',
+  './js/app.js',
+  './js/core/storage.js',
+  './js/core/theme.js',
+  './js/core/audio.js',
+  './js/components/modal.js',
+  './js/components/timer.js',
+  './js/components/chart.js',
+  './js/components/plate-calc.js',
+  './js/screens/habits.js',
+  './js/screens/workout.js',
+  './js/screens/stats.js',
+  './js/screens/profile.js'
 ];
 
 // БЛОК 2. Событие установки (Pre-caching критических файлов)
@@ -79,7 +79,7 @@ self.addEventListener('fetch', (event) => {
           return caches.match(event.request).then((cached) => {
             if (cached) return cached;
             if (event.request.mode === 'navigate') {
-              return caches.match('/index.html');
+              return caches.match('./index.html');
             }
           });
         })
