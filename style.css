@@ -132,6 +132,9 @@ body {
   flex: 1;
   padding: 18px 16px calc(92px + env(safe-area-inset-bottom, 0px)) 16px;
   overflow-y: auto;
+  overflow-x: hidden;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* Bottom Navigation Bar */
@@ -2189,6 +2192,10 @@ canvas {
 
 .report-tab-wrapper {
   padding-bottom: 24px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .apple-report-action-bar {
@@ -2197,6 +2204,9 @@ canvas {
   align-items: center;
   margin-bottom: 14px;
   gap: 8px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .apple-report-title-box {
@@ -2230,14 +2240,18 @@ canvas {
 .apple-fitness-report {
   background: #000000;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 24px;
-  padding: 24px 18px;
+  border-radius: 22px;
+  padding: 20px 14px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
   gap: 16px;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
   color: #ffffff;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 /* Центрированный брендинг VIV */
@@ -2248,6 +2262,8 @@ canvas {
   align-items: center;
   padding-bottom: 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .apple-report-logo {
@@ -2277,6 +2293,8 @@ canvas {
 .apple-athlete-pill {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
   gap: 6px;
   margin-top: 10px;
   background: rgba(255, 255, 255, 0.06);
@@ -2285,6 +2303,8 @@ canvas {
   border-radius: 20px;
   font-size: 12px;
   color: rgba(255, 255, 255, 0.85);
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .apple-dot {
@@ -2301,18 +2321,21 @@ canvas {
 .apple-hero-card {
   background: linear-gradient(145deg, #18181b 0%, #111113 100%);
   border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 20px;
-  padding: 18px 16px;
+  border-radius: 18px;
+  padding: 16px 14px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .apple-ring-container {
   position: relative;
-  width: 96px;
-  height: 96px;
+  width: 86px;
+  height: 86px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -2372,7 +2395,7 @@ canvas {
 }
 
 .apple-hero-num {
-  font-size: 32px;
+  font-size: 30px;
   font-weight: 900;
   color: #ffffff;
   letter-spacing: -1px;
@@ -2386,7 +2409,7 @@ canvas {
 }
 
 .apple-hero-label {
-  font-size: 14.5px;
+  font-size: 14px;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.9);
   margin-top: 3px;
@@ -2396,20 +2419,17 @@ canvas {
   font-size: 11px;
   color: rgba(255, 255, 255, 0.5);
   margin-top: 2px;
+  line-height: 1.35;
 }
 
-/* Сводные виджеты */
+/* Сводные виджеты: 2 колонки + широкая карточка дисциплины */
 .apple-widgets-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 8px;
-}
-
-@media (max-width: 480px) {
-  .apple-widgets-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-  }
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .apple-widget-card {
@@ -2419,6 +2439,12 @@ canvas {
   padding: 12px 10px;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.apple-widget-card-wide {
+  grid-column: span 2;
 }
 
 .apple-widget-header {
@@ -2450,7 +2476,7 @@ canvas {
 }
 
 .apple-widget-foot {
-  font-size: 10px;
+  font-size: 10.5px;
   color: rgba(255, 255, 255, 0.45);
   margin-top: 4px;
   white-space: nowrap;
@@ -2463,6 +2489,8 @@ canvas {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .apple-section-header {
@@ -2489,27 +2517,28 @@ canvas {
   border-radius: 10px;
 }
 
-/* Сетка рекордов (PR) */
-.apple-records-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
+/* Список рекордов (PR): полноразмерный список наград */
+.apple-records-list {
+  display: flex;
+  flex-direction: column;
   gap: 8px;
-}
-
-@media (max-width: 440px) {
-  .apple-records-grid {
-    grid-template-columns: 1fr;
-  }
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .apple-record-card {
   background: #18181b;
   border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 14px;
-  padding: 10px 12px;
+  padding: 11px 12px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 .apple-record-icon-badge {

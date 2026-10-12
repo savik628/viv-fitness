@@ -51,6 +51,16 @@
   // ---------------------------------------------------------------------------
   // БЛОК 1.1. АТЛЕТИЧЕСКИЙ ОТЧЁТ (VIV Athlete Performance Report - Apple / Nike Style)
   // ---------------------------------------------------------------------------
+  function plural(n, forms) {
+    const num = Math.abs(Math.round(n || 0));
+    const rem100 = num % 100;
+    const rem10 = num % 10;
+    if (rem100 >= 11 && rem100 <= 19) return forms[2];
+    if (rem10 === 1) return forms[0];
+    if (rem10 >= 2 && rem10 <= 4) return forms[1];
+    return forms[2];
+  }
+
   function renderStatsReportTab() {
     const container = document.getElementById('stats-tab-content');
     if (!container) return;
@@ -150,64 +160,64 @@
                 <circle class="apple-ring-bar" cx="70" cy="70" r="54" stroke="url(#appleRingGrad)" />
               </svg>
               <div class="apple-ring-inner-icon">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 5v14M18 5v14M2 9v6M22 9v6M6 12h12"/></svg>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 5v14M18 5v14M2 9v6M22 9v6M6 12h12"/></svg>
               </div>
             </div>
             <div class="apple-hero-info">
-              <div class="apple-hero-kicker">HERO METRIC • ГЛАВНЫЙ ПОКАЗАТЕЛЬ</div>
+              <div class="apple-hero-kicker">ГЛАВНЫЙ ПОКАЗАТЕЛЬ</div>
               <div class="apple-hero-num-wrap">
                 <span class="apple-hero-num">${Math.round(totalVolume).toLocaleString('ru-RU')}</span>
                 <span class="apple-hero-unit">КГ</span>
               </div>
               <div class="apple-hero-label">Суммарный тоннаж</div>
-              <div class="apple-hero-sub">Поднято за ${history.length} тренировок и ${totalSets} подходов</div>
+              <div class="apple-hero-sub">Поднято за ${history.length} ${plural(history.length, ['тренировку', 'тренировки', 'тренировок'])} и ${totalSets} ${plural(totalSets, ['подход', 'подхода', 'подходов'])}</div>
             </div>
           </div>
 
-          <!-- СВОДНЫЕ ВИДЖЕТ-КАРТОЧКИ В СТИЛЕ APPLE FITNESS -->
+          <!-- СВОДНЫЕ ВИДЖЕТ-КАРТОЧКИ В СТИЛЕ APPLE FITNESS (2 КОЛОНКИ + СТРОКА ДИСЦИПЛИНЫ) -->
           <div class="apple-widgets-grid">
             <div class="apple-widget-card">
               <div class="apple-widget-header">
                 <span class="apple-widget-title">Тренировки</span>
                 <span class="apple-widget-icon" style="color:#22c55e;">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
                 </span>
               </div>
-              <div class="apple-widget-val">${history.length} <span class="apple-widget-unit">сессий</span></div>
-              <div class="apple-widget-foot">Время: ${totalHours} ч под нагрузкой</div>
+              <div class="apple-widget-val">${history.length} <span class="apple-widget-unit">${plural(history.length, ['сессия', 'сессии', 'сессий'])}</span></div>
+              <div class="apple-widget-foot">${totalHours} ч под нагрузкой</div>
             </div>
 
             <div class="apple-widget-card">
               <div class="apple-widget-header">
                 <span class="apple-widget-title">Подходы</span>
                 <span class="apple-widget-icon" style="color:#00d2ff;">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
                 </span>
               </div>
-              <div class="apple-widget-val">${totalSets} <span class="apple-widget-unit">сетов</span></div>
-              <div class="apple-widget-foot">В среднем ${history.length ? Math.round(totalSets / history.length) : 0} на тренировку</div>
+              <div class="apple-widget-val">${totalSets} <span class="apple-widget-unit">${plural(totalSets, ['сет', 'сета', 'сетов'])}</span></div>
+              <div class="apple-widget-foot">В среднем ${history.length ? Math.round(totalSets / history.length) : 0} на сессию</div>
             </div>
 
-            <div class="apple-widget-card">
+            <div class="apple-widget-card apple-widget-card-wide">
               <div class="apple-widget-header">
-                <span class="apple-widget-title">Дисциплина</span>
+                <span class="apple-widget-title">Дисциплина и привычки</span>
                 <span class="apple-widget-icon" style="color:#f59e0b;">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
                 </span>
               </div>
-              <div class="apple-widget-val">${maxStreak} <span class="apple-widget-unit">дней</span></div>
-              <div class="apple-widget-foot">Серия привычек (${habits.length} активных)</div>
+              <div class="apple-widget-val">${maxStreak} <span class="apple-widget-unit">${plural(maxStreak, ['день', 'дня', 'дней'])} подряд</span></div>
+              <div class="apple-widget-foot">${habits.length} ${plural(habits.length, ['активная привычка', 'активные привычки', 'активных привычек'])} в трекере</div>
             </div>
           </div>
 
-          <!-- ЛИЧНЫЕ РЕКОРДЫ В СТИЛЕ NIKE / APPLE AWARDS -->
+          <!-- ЛИЧНЫЕ РЕКОРДЫ В СТИЛЕ NIKE / APPLE AWARDS (ПОЛНОРАЗМЕРНЫЙ СПИСОК) -->
           <div class="apple-section">
             <div class="apple-section-header">
               <div class="apple-section-title">Личные рекорды в упражнениях</div>
               <span class="apple-section-badge">${bestsList.length} PR</span>
             </div>
             ${bestsList.length ? `
-              <div class="apple-records-grid">
+              <div class="apple-records-list">
                 ${bestsList.map(b => `
                   <div class="apple-record-card">
                     <div class="apple-record-icon-badge">
@@ -215,7 +225,7 @@
                     </div>
                     <div class="apple-record-main">
                       <div class="apple-record-name">${esc(b.name)}</div>
-                      <div class="apple-record-sub">${b.reps} повт • ${b.date || '—'}</div>
+                      <div class="apple-record-sub">${b.reps} ${plural(b.reps, ['повторение', 'повторения', 'повторений'])} • ${b.date || '—'}</div>
                     </div>
                     <div class="apple-record-badge">
                       <span class="apple-record-val">${b.weight}</span>
@@ -244,7 +254,7 @@
                     <div class="apple-history-row">
                       <div class="apple-history-info">
                         <div class="apple-history-name">${esc(h.routineName || 'Тренировка')}</div>
-                        <div class="apple-history-date">${h.date} • ${h.sets ? h.sets.length : 0} подходов</div>
+                        <div class="apple-history-date">${h.date} • ${h.sets ? h.sets.length : 0} ${plural(h.sets ? h.sets.length : 0, ['подход', 'подхода', 'подходов'])}</div>
                       </div>
                       <div class="apple-history-tonnage-box">
                         <div class="apple-history-tonnage-val">${Math.round(wVol).toLocaleString('ru-RU')} кг</div>
