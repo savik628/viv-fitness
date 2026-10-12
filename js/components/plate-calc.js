@@ -47,7 +47,7 @@
 
           <!-- Быстрые дельты без стрелок -->
           <div class="wheel-picker-deltas-row" style="margin-bottom:10px;">
-            ${[-10, -5, -2.5, 2.5, 5, 10].map(d => `
+            ${[-10, -5, -1, 1, 5, 10].map(d => `
               <button type="button" class="wheel-picker-delta-chip" onclick="changePlateTargetWeight(${d})">
                 ${d > 0 ? `+${d}` : d}
               </button>
@@ -254,9 +254,9 @@
         value: plateCalcTargetWeight,
         min: 20,
         max: 400,
-        step: 2.5,
-        unit: 'кг',
-        deltas: [-10, -5, -2.5, 2.5, 5, 10],
+        step: 1,
+        unit: '',
+        deltas: [-10, -5, -1, 1, 5, 10],
         onConfirm: (newW) => {
           plateCalcTargetWeight = Math.max(plateCalcBarWeight, newW);
           updatePlateCalculatorUI();

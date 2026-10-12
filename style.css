@@ -2380,7 +2380,7 @@ canvas {
   stroke-linecap: round;
   stroke-dasharray: 402;
   stroke-dashoffset: 100;
-  filter: drop-shadow(0 0 10px rgba(0, 245, 155, 0.4));
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.25));
 }
 
 .apple-ring-center-info {
@@ -2404,7 +2404,7 @@ canvas {
 .apple-ring-center-unit {
   font-size: 14px;
   font-weight: 800;
-  color: var(--accent-color, #DFFF00);
+  color: #ffffff;
   margin-top: 4px;
   letter-spacing: 1.5px;
 }
@@ -2436,9 +2436,9 @@ canvas {
 .tonnage-dist-badge {
   font-size: 10.5px;
   font-weight: 700;
-  color: #00F59B;
-  background: rgba(0, 245, 155, 0.1);
-  border: 1px solid rgba(0, 245, 155, 0.25);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   padding: 2px 8px;
   border-radius: 6px;
   letter-spacing: 0.4px;
@@ -2536,7 +2536,7 @@ canvas {
 .tonnage-dist-vol {
   font-size: 14px;
   font-weight: 800;
-  color: var(--accent-color, #DFFF00);
+  color: #ffffff;
 }
 
 .tonnage-dist-track {
@@ -2550,7 +2550,7 @@ canvas {
 
 .tonnage-dist-bar {
   height: 100%;
-  background: linear-gradient(90deg, #00F59B 0%, #DFFF00 100%);
+  background: linear-gradient(90deg, #ffffff 0%, #cbd5e1 100%);
   border-radius: 3px;
   transition: width 0.3s ease;
 }

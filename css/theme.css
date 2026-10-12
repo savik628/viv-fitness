@@ -408,3 +408,9 @@
   border-color: #cbd5e1 !important;
   color: #334155 !important;
 }
+
+[data-theme="light"] .viv-report-download-btn {
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+

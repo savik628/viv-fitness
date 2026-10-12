@@ -124,17 +124,21 @@
               ${logoHtml}
             </div>
             <div class="apple-report-date">${todayDateStr}</div>
+            <button type="button" class="btn btn-outline viv-report-download-btn" 
+                    style="margin-top:8px; font-size:11px; padding:4px 14px; border-radius:16px; border:1px solid rgba(255,255,255,0.2); background:transparent; color:inherit; font-weight:600; cursor:pointer;" 
+                    onclick="exportVivReportPng()">
+              Скачать PNG
+            </button>
           </div>
 
-          <!-- ГЛАВНЫЙ АКЦЕНТ: ДВУХЦВЕТНОЕ НЕОНОВОЕ КОЛЬЦО ТОННАЖА ПО ЦЕНТРУ (ДИЗАЙН 1) -->
+          <!-- ГЛАВНЫЙ АКЦЕНТ: МОНОХРОМНОЕ КОЛЬЦО ТОННАЖА ПО ЦЕНТРУ -->
           <div class="apple-hero-ring-card">
             <div class="apple-ring-container-centered">
               <svg class="apple-ring-svg-lg" viewBox="0 0 160 160">
                 <defs>
                   <linearGradient id="appleRingGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#00F59B" />
-                    <stop offset="50%" stop-color="#10b981" />
-                    <stop offset="100%" stop-color="#DFFF00" />
+                    <stop offset="0%" stop-color="#ffffff" />
+                    <stop offset="100%" stop-color="#94a3b8" />
                   </linearGradient>
                 </defs>
                 <circle class="apple-ring-bg-lg" cx="80" cy="80" r="62" />
@@ -359,14 +363,19 @@
     ctx.strokeStyle = cRingBg;
     ctx.stroke();
 
-    // Неоновая дуга активности
+    // Монохромная дуга активности (черно-белая)
     const ringGrad = ctx.createLinearGradient(ringCenterX - ringRadius, ringCenterY - ringRadius, ringCenterX + ringRadius, ringCenterY + ringRadius);
-    ringGrad.addColorStop(0, '#00F59B');
-    ringGrad.addColorStop(1, '#DFFF00');
+    if (isLight) {
+      ringGrad.addColorStop(0, '#0f172a');
+      ringGrad.addColorStop(1, '#334155');
+    } else {
+      ringGrad.addColorStop(0, '#ffffff');
+      ringGrad.addColorStop(1, '#94a3b8');
+    }
 
     ctx.save();
-    ctx.shadowColor = 'rgba(0, 245, 155, 0.45)';
-    ctx.shadowBlur = 12;
+    ctx.shadowColor = isLight ? 'rgba(15, 23, 42, 0.25)' : 'rgba(255, 255, 255, 0.25)';
+    ctx.shadowBlur = 10;
     ctx.beginPath();
     ctx.arc(ringCenterX, ringCenterY, ringRadius, -Math.PI / 2, Math.PI * 1.15);
     ctx.strokeStyle = ringGrad;
@@ -381,7 +390,7 @@
     ctx.fillText(`${displayVol}`, ringCenterX, ringCenterY + 4);
 
     ctx.font = '800 14px -apple-system, sans-serif';
-    ctx.fillStyle = isLight ? '#059669' : '#DFFF00';
+    ctx.fillStyle = isLight ? '#0f172a' : '#ffffff';
     ctx.letterSpacing = '1.5px';
     ctx.fillText(volUnit, ringCenterX, ringCenterY + 25);
     ctx.letterSpacing = '0px';
@@ -440,8 +449,13 @@
 
         const barW = Math.max(6, Math.round((trackW * item.pct) / 100));
         const barGrad = ctx.createLinearGradient(trackX, trackY, trackX + barW, trackY);
-        barGrad.addColorStop(0, '#00F59B');
-        barGrad.addColorStop(1, '#DFFF00');
+        if (isLight) {
+          barGrad.addColorStop(0, '#0f172a');
+          barGrad.addColorStop(1, '#334155');
+        } else {
+          barGrad.addColorStop(0, '#ffffff');
+          barGrad.addColorStop(1, '#cbd5e1');
+        }
         roundRect(trackX, trackY, barW, 6, 3, barGrad, false, null);
 
         curExY += exCardH + exGap;
@@ -457,36 +471,41 @@
     ctx.lineTo(cardX + cardW - cardPad, botDivY);
     ctx.stroke();
 
-    // 7. Сохранение и шеринг
-    canvas.toBlob(async (blob) => {
-      if (!blob) return;
-      const fileName = `viv-tonnage-report-${new Date().toISOString().substring(0, 10)}.png`;
-      const file = new File([blob], fileName, { type: 'image/png' });
-
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({
-            title: 'VIV Athletic Report',
-            text: 'Мой силовой отчёт VIV',
-            files: [file]
-          });
-          if (window.triggerHaptic) window.triggerHaptic('success');
-          return;
-        } catch (err) {
-          if (err.name === 'AbortError') return;
-        }
-      }
-
-      const url = URL.createObjectURL(blob);
+    // 7. Прямое надёжное скачивание PNG в браузер
+    const fileName = `viv-tonnage-report-${new Date().toISOString().substring(0, 10)}.png`;
+    const triggerFileDownload = (url) => {
       const a = document.createElement('a');
       a.href = url;
       a.download = fileName;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
       if (window.triggerHaptic) window.triggerHaptic('success');
-    }, 'image/png');
+    };
+
+    if (canvas.toBlob) {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          triggerFileDownload(url);
+          setTimeout(() => URL.revokeObjectURL(url), 2000);
+        } else {
+          try {
+            const dataUrl = canvas.toDataURL('image/png');
+            triggerFileDownload(dataUrl);
+          } catch (e) {
+            console.error('Ошибка экспорта canvas:', e);
+          }
+        }
+      }, 'image/png');
+    } else {
+      try {
+        const dataUrl = canvas.toDataURL('image/png');
+        triggerFileDownload(dataUrl);
+      } catch (e) {
+        console.error('Ошибка экспорта canvas:', e);
+      }
+    }
   }
 
   window.handleVivLogoClick = handleVivLogoClick;
