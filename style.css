@@ -2268,27 +2268,27 @@ canvas {
 
 .apple-report-logo,
 .apple-report-logo-interactive {
-  font-size: 36px;
+  font-size: 38px;
   font-weight: 900;
-  letter-spacing: 5px;
-  color: #ffffff;
+  letter-spacing: 6px;
+  color: #ffffff !important;
   line-height: 1;
-  text-shadow: 0 2px 14px rgba(255, 255, 255, 0.2);
+  text-shadow: 0 2px 18px rgba(255, 255, 255, 0.35);
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
-  transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1), text-shadow 0.15s ease, color 0.15s ease;
+  transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1), text-shadow 0.15s ease;
 }
 
 .apple-report-logo-interactive:hover {
-  color: var(--accent-color, #ccff00);
-  text-shadow: 0 0 20px rgba(204, 255, 0, 0.6);
+  color: #ffffff !important;
+  text-shadow: 0 0 24px rgba(255, 255, 255, 0.7);
 }
 
 .apple-report-logo-interactive:active {
-  transform: scale(0.94);
-  color: var(--accent-color, #ccff00);
-  text-shadow: 0 0 26px rgba(204, 255, 0, 0.8);
+  transform: scale(0.95);
+  color: #ffffff !important;
+  text-shadow: 0 0 30px rgba(255, 255, 255, 0.9);
 }
 
 .apple-report-hint {
@@ -2324,9 +2324,206 @@ canvas {
 }
 
 .apple-report-date {
-  font-size: 11px;
+  font-size: 12px;
   color: rgba(255, 255, 255, 0.5);
+  margin-top: 5px;
+}
+
+/* Hero Ring Card по центру (Дизайн 1) */
+.apple-hero-ring-card {
+  background: var(--card-bg, #14181c);
+  border: 1px solid var(--border-color, #1c2229);
+  border-radius: 22px;
+  padding: 24px 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.apple-ring-container-centered {
+  position: relative;
+  width: 168px;
+  height: 168px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.apple-ring-svg-lg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.apple-ring-bg-lg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.07);
+  stroke-width: 13;
+}
+
+.apple-ring-bar-lg {
+  fill: none;
+  stroke-width: 13;
+  stroke-linecap: round;
+  stroke-dasharray: 402;
+  stroke-dashoffset: 100;
+  filter: drop-shadow(0 0 10px rgba(0, 245, 155, 0.4));
+}
+
+.apple-ring-center-info {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  pointer-events: none;
+}
+
+.apple-ring-center-num {
+  font-size: 34px;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.apple-ring-center-unit {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--accent-color, #DFFF00);
+  margin-top: 3px;
+  letter-spacing: 1px;
+}
+
+.apple-ring-center-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.45);
   margin-top: 4px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+/* Секция распределения тоннажа */
+.tonnage-dist-section {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tonnage-dist-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 4px;
+}
+
+.tonnage-dist-section-title {
+  font-size: 13.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #ffffff;
+}
+
+.tonnage-dist-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #00F59B;
+  background: rgba(0, 245, 155, 0.1);
+  border: 1px solid rgba(0, 245, 155, 0.25);
+  padding: 2px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.4px;
+}
+
+.tonnage-dist-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tonnage-dist-card {
+  background: var(--card-bg-elevated, #14181c);
+  border: 1px solid var(--border-color, #1c2229);
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.tonnage-dist-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.tonnage-dist-name {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #ffffff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tonnage-dist-stats {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--accent-color, #DFFF00);
+  white-space: nowrap;
+}
+
+.tonnage-dist-pct {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.tonnage-dist-track {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  margin-top: 8px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.tonnage-dist-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #00F59B 0%, #DFFF00 100%);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.app-logo-image,
+.app-logo-badge {
+  display: inline-block;
+  vertical-align: middle;
+  height: 38px;
+  width: auto;
+  border-radius: 8px;
+}
+
+.app-logo-brand {
+  color: #ffffff !important;
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+
+.apple-report-logo-interactive .app-logo-badge {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
 }
 
 .apple-athlete-pill {

@@ -21,6 +21,53 @@
   }
 
   // ---------------------------------------------------------------------------
+  // БЛОК 1.1. Централизованный модуль управления логотипом VIV (App Logo)
+  // ---------------------------------------------------------------------------
+  const savedLogoMode = (typeof localStorage !== 'undefined' && localStorage.getItem('viv_logo_mode')) || 'text';
+
+  window.AppLogo = {
+    mode: savedLogoMode === 'icon' ? 'icon' : 'text', // 'text' (чистый белый текст "VIV") | 'icon' (иконка приложения icon.svg)
+    iconSrc: 'icon.svg',
+    render(options = {}) {
+      const cls = options.className || '';
+      const style = options.style || '';
+      if (this.mode === 'icon' && !options.textOnly) {
+        const height = options.small ? '14px' : (options.height || 'auto');
+        return `<img src="${this.iconSrc}" alt="VIV" class="app-logo-badge ${cls}" style="display:inline-block; vertical-align:middle; height:${height}; ${style}">`;
+      }
+      return `<span class="app-logo-brand ${cls}" style="${style}">VIV</span>`;
+    },
+    getText() {
+      return 'VIV';
+    },
+    setMode(mode) {
+      this.mode = mode === 'icon' ? 'icon' : 'text';
+      try {
+        localStorage.setItem('viv_logo_mode', this.mode);
+      } catch (e) {}
+      this.syncAll();
+    },
+    toggleMode() {
+      this.setMode(this.mode === 'icon' ? 'text' : 'icon');
+    },
+    syncAll() {
+      document.querySelectorAll('.viv-logo-target').forEach(el => {
+        const isSmall = el.dataset.logoSmall === 'true';
+        el.innerHTML = this.render({ small: isSmall });
+      });
+      if (window.renderStats && window.state?.currentTab === 'stats') {
+        window.renderStats();
+      }
+      if (window.renderProfile && window.state?.currentTab === 'profile') {
+        window.renderProfile();
+      }
+      if (window.renderShop && window.state?.currentTab === 'shop') {
+        window.renderShop();
+      }
+    }
+  };
+
+  // ---------------------------------------------------------------------------
   // БЛОК 2. Глобальное состояние приложения (Application State Store)
   // ---------------------------------------------------------------------------
   const todayLocal = window.getLocalDateStr ? window.getLocalDateStr() : new Date().toISOString().substring(0, 10);
@@ -135,7 +182,10 @@
       });
     }
 
-    // Первичный рендер активного экрана
+    // Синхронизация брендинга VIV и первичный рендер активного экрана
+    if (window.AppLogo && window.AppLogo.syncAll) {
+      window.AppLogo.syncAll();
+    }
     render();
   }
 

@@ -98,6 +98,31 @@
         </div>
       </div>
 
+      <!-- 1.1. ОТОБРАЖЕНИЕ БРЕНДА VIV (Текст / Иконка приложения) -->
+      <div class="card">
+        <div style="font-weight:bold; font-size:14px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:12px;">
+          Логотип VIV в приложении
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <button 
+            type="button"
+            class="btn-theme-select ${(!window.AppLogo || window.AppLogo.mode !== 'icon') ? 'theme-active' : ''}" 
+            onclick="window.AppLogo && window.AppLogo.setMode('text')"
+          >
+            <span style="font-weight:900; font-size:15px; letter-spacing:1px; color:#ffffff;">VIV</span>
+            <span style="font-size:11px; color:var(--text-secondary); margin-top:2px;">Текст</span>
+          </button>
+          <button 
+            type="button"
+            class="btn-theme-select ${window.AppLogo?.mode === 'icon' ? 'theme-active' : ''}" 
+            onclick="window.AppLogo && window.AppLogo.setMode('icon')"
+          >
+            <img src="icon.svg" style="width:22px; height:22px; border-radius:4px; margin-bottom:2px; object-fit:contain;" alt="Icon">
+            <span style="font-size:11px; color:var(--text-secondary); margin-top:2px;">Иконка</span>
+          </button>
+        </div>
+      </div>
+
       <!-- 2. ФОРМА ПАРАМЕТРОВ ПРОФИЛЯ -->
       <div class="card">
         <div class="form-group">
@@ -648,7 +673,9 @@
     mainContent.innerHTML = `
       <div class="item-list">
         <div class="card" style="text-align:center; padding:22px 16px;">
-          <div style="font-size:24px; font-weight:900; letter-spacing:1.5px; margin-bottom:4px;">VIV</div>
+          <div style="font-size:24px; font-weight:900; letter-spacing:1.5px; margin-bottom:4px;">
+            <span class="viv-logo-target">${window.AppLogo ? window.AppLogo.render() : 'VIV'}</span>
+          </div>
           <div style="font-size:13px; color:var(--text-secondary);">Официальные ресурсы и сообщества</div>
         </div>
         <a href="https://vivclub.ru" target="_blank" rel="noopener noreferrer" onclick="openExternal('https://vivclub.ru'); return false;" class="social-btn">

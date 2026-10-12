@@ -72,194 +72,106 @@
     const initialW = weightLogs.length ? weightLogs[0].weight : (prof.weight || null);
     const weightDiff = (latestW != null && initialW != null) ? Math.round((latestW - initialW) * 10) / 10 : 0;
 
-    let totalVolume = 0;
-    let totalSets = 0;
-    let totalDurationSec = 0;
-    history.forEach(h => {
-      totalDurationSec += (h.duration || 0);
-      h.sets?.forEach(s => {
-        totalSets++;
-        totalVolume += ((parseFloat(s.weight) || 0) * (parseInt(s.reps, 10) || 0));
-      });
-    });
+    // Расчет чистого силового тоннажа (исключая упражнения на время и дистанцию)
+    const volumeByExercise = {};
+    let totalPureVolume = 0;
+    let totalPureSets = 0;
 
-    const totalHours = Math.round((totalDurationSec / 3600) * 10) / 10;
-
-    // Личные рекорды (PR)
-    const bests = {};
     history.forEach(h => {
       h.sets?.forEach(s => {
         const w = parseFloat(s.weight) || 0;
-        if (w > 0 && s.exerciseName) {
-          if (!bests[s.exerciseName] || w > bests[s.exerciseName].weight) {
-            bests[s.exerciseName] = { weight: w, reps: s.reps, date: h.date };
-          }
+        const r = parseInt(s.reps, 10) || 0;
+        // Учитывается исключительно силовой вес (кг); время (сек/мин) и дистанция исключены
+        if (w > 0 && r > 0 && s.exerciseName && s.exerciseType !== 'distance' && s.exerciseType !== 'duration') {
+          const vol = w * r;
+          volumeByExercise[s.exerciseName] = (volumeByExercise[s.exerciseName] || 0) + vol;
+          totalPureVolume += vol;
+          totalPureSets++;
         }
       });
     });
 
-    const bestsList = Object.keys(bests)
-      .map(k => ({ name: k, ...bests[k] }))
-      .sort((a, b) => b.weight - a.weight)
-      .slice(0, 8);
+    const isTons = totalPureVolume >= 1000;
+    const displayVol = isTons ? (Math.round((totalPureVolume / 1000) * 10) / 10) : Math.round(totalPureVolume);
+    const volUnit = isTons ? 'ТОНН' : 'КГ';
 
-    // Привычки и дисциплина
-    const habits = window.Storage ? window.Storage.getHabits() : [];
-    let maxStreak = 0;
-    habits.forEach(h => {
-      const st = window.Storage ? window.Storage.getHabitStats(h.id) : { currentStreak: 0 };
-      if (st.currentStreak > maxStreak) maxStreak = st.currentStreak;
-    });
+    // Список упражнений строго по убыванию чистого тоннажа
+    const sortedExercises = Object.keys(volumeByExercise)
+      .map(name => {
+        const vol = volumeByExercise[name];
+        const pct = totalPureVolume > 0 ? Math.round((vol / totalPureVolume) * 100) : 0;
+        const volStr = vol >= 1000 
+          ? (Math.round((vol / 1000) * 10) / 10) + ' т' 
+          : Math.round(vol) + ' кг';
+        return { name, volume: vol, volStr, pct };
+      })
+      .sort((a, b) => b.volume - a.volume);
 
     const todayDateStr = new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+    const logoHtml = window.AppLogo ? window.AppLogo.render({ className: 'apple-report-logo-text' }) : 'VIV';
 
     container.innerHTML = `
       <div class="report-tab-wrapper">
-        <!-- Документ отчёта: лаконичный, стиль Apple Fitness / Nike, логотип VIV по центру -->
         <div id="viv-athlete-pdf-document" class="printable-athlete-doc apple-fitness-report">
-          <!-- Шапка ПО ЦЕНТРУ с логотипом VIV (двойной клик для сохранения PNG) -->
+          <!-- Шапка ПО ЦЕНТРУ с чистым белым логотипом VIV (двойной клик сохраняет PNG) -->
           <div class="apple-report-branding">
-            <div class="apple-report-logo-interactive" 
+            <div class="apple-report-logo-interactive viv-logo-target" 
                  id="viv-report-logo-btn" 
                  role="button" 
                  tabindex="0"
                  title="Нажмите дважды для сохранения в PNG"
                  ondblclick="exportVivReportPng()"
-                 onclick="handleVivLogoClick(event)">VIV</div>
+                 onclick="handleVivLogoClick(event)">
+              ${logoHtml}
+            </div>
             <div class="apple-report-hint">Дважды нажмите на VIV для сохранения PNG</div>
             <div class="apple-report-date">${todayDateStr}</div>
-            <div class="apple-athlete-pill">
-              <span class="apple-athlete-name">${esc(prof.name || 'Атлет')}</span>
-              <span class="apple-dot">•</span>
-              <span class="apple-athlete-level">${esc(prof.level || 'Начинающий')}</span>
-              ${latestW ? `
-                <span class="apple-dot">•</span>
-                <span class="apple-athlete-weight">${latestW} кг ${weightDiff !== 0 ? `(${weightDiff > 0 ? `+${weightDiff}` : weightDiff})` : ''}</span>
-              ` : ''}
-            </div>
           </div>
 
-          <!-- ГЛАВНЫЙ АКЦЕНТ: HERO CARD СУММАРНЫЙ ТОННАЖ С НЕОНОВЫМ КОЛЬЦОМ -->
-          <div class="apple-hero-card">
-            <div class="apple-ring-container">
-              <svg class="apple-ring-svg" viewBox="0 0 140 140">
+          <!-- ГЛАВНЫЙ АКЦЕНТ: ДВУХЦВЕТНОЕ НЕОНОВОЕ КОЛЬЦО ТОННАЖА ПО ЦЕНТРУ (ДИЗАЙН 1) -->
+          <div class="apple-hero-ring-card">
+            <div class="apple-ring-container-centered">
+              <svg class="apple-ring-svg-lg" viewBox="0 0 160 160">
                 <defs>
-                  <linearGradient id="appleRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#22c55e" />
-                    <stop offset="60%" stop-color="#10b981" />
-                    <stop offset="100%" stop-color="#a3e635" />
+                  <linearGradient id="appleRingGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#00F59B" />
+                    <stop offset="50%" stop-color="#10b981" />
+                    <stop offset="100%" stop-color="#DFFF00" />
                   </linearGradient>
                 </defs>
-                <circle class="apple-ring-bg" cx="70" cy="70" r="54" />
-                <circle class="apple-ring-bar" cx="70" cy="70" r="54" stroke="url(#appleRingGrad)" />
+                <circle class="apple-ring-bg-lg" cx="80" cy="80" r="62" />
+                <circle class="apple-ring-bar-lg" cx="80" cy="80" r="62" stroke="url(#appleRingGrad1)" />
               </svg>
-              <div class="apple-ring-inner-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 5v14M18 5v14M2 9v6M22 9v6M6 12h12"/></svg>
+              <div class="apple-ring-center-info">
+                <div class="apple-ring-center-num">${displayVol}</div>
+                <div class="apple-ring-center-unit">${volUnit}</div>
+                <div class="apple-ring-center-label">СУММАРНЫЙ ТОННАЖ</div>
               </div>
-            </div>
-            <div class="apple-hero-info">
-              <div class="apple-hero-kicker">ГЛАВНЫЙ ПОКАЗАТЕЛЬ</div>
-              <div class="apple-hero-num-wrap">
-                <span class="apple-hero-num">${Math.round(totalVolume).toLocaleString('ru-RU')}</span>
-                <span class="apple-hero-unit">КГ</span>
-              </div>
-              <div class="apple-hero-label">Суммарный тоннаж</div>
-              <div class="apple-hero-sub">Поднято за ${history.length} ${plural(history.length, ['тренировку', 'тренировки', 'тренировок'])} и ${totalSets} ${plural(totalSets, ['подход', 'подхода', 'подходов'])}</div>
             </div>
           </div>
 
-          <!-- СВОДНЫЕ ВИДЖЕТ-КАРТОЧКИ В СТИЛЕ APPLE FITNESS (2 КОЛОНКИ + СТРОКА ДИСЦИПЛИНЫ) -->
-          <div class="apple-widgets-grid">
-            <div class="apple-widget-card">
-              <div class="apple-widget-header">
-                <span class="apple-widget-title">Тренировки</span>
-                <span class="apple-widget-icon" style="color:#22c55e;">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                </span>
-              </div>
-              <div class="apple-widget-val">${history.length} <span class="apple-widget-unit">${plural(history.length, ['сессия', 'сессии', 'сессий'])}</span></div>
-              <div class="apple-widget-foot">${totalHours} ч под нагрузкой</div>
+          <!-- СПИСОК РАСПРЕДЕЛЕНИЯ СИЛОВОГО ТОННАЖА ПО УБЫВАНИЮ -->
+          <div class="tonnage-dist-section">
+            <div class="tonnage-dist-header-row">
+              <div class="tonnage-dist-section-title">Распределение тоннажа</div>
+              <span class="tonnage-dist-badge">Только силовой вес</span>
             </div>
-
-            <div class="apple-widget-card">
-              <div class="apple-widget-header">
-                <span class="apple-widget-title">Подходы</span>
-                <span class="apple-widget-icon" style="color:#00d2ff;">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                </span>
-              </div>
-              <div class="apple-widget-val">${totalSets} <span class="apple-widget-unit">${plural(totalSets, ['сет', 'сета', 'сетов'])}</span></div>
-              <div class="apple-widget-foot">В среднем ${history.length ? Math.round(totalSets / history.length) : 0} на сессию</div>
-            </div>
-
-            <div class="apple-widget-card apple-widget-card-wide">
-              <div class="apple-widget-header">
-                <span class="apple-widget-title">Дисциплина и привычки</span>
-                <span class="apple-widget-icon" style="color:#f59e0b;">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                </span>
-              </div>
-              <div class="apple-widget-val">${maxStreak} <span class="apple-widget-unit">${plural(maxStreak, ['день', 'дня', 'дней'])} подряд</span></div>
-              <div class="apple-widget-foot">${habits.length} ${plural(habits.length, ['активная привычка', 'активные привычки', 'активных привычек'])} в трекере</div>
-            </div>
-          </div>
-
-          <!-- ЛИЧНЫЕ РЕКОРДЫ В СТИЛЕ NIKE / APPLE AWARDS (ПОЛНОРАЗМЕРНЫЙ СПИСОК) -->
-          <div class="apple-section">
-            <div class="apple-section-header">
-              <div class="apple-section-title">Личные рекорды в упражнениях</div>
-              <span class="apple-section-badge">${bestsList.length} PR</span>
-            </div>
-            ${bestsList.length ? `
-              <div class="apple-records-list">
-                ${bestsList.map(b => `
-                  <div class="apple-record-card">
-                    <div class="apple-record-icon-badge">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path></svg>
+            ${sortedExercises.length ? `
+              <div class="tonnage-dist-list">
+                ${sortedExercises.map(item => `
+                  <div class="tonnage-dist-card">
+                    <div class="tonnage-dist-row">
+                      <span class="tonnage-dist-name">${esc(item.name)}</span>
+                      <span class="tonnage-dist-stats">${item.volStr} <span class="tonnage-dist-pct">(${item.pct}%)</span></span>
                     </div>
-                    <div class="apple-record-main">
-                      <div class="apple-record-name">${esc(b.name)}</div>
-                      <div class="apple-record-sub">${b.reps} ${plural(b.reps, ['повторение', 'повторения', 'повторений'])} • ${b.date || '—'}</div>
-                    </div>
-                    <div class="apple-record-badge">
-                      <span class="apple-record-val">${b.weight}</span>
-                      <span class="apple-record-unit">кг</span>
+                    <div class="tonnage-dist-track">
+                      <div class="tonnage-dist-bar" style="width:${Math.max(4, item.pct)}%;"></div>
                     </div>
                   </div>
                 `).join('')}
               </div>
             ` : `
-              <div class="apple-empty-box">Личные рекорды появятся по мере фиксации максимальных весов в сессиях.</div>
-            `}
-          </div>
-
-          <!-- ПОСЛЕДНИЕ ТРЕНИРОВКИ В СТИЛЕ КАРТОЧЕК APPLE WORKOUTS -->
-          <div class="apple-section">
-            <div class="apple-section-header">
-              <div class="apple-section-title">История тренировочных сессий</div>
-              <span class="apple-section-badge">Недавние</span>
-            </div>
-            ${history.length ? `
-              <div class="apple-history-list">
-                ${history.slice(0, 6).map(h => {
-                  let wVol = 0;
-                  h.sets?.forEach(s => { wVol += (parseFloat(s.weight) || 0) * (parseInt(s.reps, 10) || 0); });
-                  return `
-                    <div class="apple-history-row">
-                      <div class="apple-history-info">
-                        <div class="apple-history-name">${esc(h.routineName || 'Тренировка')}</div>
-                        <div class="apple-history-date">${h.date} • ${h.sets ? h.sets.length : 0} ${plural(h.sets ? h.sets.length : 0, ['подход', 'подхода', 'подходов'])}</div>
-                      </div>
-                      <div class="apple-history-tonnage-box">
-                        <div class="apple-history-tonnage-val">${Math.round(wVol).toLocaleString('ru-RU')} кг</div>
-                        <div class="apple-history-tonnage-label">тоннаж</div>
-                      </div>
-                    </div>
-                  `;
-                }).join('')}
-              </div>
-            ` : `
-              <div class="apple-empty-box">Нет завершенных тренировок.</div>
+              <div class="apple-empty-box">Нет завершенных силовых тренировок с весом.</div>
             `}
           </div>
 
@@ -282,58 +194,45 @@
     }
   }
 
-  function exportVivReportPng() {
+  async function exportVivReportPng() {
     if (window.triggerHaptic) window.triggerHaptic('medium');
 
     const history = window.Storage ? window.Storage.getHistory() : [];
-    const prof = window.Storage ? window.Storage.getProfile() : {};
-    const weightLogs = window.Storage ? window.Storage.getBodyweightHistory() : [];
-    const latestW = weightLogs.length ? weightLogs[weightLogs.length - 1].weight : (prof.weight || null);
+    
+    // Чистый силовой объем
+    const volumeByExercise = {};
+    let totalPureVolume = 0;
 
-    let totalWorkouts = history.length;
-    let totalSets = 0;
-    let totalVolume = 0;
-    let totalDurationSec = 0;
-    history.forEach(h => {
-      totalDurationSec += (h.durationSeconds || 0);
-      h.sets?.forEach(s => {
-        totalSets++;
-        totalVolume += ((parseFloat(s.weight) || 0) * (parseInt(s.reps, 10) || 0));
-      });
-    });
-
-    const totalHours = Math.round((totalDurationSec / 3600) * 10) / 10;
-    const isTons = totalVolume >= 1000;
-    const displayVol = isTons ? (Math.round((totalVolume / 1000) * 10) / 10) : Math.round(totalVolume);
-    const volUnit = isTons ? 'ТОНН' : 'КГ';
-    const avgSetsPerWorkout = totalWorkouts > 0 ? Math.round((totalSets / totalWorkouts) * 10) / 10 : 0;
-
-    const habits = window.Storage ? window.Storage.getHabits() : [];
-    let maxStreak = 0;
-    habits.forEach(h => {
-      const st = window.Storage ? window.Storage.getHabitStats(h.id) : { currentStreak: 0 };
-      if (st.currentStreak > maxStreak) maxStreak = st.currentStreak;
-    });
-
-    const bests = {};
     history.forEach(h => {
       h.sets?.forEach(s => {
         const w = parseFloat(s.weight) || 0;
-        if (w > 0 && s.exerciseName) {
-          if (!bests[s.exerciseName] || w > bests[s.exerciseName].weight) {
-            bests[s.exerciseName] = { weight: w, reps: s.reps, date: h.date };
-          }
+        const r = parseInt(s.reps, 10) || 0;
+        if (w > 0 && r > 0 && s.exerciseName && s.exerciseType !== 'distance' && s.exerciseType !== 'duration') {
+          const vol = w * r;
+          volumeByExercise[s.exerciseName] = (volumeByExercise[s.exerciseName] || 0) + vol;
+          totalPureVolume += vol;
         }
       });
     });
-    const bestsList = Object.keys(bests)
-      .map(k => ({ name: k, ...bests[k] }))
-      .sort((a, b) => b.weight - a.weight)
-      .slice(0, 4);
+
+    const isTons = totalPureVolume >= 1000;
+    const displayVol = isTons ? (Math.round((totalPureVolume / 1000) * 10) / 10) : Math.round(totalPureVolume);
+    const volUnit = isTons ? 'ТОНН' : 'КГ';
+
+    const sortedExercises = Object.keys(volumeByExercise)
+      .map(name => {
+        const vol = volumeByExercise[name];
+        const pct = totalPureVolume > 0 ? Math.round((vol / totalPureVolume) * 100) : 0;
+        const volStr = vol >= 1000 
+          ? (Math.round((vol / 1000) * 10) / 10) + ' т' 
+          : Math.round(vol) + ' кг';
+        return { name, volume: vol, volStr, pct };
+      })
+      .sort((a, b) => b.volume - a.volume);
 
     const canvas = document.createElement('canvas');
     const W = 1080;
-    const H = 1520;
+    const H = 1350; // Формат 4:5
     canvas.width = W;
     canvas.height = H;
     const ctx = canvas.getContext('2d');
@@ -355,176 +254,180 @@
       if (stroke) { ctx.strokeStyle = strokeColor; ctx.lineWidth = lineWidth; ctx.stroke(); }
     }
 
+    // 1. Фон глубокий матовый
     const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
-    bgGrad.addColorStop(0, '#090b0e');
+    bgGrad.addColorStop(0, '#0a0c0e');
     bgGrad.addColorStop(1, '#11151a');
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, W, H);
 
-    const glow = ctx.createRadialGradient(W / 2, 160, 20, W / 2, 220, 460);
-    glow.addColorStop(0, 'rgba(0, 245, 155, 0.12)');
+    // Радиальный неоновый свет позади кольца
+    const glow = ctx.createRadialGradient(W / 2, 420, 30, W / 2, 420, 380);
+    glow.addColorStop(0, 'rgba(0, 245, 155, 0.14)');
     glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
     ctx.fillStyle = glow;
-    ctx.fillRect(0, 0, W, 500);
+    ctx.fillRect(0, 100, W, 700);
 
-    roundRect(24, 24, W - 48, H - 48, 36, null, true, 'rgba(255, 255, 255, 0.08)', 2);
+    // Рамка карточки
+    roundRect(32, 32, W - 64, H - 64, 40, null, true, 'rgba(255, 255, 255, 0.08)', 2);
 
-    ctx.textAlign = 'center';
-    ctx.font = '900 68px -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.shadowColor = 'rgba(223, 255, 0, 0.4)';
-    ctx.shadowBlur = 24;
-    ctx.fillText('VIV', W / 2, 130);
-    ctx.shadowBlur = 0;
+    // 2. Шапка: VIV (текст или логотип в зависимости от window.AppLogo.mode)
+    let iconImg = null;
+    if (window.AppLogo && window.AppLogo.mode === 'icon') {
+      try {
+        iconImg = await new Promise((resolve) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => resolve(img);
+          img.onerror = () => resolve(null);
+          img.src = window.AppLogo.iconSrc || 'icon.svg';
+        });
+      } catch (e) {
+        iconImg = null;
+      }
+    }
+
+    if (iconImg) {
+      const iconSize = 92;
+      ctx.save();
+      ctx.shadowColor = 'rgba(255, 255, 255, 0.35)';
+      ctx.shadowBlur = 20;
+      ctx.drawImage(iconImg, (W - iconSize) / 2, 65, iconSize, iconSize);
+      ctx.restore();
+    } else {
+      ctx.textAlign = 'center';
+      ctx.font = '900 76px -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = 'rgba(255, 255, 255, 0.35)';
+      ctx.shadowBlur = 24;
+      ctx.fillText('VIV', W / 2, 135);
+      ctx.shadowBlur = 0;
+    }
 
     const dateStr = new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
-    ctx.font = '500 20px -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
-    ctx.fillText(dateStr, W / 2, 172);
+    ctx.font = '500 22px -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.fillText(dateStr, W / 2, 185);
 
-    const pillText = `${prof.name || 'Атлет'}  •  ${prof.level || 'Начинающий'}${latestW ? '  •  ' + latestW + ' кг' : ''}`;
-    ctx.font = '600 20px -apple-system, sans-serif';
-    const pillW = ctx.measureText(pillText).width + 48;
-    roundRect(W / 2 - pillW / 2, 202, pillW, 44, 22, 'rgba(255, 255, 255, 0.06)', true, 'rgba(255, 255, 255, 0.12)', 1.5);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-    ctx.fillText(pillText, W / 2, 231);
+    // 3. Центральное неоновое кольцо с суммарным тоннажем
+    const ringCenterX = W / 2;
+    const ringCenterY = 410;
+    const ringRadius = 145;
 
-    const heroY = 280;
-    const heroH = 320;
-    roundRect(64, heroY, W - 128, heroH, 28, '#13181f', true, 'rgba(255, 255, 255, 0.08)', 1.5);
-
-    const ringX = 220;
-    const ringY = heroY + heroH / 2;
-    const ringR = 86;
-    ctx.lineWidth = 18;
+    // Фоновая окружность
+    ctx.lineWidth = 26;
     ctx.beginPath();
-    ctx.arc(ringX, ringY, ringR, 0, Math.PI * 2);
+    ctx.arc(ringCenterX, ringCenterY, ringRadius, 0, Math.PI * 2);
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
     ctx.stroke();
 
-    const ringGrad = ctx.createLinearGradient(ringX - ringR, ringY, ringX + ringR, ringY + ringR);
+    // Неоновая дуга активности
+    const ringGrad = ctx.createLinearGradient(ringCenterX - ringRadius, ringCenterY - ringRadius, ringCenterX + ringRadius, ringCenterY + ringRadius);
     ringGrad.addColorStop(0, '#00F59B');
     ringGrad.addColorStop(1, '#DFFF00');
     ctx.beginPath();
-    ctx.arc(ringX, ringY, ringR, -Math.PI / 2, Math.PI * 1.15);
+    ctx.arc(ringCenterX, ringCenterY, ringRadius, -Math.PI / 2, Math.PI * 1.18);
     ctx.strokeStyle = ringGrad;
     ctx.lineCap = 'round';
     ctx.stroke();
     ctx.lineCap = 'butt';
 
+    // Текст внутри кольца
     ctx.textAlign = 'center';
-    ctx.font = '900 24px -apple-system, sans-serif';
-    ctx.fillStyle = '#00F59B';
-    ctx.fillText('VIV', ringX, ringY + 8);
-
-    ctx.textAlign = 'left';
-    ctx.font = '800 16px -apple-system, sans-serif';
-    ctx.fillStyle = '#00F59B';
-    ctx.fillText('СУММАРНЫЙ ТОННАЖ', 360, heroY + 80);
-
-    ctx.font = '900 68px -apple-system, sans-serif';
+    ctx.font = '900 84px -apple-system, sans-serif';
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(`${displayVol}`, 360, heroY + 155);
-    const volNumW = ctx.measureText(`${displayVol}`).width;
+    ctx.fillText(`${displayVol}`, ringCenterX, ringCenterY + 18);
+
     ctx.font = '800 28px -apple-system, sans-serif';
     ctx.fillStyle = '#DFFF00';
-    ctx.fillText(volUnit, 360 + volNumW + 14, heroY + 140);
+    ctx.fillText(volUnit, ringCenterX, ringCenterY + 62);
 
-    ctx.font = '400 20px -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-    ctx.fillText(`Поднято за ${totalWorkouts} ${plural(totalWorkouts, ['тренировку', 'тренировки', 'тренировок'])} и ${totalSets} ${plural(totalSets, ['подход', 'подхода', 'подходов'])}`, 360, heroY + 205);
+    ctx.font = '700 15px -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+    ctx.letterSpacing = '2px';
+    ctx.fillText('СУММАРНЫЙ ТОННАЖ', ringCenterX, ringCenterY + 95);
+    ctx.letterSpacing = '0px';
 
-    const gridY = heroY + heroH + 24;
-    const cardW = (W - 128 - 24) / 2;
-    const cardH = 200;
+    // 4. Список распределения тоннажа по убыванию (Дизайн 1)
+    const listTopY = 640;
+    const listW = W - 140;
+    const listLeft = 70;
 
-    roundRect(64, gridY, cardW, cardH, 24, '#13181f', true, 'rgba(255, 255, 255, 0.08)', 1.5);
     ctx.textAlign = 'left';
-    ctx.font = '800 15px -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.fillText('ТРЕНИРОВКИ', 96, gridY + 50);
-    ctx.font = '900 58px -apple-system, sans-serif';
+    ctx.font = '800 22px -apple-system, sans-serif';
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(`${totalWorkouts}`, 96, gridY + 120);
-    ctx.font = '500 18px -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
-    ctx.fillText(`${totalHours} ч под нагрузкой`, 96, gridY + 160);
+    ctx.fillText('РАСПРЕДЕЛЕНИЕ ТОННАЖА', listLeft, listTopY);
 
-    const card2X = 64 + cardW + 24;
-    roundRect(card2X, gridY, cardW, cardH, 24, '#13181f', true, 'rgba(255, 255, 255, 0.08)', 1.5);
-    ctx.font = '800 15px -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.fillText('ПОДХОДЫ', card2X + 32, gridY + 50);
-    ctx.font = '900 58px -apple-system, sans-serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText(`${totalSets}`, card2X + 32, gridY + 120);
-    ctx.font = '500 18px -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
-    ctx.fillText(`В среднем ${avgSetsPerWorkout} на тренировку`, card2X + 32, gridY + 160);
+    ctx.textAlign = 'right';
+    ctx.font = '600 16px -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+    ctx.fillText('ТОЛЬКО СИЛОВОЙ ВЕС', listLeft + listW, listTopY);
 
-    const discY = gridY + cardH + 20;
-    const discH = 120;
-    roundRect(64, discY, W - 128, discH, 24, '#13181f', true, 'rgba(255, 255, 255, 0.08)', 1.5);
-    ctx.font = '800 15px -apple-system, sans-serif';
-    ctx.fillStyle = '#00F59B';
-    ctx.fillText('ДИСЦИПЛИНА И ПРИВЫЧКИ', 96, discY + 45);
-    ctx.font = '700 24px -apple-system, sans-serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText(`Серия ${maxStreak} ${plural(maxStreak, ['день', 'дня', 'дней'])} подряд  •  ${habits.length} активных привычек`, 96, discY + 86);
+    let rowY = listTopY + 24;
+    const maxItems = Math.min(5, sortedExercises.length);
 
-    const prY = discY + discH + 40;
-    ctx.font = '900 22px -apple-system, sans-serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText('ЛИЧНЫЕ РЕКОРДЫ В УПРАЖНЕНИЯХ', 64, prY);
-
-    let rowY = prY + 24;
-    if (!bestsList.length) {
-      roundRect(64, rowY, W - 128, 90, 20, '#13181f', true, 'rgba(255, 255, 255, 0.06)', 1);
+    if (maxItems === 0) {
+      roundRect(listLeft, rowY, listW, 100, 22, '#13181f', true, 'rgba(255, 255, 255, 0.06)', 1.5);
       ctx.textAlign = 'center';
-      ctx.font = '500 18px -apple-system, sans-serif';
+      ctx.font = '500 20px -apple-system, sans-serif';
       ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-      ctx.fillText('Нет завершенных тренировок', W / 2, rowY + 52);
+      ctx.fillText('Нет завершенных силовых тренировок', W / 2, rowY + 58);
     } else {
-      bestsList.forEach((b) => {
-        roundRect(64, rowY, W - 128, 80, 20, '#13181f', true, 'rgba(255, 255, 255, 0.07)', 1.5);
+      for (let i = 0; i < maxItems; i++) {
+        const item = sortedExercises[i];
+        const cardH = 92;
+        roundRect(listLeft, rowY, listW, cardH, 20, '#13181f', true, 'rgba(255, 255, 255, 0.07)', 1.5);
+
+        // Название упражнения
         ctx.textAlign = 'left';
-        ctx.font = '700 20px -apple-system, sans-serif';
+        ctx.font = '700 24px -apple-system, sans-serif';
         ctx.fillStyle = '#ffffff';
-        ctx.fillText(b.name, 96, rowY + 36);
+        ctx.fillText(item.name, listLeft + 24, rowY + 42);
 
-        ctx.font = '500 15px -apple-system, sans-serif';
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-        const dateSub = b.date ? b.date.substring(0, 10) : '';
-        ctx.fillText(`${b.reps} повт  •  ${dateSub}`, 96, rowY + 62);
+        // Тоннаж и процент
+        ctx.textAlign = 'right';
+        ctx.font = '800 22px -apple-system, sans-serif';
+        ctx.fillStyle = '#DFFF00';
+        ctx.fillText(item.volStr, listLeft + listW - 24, rowY + 42);
+        const valW = ctx.measureText(item.volStr).width;
 
-        const badgeText = `${b.weight} кг`;
-        ctx.font = '800 20px -apple-system, sans-serif';
-        const badgeW = ctx.measureText(badgeText).width + 36;
-        const badgeX = W - 64 - badgeW - 20;
-        roundRect(badgeX, rowY + 18, badgeW, 44, 22, '#DFFF00', false, null);
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#000000';
-        ctx.fillText(badgeText, badgeX + badgeW / 2, rowY + 47);
+        ctx.font = '500 18px -apple-system, sans-serif';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+        ctx.fillText(` (${item.pct}%)`, listLeft + listW - 24 - valW, rowY + 42);
 
-        rowY += 94;
-      });
+        // Тонкий неоновый прогресс-бар
+        const trackY = rowY + 62;
+        const trackW = listW - 48;
+        const trackX = listLeft + 24;
+        roundRect(trackX, trackY, trackW, 8, 4, 'rgba(255, 255, 255, 0.08)', false, null);
+
+        const barW = Math.max(8, Math.round((trackW * item.pct) / 100));
+        const barGrad = ctx.createLinearGradient(trackX, trackY, trackX + barW, trackY);
+        barGrad.addColorStop(0, '#00F59B');
+        barGrad.addColorStop(1, '#DFFF00');
+        roundRect(trackX, trackY, barW, 8, 4, barGrad, false, null);
+
+        rowY += cardH + 16;
+      }
     }
 
+    // 5. Водяной знак
     ctx.textAlign = 'center';
-    ctx.font = '700 14px -apple-system, sans-serif';
+    ctx.font = '700 15px -apple-system, sans-serif';
     ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
-    ctx.fillText('VIV  •  ATHLETIC PERFORMANCE SYSTEM', W / 2, H - 46);
+    ctx.fillText('VIV  •  ATHLETIC PERFORMANCE SYSTEM', W / 2, H - 48);
 
+    // Сохранение и шеринг
     canvas.toBlob(async (blob) => {
       if (!blob) return;
-      const fileName = `viv-athletic-report-${new Date().toISOString().substring(0, 10)}.png`;
+      const fileName = `viv-tonnage-report-${new Date().toISOString().substring(0, 10)}.png`;
       const file = new File([blob], fileName, { type: 'image/png' });
 
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({
             title: 'VIV Athletic Report',
-            text: 'Мой атлетический отчёт VIV',
+            text: 'Мой силовой отчёт VIV',
             files: [file]
           });
           if (window.triggerHaptic) window.triggerHaptic('success');
