@@ -1,11 +1,18 @@
-// VIV Fitness - Stats Screen (Screen 3: Графики прогресса, Календарь, Привычки)
-// Визуализация прогресса 1RM, объема, истории тренировок и трекер привычек
+// =============================================================================
+// VIV Fitness - Экран аналитики и истории тренировок (Stats Screen)
+// =============================================================================
+// Назначение: Визуализация тренировочного прогресса через интерактивные графики
+// (максимальный рабочий вес, расчетный 1RM, суммарный тоннаж), календарь активности
+// по месяцам и подробный журнал истории завершенных сессий.
+// =============================================================================
 
 (function () {
   'use strict';
 
-      
-    function renderStats() {
+  // ---------------------------------------------------------------------------
+  // БЛОК 1. ДИСПЕТЧЕР ПОДВКЛАДОК СТАТИСТИКИ (Sub-tabs Router)
+  // ---------------------------------------------------------------------------
+  function renderStats() {
     if (window.setHeader) window.setHeader('Статистика', false);
     const mainContent = document.getElementById('main-content');
     if (!mainContent) return;
@@ -23,11 +30,13 @@
       </div>
       <div id="stats-tab-content"></div>`;
 
-    if (window.state.stats.activeSubTab === 'calendar') renderStatsCalendarTab();
-    else if (window.state.stats.activeSubTab === 'habits') {
+    if (window.state.stats.activeSubTab === 'calendar') {
+      renderStatsCalendarTab();
+    } else if (window.state.stats.activeSubTab === 'habits') {
       if (window.renderHabitsTab) window.renderHabitsTab();
+    } else {
+      renderStatsProgressTab();
     }
-    else renderStatsProgressTab();
   }
 
   function switchStatsSubTab(tab) {
@@ -35,7 +44,9 @@
     renderStats();
   }
 
-  // 3.1 Sub-tab: Прогресс (Графики с 1RM)
+  // ---------------------------------------------------------------------------
+  // БЛОК 2. ВКЛАДКА "ПРОГРЕСС" И ГРАФИКИ ДИНАМИКИ (Progress Charts)
+  // ---------------------------------------------------------------------------
   function renderStatsProgressTab() {
     const container = document.getElementById('stats-tab-content');
     if (!container) return;
@@ -170,7 +181,9 @@
     renderStatsProgressTab();
   }
 
-  // 3.2 Sub-tab: Календарь активности
+  // ---------------------------------------------------------------------------
+  // БЛОК 3. ВКЛАДКА "КАЛЕНДАРЬ АКТИВНОСТИ" (Monthly Calendar Grid)
+  // ---------------------------------------------------------------------------
   function renderStatsCalendarTab() {
     const container = document.getElementById('stats-tab-content');
     if (!container) return;
@@ -248,7 +261,7 @@
         </div>
       </div>
 
-      <!-- Workout History Feed -->
+      <!-- Лента истории тренировок -->
       <div style="font-weight:bold; font-size:15px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary); margin:16px 0 10px;">История тренировок</div>
       ${records.length === 0 ? `
         <div class="card" style="text-align:center; color:var(--text-secondary); padding:24px;">История пуста</div>
@@ -298,6 +311,9 @@
     renderStatsCalendarTab();
   }
 
+  // ---------------------------------------------------------------------------
+  // БЛОК 4. МОДАЛЬНОЕ ОКНО ДЕТАЛЕЙ ТРЕНИРОВКИ ДНЯ (Day Details Modal)
+  // ---------------------------------------------------------------------------
   function showDayWorkoutDetails(dateStr) {
     const [y, m, d] = dateStr.split('-').map(Number);
     const dateObj = new Date(y, m - 1, d);
@@ -349,7 +365,6 @@
           <button class="modal-close-btn" onclick="closeModal()">✕</button>
         </div>
 
-        <!-- Quick Stats -->
         <div style="display:flex; gap:8px; margin-bottom:16px;">
           <div class="cal-detail-metric">
             <div class="cal-detail-metric-val">${totalTonnage > 0 ? `${Math.round(totalTonnage).toLocaleString('ru-RU')} кг` : '—'}</div>
@@ -414,13 +429,15 @@
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // БЛОК 5. УДАЛЕНИЕ ЗАПИСЕЙ И ОБРАБОТЧИК СМЕНЫ ТЕМЫ (Delete & Theme Watcher)
+  // ---------------------------------------------------------------------------
   function deleteHistoryRecord(id) {
     if (!confirm('Удалить эту запись тренировки из истории?')) return;
     if (window.Storage) window.Storage.deleteHistoryRecord(id);
     renderStats();
   }
 
-  // Перерисовка графиков при переключении темы оформления
   window.addEventListener('viv-theme-changed', () => {
     if (window.state && window.state.currentTab === 'stats') {
       if (window.state.stats.activeSubTab === 'progress') renderStatsProgressTab();
@@ -428,11 +445,12 @@
     }
   });
 
-  // Экспорт
+  // ---------------------------------------------------------------------------
+  // БЛОК 6. ЭКСПОРТ В GLOBAL WINDOW (Module Exports)
+  // ---------------------------------------------------------------------------
   window.renderStats = renderStats;
   window.switchStatsSubTab = switchStatsSubTab;
-  
-    window.renderStatsProgressTab = renderStatsProgressTab;
+  window.renderStatsProgressTab = renderStatsProgressTab;
   window.changeStatsRoutine = changeStatsRoutine;
   window.changeStatsExercise = changeStatsExercise;
   window.renderStatsCalendarTab = renderStatsCalendarTab;

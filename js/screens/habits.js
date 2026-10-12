@@ -1,13 +1,19 @@
-// VIV Fitness - Habits Tracker Module (Screen: Привычки)
-// Ежедневный трекинг атлетических привычек, серий дней (streaks) и недельная лента
+// =============================================================================
+// VIV Fitness - Экран трекера привычек атлета (Habits Tracker Screen)
+// =============================================================================
+// Назначение: Ежедневный учет полезных привычек (сон, вода, спорт, питание),
+// расчет непрерывных серий выполнения (streaks), визуализация недельной ленты
+// и модальное окно добавления/редактирования с сеткой из 12 иконок.
+// =============================================================================
 
 (function () {
   'use strict';
 
-  // 12 минималистичных символьных эмодзи для привычек
+  // ---------------------------------------------------------------------------
+  // БЛОК 1. КОНСТАНТЫ ИКОНОК И ОБРАТНАЯ СОВМЕСТИМОСТЬ (Habit Icons Registry)
+  // ---------------------------------------------------------------------------
   const HABIT_EMOJIS = ['✅', '🛑', '🌙', '⏱️', '⚡', '💧', '🔥', '🎯', '❄️', '☀️', '🌿', '➡️'];
 
-  // Старый маппинг категорий на эмодзи для обратной совместимости
   const LEGACY_CATEGORY_MAP = {
     water: '💧',
     sleep: '🌙',
@@ -25,7 +31,9 @@
     return '⚡';
   }
 
-  // Получение 7 дней текущей недели (Пн - Вс)
+  // ---------------------------------------------------------------------------
+  // БЛОК 2. НЕДЕЛЬНАЯ ЛЕНТА ДАТ И УПРАВЛЕНИЕ ВЫБОРОМ ДНЯ (Week Dates & State)
+  // ---------------------------------------------------------------------------
   function getCurrentWeekDates(refDateStr) {
     const ref = refDateStr ? new Date(refDateStr + 'T12:00:00') : new Date();
     const dayOfWeek = ref.getDay();
@@ -66,7 +74,9 @@
     renderHabitsTab();
   }
 
-  // Рендеринг основного содержимого экрана "Привычки"
+  // ---------------------------------------------------------------------------
+  // БЛОК 3. РЕНДЕРИНГ ЭКРАНА ПРИВЫЧЕК (Screen Layout & Habit Cards List)
+  // ---------------------------------------------------------------------------
   function renderHabitsTab(targetContainer) {
     const isMainTab = window.state?.currentTab === 'habits';
     const container = targetContainer || (isMainTab ? document.getElementById('main-content') : document.getElementById('stats-tab-content'));
@@ -123,7 +133,7 @@
               ${habits.length ? `Выполнено ${dailyProgress.completed} из ${dailyProgress.total}` : 'Нет активных привычек'}
             </div>
           </div>
-          <div style="font-size:20px; font-weight:800; color:${dailyProgress.percentage === 100 ? 'var(--color-success)' : 'var(--accent)'};">
+          <div style="font-size:20px; font-weight:800; color:${dailyProgress.percentage === 100 ? 'var(--color-success, #16a34a)' : 'var(--text-primary)'};">
             ${dailyProgress.percentage}%
           </div>
         </div>
@@ -131,13 +141,13 @@
         <div class="habit-progress-track">
           <div 
             class="habit-progress-bar" 
-            style="width:${dailyProgress.percentage}%; ${dailyProgress.percentage === 100 ? 'background:var(--color-success);' : ''}"
+            style="width:${dailyProgress.percentage}%; ${dailyProgress.percentage === 100 ? 'background:var(--color-success, #16a34a);' : ''}"
           ></div>
         </div>
       </div>
     `;
 
-    // 3. Список привычек
+    // 3. Список карточек привычек
     if (!habits.length) {
       html += `
         <div class="card" style="text-align:center; padding:36px 16px;">
@@ -198,7 +208,9 @@
     container.innerHTML = html;
   }
 
-  // Переключение статуса привычки
+  // ---------------------------------------------------------------------------
+  // БЛОК 4. ПЕРЕКЛЮЧЕНИЕ СТАТУСА ПРИВЫЧКИ (Toggle Habit & Haptic Feedback)
+  // ---------------------------------------------------------------------------
   function toggleHabitStatus(habitId) {
     const curDateStr = getSelectedDate();
     if (!window.Storage) return;
@@ -211,7 +223,9 @@
     renderHabitsTab();
   }
 
-  // Модальное окно добавления/редактирования
+  // ---------------------------------------------------------------------------
+  // БЛОК 5. МОДАЛЬНОЕ ОКНО ДОБАВЛЕНИЯ / РЕДАКТИРОВАНИЯ (Habit Modal Manager)
+  // ---------------------------------------------------------------------------
   function openAddHabitModal(habitId = null) {
     const isEdit = habitId !== null;
     let habit = { title: '', emoji: '✅' };
@@ -258,17 +272,17 @@
             ${isEdit ? 'Сохранить' : 'Создать'}
           </button>
           ${isEdit ? `
-            <button class="btn btn-outline" style="color:var(--color-danger); border-color:var(--color-danger);" onclick="deleteHabitModal(${habitId})">
+            <button class="btn btn-outline" style="color:var(--color-danger, #ef4444); border-color:rgba(239,68,68,0.4);" onclick="deleteHabitModal(${habitId})">
               Удалить
             </button>
           ` : ''}
-          <button class="btn btn-outline" onclick="window.closeModal()">Отмена</button>
+          <button class="btn btn-outline" onclick="closeModal()">Отмена</button>
         </div>
       </div>
     `;
 
-    if (window.showModal) {
-      window.showModal(modalHtml);
+    if (window.openModal) {
+      window.openModal(modalHtml);
       setTimeout(() => {
         const inp = document.getElementById('habit-title-input');
         if (inp) inp.focus();
@@ -317,7 +331,9 @@
     renderHabitsTab();
   }
 
-  // Экспорт в глобальную область
+  // ---------------------------------------------------------------------------
+  // БЛОК 6. ЭКСПОРТ ФУНКЦИЙ ЭКРАНА В GLOBAL WINDOW (Module Exports)
+  // ---------------------------------------------------------------------------
   window.renderHabits = renderHabitsTab;
   window.renderHabitsTab = renderHabitsTab;
   window.selectHabitDate = setSelectedDate;

@@ -1,13 +1,24 @@
-// VIV Fitness - Barbell Plate Calculator Component
-// Расчет распределения блинов на гриф с интерактивной визуализацией
+// =============================================================================
+// VIV Fitness - Компонент калькулятора блинов на гриф (Plate Calculator)
+// =============================================================================
+// Назначение: Модальное окно расчета распределения олимпийских блинов (25, 20, 15,
+// 10, 5, 2.5, 1.25 кг) на гриф (20 или 15 кг) с визуализацией и возможностью
+// применения выбранного веса сразу ко всем подходам упражнения.
+// =============================================================================
 
 (function () {
   'use strict';
 
-      let plateCalcTargetWeight = 60;
+  // ---------------------------------------------------------------------------
+  // БЛОК 1. Локальное состояние калькулятора блинов
+  // ---------------------------------------------------------------------------
+  let plateCalcTargetWeight = 60;
   let plateCalcBarWeight = 20;
   let plateCalcTargetExIdx = null;
 
+  // ---------------------------------------------------------------------------
+  // БЛОК 2. Открытие модального окна калькулятора (Modal Layout)
+  // ---------------------------------------------------------------------------
   function openPlateCalculatorModal(targetWeight = 60, targetExIdx = null) {
     plateCalcTargetWeight = parseFloat(targetWeight) || 60;
     plateCalcBarWeight = 20;
@@ -28,20 +39,20 @@
             <button class="stepper-btn" style="width:34px; height:34px; border:1px solid var(--border-color); border-radius:8px;" onclick="changePlateTargetWeight(5)">+5</button>
           </div>
 
-          <!-- Quick Preset Weights -->
+          <!-- Быстрый выбор популярных весов -->
           <div class="plate-quick-chips">
             ${[40, 60, 80, 100, 120, 140].map(w => `
               <button class="plate-quick-chip ${plateCalcTargetWeight === w ? 'active' : ''}" onclick="setPlateQuickWeight(${w})">${w} кг</button>
             `).join('')}
           </div>
 
-          <!-- Bar Weight Toggle -->
+          <!-- Выбор веса грифа (мужской 20 кг / женский 15 кг) -->
           <div style="display:flex; justify-content:center; gap:6px; margin-bottom:12px;">
             <button id="plate-bar-20" class="filter-chip ${plateCalcBarWeight === 20 ? 'active' : ''}" onclick="setPlateBarWeight(20)">Гриф 20 кг</button>
             <button id="plate-bar-15" class="filter-chip ${plateCalcBarWeight === 15 ? 'active' : ''}" onclick="setPlateBarWeight(15)">Гриф 15 кг</button>
           </div>
 
-          <!-- Olympic Barbell Visual -->
+          <!-- Визуализация грифа и надетых блинов -->
           <div class="barbell-visual">
             <div class="barbell-shaft"></div>
             <div class="barbell-sleeve-wrap">
@@ -50,7 +61,7 @@
             </div>
           </div>
 
-          <!-- Breakdown Summary -->
+          <!-- Сводка блинов на каждую сторону -->
           <div id="plate-calc-summary" class="plate-summary-card"></div>
 
           <div style="display:flex; gap:8px; margin-top:14px;">
@@ -66,26 +77,28 @@
     }
   }
 
-  
-    function updatePlateCalculatorUI() {
+  // ---------------------------------------------------------------------------
+  // БЛОК 3. Обновление графического интерфейса и стека блинов (UI Update)
+  // ---------------------------------------------------------------------------
+  function updatePlateCalculatorUI() {
     if (!window.Storage || !window.Storage.calculatePlates) return;
     const res = window.Storage.calculatePlates(plateCalcTargetWeight, plateCalcBarWeight);
     const valEl = document.getElementById('plate-calc-val');
     if (valEl) valEl.textContent = `${plateCalcTargetWeight} кг`;
 
-    // Update quick chips active state
+    // Обновление подсветки чипов быстрого выбора
     document.querySelectorAll('.plate-quick-chip').forEach(ch => {
       const w = parseFloat(ch.textContent);
       ch.classList.toggle('active', w === plateCalcTargetWeight);
     });
 
-    // Update bar chips
+    // Обновление подсветки веса грифа
     const b20 = document.getElementById('plate-bar-20');
     const b15 = document.getElementById('plate-bar-15');
     if (b20) b20.classList.toggle('active', plateCalcBarWeight === 20);
     if (b15) b15.classList.toggle('active', plateCalcBarWeight === 15);
 
-    // Update stack
+    // Отрисовка цветных дисков на втулке
     const stackEl = document.getElementById('plate-calc-stack');
     if (stackEl) {
       const plateClassMap = {
@@ -109,7 +122,7 @@
       stackEl.innerHTML = discsHtml.join('');
     }
 
-    // Update summary
+    // Текстовая сводка
     const sumEl = document.getElementById('plate-calc-summary');
     if (sumEl) {
       sumEl.innerHTML = `
@@ -142,6 +155,9 @@
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // БЛОК 4. Обработчики изменения веса и пересчета (Controls & Actions)
+  // ---------------------------------------------------------------------------
   function changePlateTargetWeight(delta) {
     plateCalcTargetWeight = Math.max(plateCalcBarWeight, Math.round((plateCalcTargetWeight + delta) * 10) / 10);
     updatePlateCalculatorUI();
@@ -169,8 +185,10 @@
     if (window.renderActiveWorkoutScreen) window.renderActiveWorkoutScreen();
   }
 
-  
-    window.openPlateCalculatorModal = openPlateCalculatorModal;
+  // ---------------------------------------------------------------------------
+  // БЛОК 5. Экспорт функций калькулятора блинов в глобальную область (window)
+  // ---------------------------------------------------------------------------
+  window.openPlateCalculatorModal = openPlateCalculatorModal;
   window.updatePlateCalculatorUI = updatePlateCalculatorUI;
   window.changePlateTargetWeight = changePlateTargetWeight;
   window.setPlateQuickWeight = setPlateQuickWeight;

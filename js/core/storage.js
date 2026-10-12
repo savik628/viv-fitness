@@ -1,6 +1,14 @@
-// VIV Fitness - Client-Side Storage Manager
-// Локальное хранилище данных каждого пользователя на его устройстве
+// =============================================================================
+// VIV Fitness - Централизованное локальное хранилище данных (Storage Manager)
+// =============================================================================
+// Назначение: Обеспечивает персистентность данных пользователя на его устройстве
+// через localStorage с fallback в оперативную память. Хранит профиль, программы,
+// историю сессий, антропометрию, привычки и резервные копии.
+// =============================================================================
 
+// -----------------------------------------------------------------------------
+// БЛОК 1. КЛЮЧИ ХРАНИЛИЩА И ДЕФОЛТНЫЕ СТРУКТУРЫ (Storage Keys & Fallbacks)
+// -----------------------------------------------------------------------------
 const KEYS = {
   PROFILE: 'viv_user_profile',
   ROUTINES: 'viv_user_routines',
@@ -16,13 +24,25 @@ const KEYS = {
   SEED_CLEANED: 'viv_clean_state_v1',
 };
 
-// Автоматическая очистка предустановленных демо-данных из хранилища браузера
+const DEFAULT_PROFILE = {
+  name: '',
+  level: '',
+  weight: null,
+  height: null,
+  notificationsEnabled: true,
+};
+
+const DEFAULT_ROUTINES = [];
+
+// -----------------------------------------------------------------------------
+// БЛОК 2. ОЧИСТКА ДЕМО-ДАННЫХ ПРИ ПЕРВОМ ЗАПУСКЕ (Auto-Purge Seed State)
+// -----------------------------------------------------------------------------
 (function autoPurgeDefaults() {
   try {
     if (typeof localStorage === 'undefined') return;
     if (localStorage.getItem(KEYS.SEED_CLEANED)) return;
 
-    // Очистка предустановленных программ-шаблонов
+    // 1. Очистка старых тестовых программ
     const rawRoutines = localStorage.getItem(KEYS.ROUTINES);
     if (rawRoutines) {
       try {
@@ -35,7 +55,7 @@ const KEYS = {
       localStorage.setItem(KEYS.ROUTINES, JSON.stringify([]));
     }
 
-    // Очистка предустановленных замеров веса
+    // 2. Очистка предустановленных тестовых записей веса
     const rawWeight = localStorage.getItem(KEYS.WEIGHT_LOG);
     if (rawWeight) {
       try {
@@ -48,7 +68,7 @@ const KEYS = {
       localStorage.setItem(KEYS.WEIGHT_LOG, JSON.stringify([]));
     }
 
-    // Очистка предустановленных замеров тела
+    // 3. Очистка предустановленных тестовых замеров тела
     const rawMeas = localStorage.getItem(KEYS.MEASUREMENTS);
     if (rawMeas) {
       try {
@@ -61,19 +81,13 @@ const KEYS = {
       localStorage.setItem(KEYS.MEASUREMENTS, JSON.stringify([]));
     }
 
-    // Очистка предустановленного профиля
+    // 4. Очистка предустановленного профиля
     const rawProf = localStorage.getItem(KEYS.PROFILE);
     if (rawProf) {
       try {
         const parsed = JSON.parse(rawProf);
         if (parsed && (parsed.name === 'Пользователь' || parsed.weight === 70)) {
-          localStorage.setItem(KEYS.PROFILE, JSON.stringify({
-            name: '',
-            level: '',
-            weight: null,
-            height: null,
-            notificationsEnabled: true
-          }));
+          localStorage.setItem(KEYS.PROFILE, JSON.stringify(DEFAULT_PROFILE));
         }
       } catch (_) {}
     }
@@ -84,6 +98,9 @@ const KEYS = {
   }
 })();
 
+// -----------------------------------------------------------------------------
+// БЛОК 3. НИЗКОУРОВНЕВЫЙ ДВИЖОК ПЕРСИСТЕНТНОСТИ (Storage Engine Helpers)
+// -----------------------------------------------------------------------------
 const _memStore = {};
 
 const getStore = (key, fallback) => {
@@ -111,36 +128,37 @@ const setStore = (key, val) => {
   }
 };
 
-const DEFAULT_PROFILE = {
-  name: '',
-  level: '',
-  weight: null,
-  height: null,
-  notificationsEnabled: true,
-};
-
-const DEFAULT_ROUTINES = [];
-
+// -----------------------------------------------------------------------------
+// ОСНОВНОЙ ОБЪЕКТ УПРАВЛЕНИЯ ДАННЫМИ (Storage Facade)
+// -----------------------------------------------------------------------------
 const Storage = {
-  // 1. Профиль пользователя
+
+  // ---------------------------------------------------------------------------
+  // БЛОК 4. УПРАВЛЕНИЕ ПРОФИЛЕМ АТЛЕТА (Athlete Profile Store)
+  // ---------------------------------------------------------------------------
   getProfile() {
     return getStore(KEYS.PROFILE, DEFAULT_PROFILE);
   },
+
   saveProfile(profile) {
     setStore(KEYS.PROFILE, profile);
     return profile;
   },
 
-  // 2. Программы тренировок
+  // ---------------------------------------------------------------------------
+  // БЛОК 5. ПРОГРАММЫ ТРЕНИРОВОК И ЧЕРНОВИК (Routines & Active Draft Store)
+  // ---------------------------------------------------------------------------
   getRoutines() {
     const list = getStore(KEYS.ROUTINES, null);
     if (Array.isArray(list)) return list;
     return [];
   },
+
   saveRoutines(routines) {
     setStore(KEYS.ROUTINES, routines);
     return routines;
   },
+
   saveRoutine(routine) {
     const routines = this.getRoutines();
     if (routine.id) {
@@ -158,20 +176,38 @@ const Storage = {
     this.saveRoutines(routines);
     return routine;
   },
+
   deleteRoutine(id) {
     const filtered = this.getRoutines().filter(r => String(r.id) !== String(id));
     this.saveRoutines(filtered);
     return true;
   },
 
-  // 3. История тренировок
+  getActiveDraft() {
+    return getStore(KEYS.ACTIVE_DRAFT, null);
+  },
+
+  saveActiveDraft(draft) {
+    setStore(KEYS.ACTIVE_DRAFT, draft);
+    return draft;
+  },
+
+  clearActiveDraft() {
+    if (typeof localStorage !== 'undefined') localStorage.removeItem(KEYS.ACTIVE_DRAFT);
+  },
+
+  // ---------------------------------------------------------------------------
+  // БЛОК 6. ИСТОРИЯ ТРЕНИРОВОК И РЕКОРДЫ (Workout Logs & Personal Records PR)
+  // ---------------------------------------------------------------------------
   getHistory() {
     return getStore(KEYS.HISTORY, []);
   },
+
   saveHistory(history) {
     setStore(KEYS.HISTORY, history);
     return history;
   },
+
   addWorkoutRecord(record) {
     const history = this.getHistory();
     let sets = [];
@@ -207,16 +243,53 @@ const Storage = {
     this.saveHistory(history);
     return newRecord;
   },
+
   deleteHistoryRecord(id) {
     const filtered = this.getHistory().filter(h => String(h.id) !== String(id));
     this.saveHistory(filtered);
     return true;
   },
 
-  // 4. Статистика и графики
+  checkWorkoutPRs(historyRecord) {
+    const priorHistory = this.getHistory().filter(h => String(h.id) !== String(historyRecord.id));
+    const prs = [];
+
+    historyRecord.sets?.forEach(s => {
+      const w = parseFloat(s.weight) || 0;
+      if (w > 0 && s.exerciseName) {
+        let maxPriorW = 0;
+        priorHistory.forEach(h => {
+          h.sets?.forEach(ps => {
+            if (ps.exerciseName === s.exerciseName) {
+              const pw = parseFloat(ps.weight) || 0;
+              if (pw > maxPriorW) maxPriorW = pw;
+            }
+          });
+        });
+
+        if (w > maxPriorW && maxPriorW > 0) {
+          if (!prs.some(p => p.exerciseName === s.exerciseName)) {
+            prs.push({
+              exerciseName: s.exerciseName,
+              weight: w,
+              priorWeight: maxPriorW,
+              diff: Math.round((w - maxPriorW) * 10) / 10
+            });
+          }
+        }
+      }
+    });
+
+    return prs;
+  },
+
+  // ---------------------------------------------------------------------------
+  // БЛОК 7. АНАЛИТИКА, ГРАФИКИ И КАЛЕНДАРЬ (Analytics, Charts & Calendar)
+  // ---------------------------------------------------------------------------
   getStatsRoutines() {
     return Array.from(new Set(this.getHistory().map(h => h.routineName).filter(Boolean))).sort();
   },
+
   getStatsExercises(routineName) {
     const names = new Set();
     this.getHistory().forEach(h => {
@@ -226,6 +299,7 @@ const Storage = {
     });
     return Array.from(names).sort();
   },
+
   getChartPoints(routineName, exerciseName) {
     const sessions = this.getHistory()
       .filter(h => (!routineName || h.routineName === routineName) && h.sets?.some(s => s.exerciseName === exerciseName))
@@ -277,57 +351,91 @@ const Storage = {
     });
   },
 
-  // 5. Каталог упражнений
-  getCatalog() {
-    return getStore(KEYS.CATALOG, { categories: [], exercises: [] });
-  },
-  async initCatalog() {
-    const cached = getStore(KEYS.CATALOG, null);
-    if (cached?.exercises?.length) return cached;
+  getMuscleDistribution(days = 30) {
+    const history = this.getHistory();
+    const cutoff = days && days < 365 ? (Date.now() - (days * 86400000)) : 0;
+    const counts = { chest: 0, back: 0, legs: 0, shoulders: 0, arms: 0, core: 0 };
 
-    try {
-      const res = await fetch('/data/catalog.json');
-      if (res.ok) {
-        const data = await res.json();
-        setStore(KEYS.CATALOG, data);
-        return data;
+    function parseDateMs(dateStr) {
+      if (!dateStr) return 0;
+      if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) return new Date(dateStr).getTime();
+      if (/^\d{2}\.\d{2}\.\d{4}/.test(dateStr)) {
+        const p = dateStr.split(/[.,\s]/);
+        return new Date(`${p[2]}-${p[1]}-${p[0]}`).getTime();
       }
-    } catch (e) {
-      console.warn('Не удалось загрузить catalog.json:', e);
+      const parsed = new Date(dateStr).getTime();
+      return isNaN(parsed) ? 0 : parsed;
     }
-    return { categories: [], exercises: [] };
-  },
-  async getCategories() {
-    const cat = await this.initCatalog();
-    return cat.categories?.length ? cat.categories : ['cardio', 'olympic weightlifting', 'plyometrics', 'powerlifting', 'strength', 'stretching', 'strongman'];
-  },
-  async getMuscles(category) {
-    const cat = await this.initCatalog();
-    const muscles = new Set();
-    cat.exercises.forEach(ex => {
-      if (!category || ex.category.toLowerCase() === category.toLowerCase()) {
-        if (ex.primaryMuscles) muscles.add(ex.primaryMuscles);
+
+    let totalSets = 0;
+
+    history.forEach(h => {
+      const hTime = parseDateMs(h.date);
+      if (!cutoff || hTime === 0 || hTime >= cutoff) {
+        h.sets?.forEach(s => {
+          totalSets++;
+          let targetGroup = null;
+          const name = (s.exerciseName || '').toLowerCase();
+
+          if (/присед|выпад|ног|бедр|квадрицепс|икр|ягодиц|голен|жим ногами|сгибан.*ног|разгибан.*ног/.test(name)) targetGroup = 'legs';
+          else if (/подтяг|тяг.*блок|тяг.*штан|становая|тяг.*гантел|гиперэкстен|широчайш|спин/.test(name)) targetGroup = 'back';
+          else if (/жим.*стоя|армейск|махи|разведен.*сторон|дельт|плеч|шраг/.test(name)) targetGroup = 'shoulders';
+          else if (/бицепс|трицепс|руки|брахи|предплеч|французск|молотк|брусья|сгибан.*рук|разгибан.*рук/.test(name)) targetGroup = 'arms';
+          else if (/пресс|скручиван|планк|кор|живот|подъем ног/.test(name)) targetGroup = 'core';
+          else if (/жим.*лежа|отжим|груд|кроссовер|разводк.*гантел|бабочк|пуловер/.test(name)) targetGroup = 'chest';
+
+          if (!targetGroup) targetGroup = 'chest';
+          counts[targetGroup] = (counts[targetGroup] || 0) + 1;
+        });
       }
     });
-    return Array.from(muscles).sort();
-  },
-  async getExercises(category, muscle) {
-    const cat = await this.initCatalog();
-    return cat.exercises.filter(ex => {
-      const cMatch = !category || ex.category.toLowerCase() === category.toLowerCase();
-      const mMatch = !muscle || ex.primaryMuscles.toLowerCase() === muscle.toLowerCase();
-      return cMatch && mMatch;
-    });
+
+    const groupLabels = {
+      chest: 'Грудные',
+      back: 'Спина',
+      legs: 'Ноги',
+      shoulders: 'Плечи',
+      arms: 'Руки',
+      core: 'Пресс / Кор'
+    };
+
+    const groups = Object.keys(counts).map(k => ({
+      key: k,
+      name: groupLabels[k] || k,
+      sets: counts[k],
+      percentage: totalSets > 0 ? Math.round((counts[k] / totalSets) * 100) : 0,
+    })).sort((a, b) => b.sets - a.sets);
+
+    return { groups, totalSets };
   },
 
-  // 6. Расчёты и утилиты
+  getActivityCalendar(year, month) {
+    const history = this.getHistory();
+    const daysMap = {};
+
+    history.forEach(h => {
+      const d = (h.date || '').substring(0, 10);
+      if (d) {
+        if (!daysMap[d]) daysMap[d] = { count: 0, totalTonnage: 0, routines: [] };
+        daysMap[d].count++;
+        daysMap[d].routines.push(h.routineName);
+        let vol = 0;
+        h.sets?.forEach(s => { vol += ((parseFloat(s.weight) || 0) * (parseInt(s.reps, 10) || 0)); });
+        daysMap[d].totalTonnage += vol;
+      }
+    });
+
+    return daysMap;
+  },
+
+  // ---------------------------------------------------------------------------
+  // БЛОК 8. РАСЧЕТНЫЕ КАЛЬКУЛЯТОРЫ (1RM & Plate Calculator)
+  // ---------------------------------------------------------------------------
   calculate1RM(weight, reps) {
     const w = parseFloat(weight) || 0;
     const r = parseInt(reps, 10) || 0;
     if (w <= 0 || r <= 0) return 0;
-    // До 3х повторений равен поднятому весу (не меньше поднятого)
     if (r <= 3) return w;
-    // После 3х повторений увеличивается по формуле 0.9 + (reps / 30)
     const est = w * (0.9 + (r / 30));
     return Math.round(Math.max(w, est) * 10) / 10;
   },
@@ -357,7 +465,9 @@ const Storage = {
     };
   },
 
-  // 7. Трекер веса тела
+  // ---------------------------------------------------------------------------
+  // БЛОК 9. АНТРОПОМЕТРИЯ: ВЕС И ЗАМЕРЫ ТЕЛА (Bodyweight & Measurements)
+  // ---------------------------------------------------------------------------
   getBodyweightHistory() {
     const logs = getStore(KEYS.WEIGHT_LOG, []);
     if (Array.isArray(logs)) {
@@ -387,7 +497,6 @@ const Storage = {
     return true;
   },
 
-  // 8. Дневник замеров тела (грудь, талия, бицепс, бедро в см)
   getMeasurements() {
     const list = getStore(KEYS.MEASUREMENTS, []);
     if (Array.isArray(list)) {
@@ -417,224 +526,13 @@ const Storage = {
     return true;
   },
 
-  // 9. Аналитика мышечного объёма (Muscle Heatmap Data)
-  getMuscleDistribution(days = 30) {
-    const history = this.getHistory();
-    const cutoff = days && days < 365 ? (Date.now() - (days * 86400000)) : 0;
-    const counts = {
-      chest: 0,
-      back: 0,
-      legs: 0,
-      shoulders: 0,
-      arms: 0,
-      core: 0,
-    };
-
-    const muscleGroupMap = {
-      'chest': 'chest',
-      'pectorals': 'chest',
-      'грудные': 'chest',
-      'грудь': 'chest',
-      'lats': 'back',
-      'middle back': 'back',
-      'lower back': 'back',
-      'traps': 'back',
-      'спина': 'back',
-      'широчайшие': 'back',
-      'трапеции': 'back',
-      'поясница': 'back',
-      'quadriceps': 'legs',
-      'hamstrings': 'legs',
-      'calves': 'legs',
-      'glutes': 'legs',
-      'adductors': 'legs',
-      'abductors': 'legs',
-      'ноги': 'legs',
-      'квадрицепсы': 'legs',
-      'бицепс бедра': 'legs',
-      'ягодицы': 'legs',
-      'икры': 'legs',
-      'голень': 'legs',
-      'shoulders': 'shoulders',
-      'deltoids': 'shoulders',
-      'плечи': 'shoulders',
-      'дельты': 'shoulders',
-      'biceps': 'arms',
-      'triceps': 'arms',
-      'forearms': 'arms',
-      'руки': 'arms',
-      'бицепс': 'arms',
-      'трицепс': 'arms',
-      'предплечья': 'arms',
-      'abdominals': 'core',
-      'neck': 'core',
-      'пресс': 'core',
-      'кор': 'core',
-      'живот': 'core',
-    };
-
-    // Fast catalog lookup map
-    const catalog = this.getCatalog()?.exercises || [];
-    const catalogMap = new Map();
-    catalog.forEach(ex => {
-      if (ex.name && ex.primaryMuscles) {
-        catalogMap.set(ex.name.toLowerCase().trim(), ex.primaryMuscles);
-      }
-    });
-
-    function parseDateMs(dateStr) {
-      if (!dateStr) return 0;
-      if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) return new Date(dateStr).getTime();
-      if (/^\d{2}\.\d{2}\.\d{4}/.test(dateStr)) {
-        const p = dateStr.split(/[.,\s]/);
-        return new Date(`${p[2]}-${p[1]}-${p[0]}`).getTime();
-      }
-      const parsed = new Date(dateStr).getTime();
-      return isNaN(parsed) ? 0 : parsed;
-    }
-
-    let totalSets = 0;
-
-    history.forEach(h => {
-      const hTime = parseDateMs(h.date);
-      if (!cutoff || hTime === 0 || hTime >= cutoff) {
-        h.sets?.forEach(s => {
-          totalSets++;
-          let targetGroup = null;
-
-          // 1. Direct match on primaryMuscle
-          const m = (s.primaryMuscle || '').toLowerCase().trim();
-          if (m && muscleGroupMap[m]) {
-            targetGroup = muscleGroupMap[m];
-          }
-
-          // 2. Lookup in catalog by exerciseName
-          if (!targetGroup && s.exerciseName) {
-            const catMuscle = catalogMap.get(s.exerciseName.toLowerCase().trim());
-            if (catMuscle && muscleGroupMap[catMuscle.toLowerCase()]) {
-              targetGroup = muscleGroupMap[catMuscle.toLowerCase()];
-            }
-          }
-
-          // 3. Keyword heuristic on exercise name
-          if (!targetGroup && s.exerciseName) {
-            const name = s.exerciseName.toLowerCase();
-            if (/присед|выпад|ног|бедр|квадрицепс|икр|ягодиц|голен|жим ногами|сгибан.*ног|разгибан.*ног/.test(name)) targetGroup = 'legs';
-            else if (/подтяг|тяг.*блок|тяг.*штан|становая|тяг.*гантел|гиперэкстен|широчайш|спин/.test(name)) targetGroup = 'back';
-            else if (/жим.*стоя|армейск|махи|разведен.*сторон|дельт|плеч|шраг/.test(name)) targetGroup = 'shoulders';
-            else if (/бицепс|трицепс|руки|брахи|предплеч|французск|молотк|брусья|сгибан.*рук|разгибан.*рук/.test(name)) targetGroup = 'arms';
-            else if (/пресс|скручиван|планк|кор|живот|подъем ног/.test(name)) targetGroup = 'core';
-            else if (/жим.*лежа|отжим|груд|кроссовер|разводк.*гантел|бабочк|пуловер/.test(name)) targetGroup = 'chest';
-          }
-
-          // 4. Default fallback
-          if (!targetGroup) targetGroup = 'chest';
-
-          counts[targetGroup] = (counts[targetGroup] || 0) + 1;
-        });
-      }
-    });
-
-    const groupLabels = {
-      chest: 'Грудные',
-      back: 'Спина',
-      legs: 'Ноги',
-      shoulders: 'Плечи',
-      arms: 'Руки',
-      core: 'Пресс / Кор'
-    };
-
-    const groups = Object.keys(counts).map(k => ({
-      key: k,
-      name: groupLabels[k] || k,
-      sets: counts[k],
-      percentage: totalSets > 0 ? Math.round((counts[k] / totalSets) * 100) : 0,
-    })).sort((a, b) => b.sets - a.sets);
-
-    return { groups, totalSets };
-  },
-
-  // 10. Календарь активности
-  getActivityCalendar(year, month) {
-    const history = this.getHistory();
-    const daysMap = {};
-
-    history.forEach(h => {
-      const d = (h.date || '').substring(0, 10);
-      if (d) {
-        if (!daysMap[d]) daysMap[d] = { count: 0, totalTonnage: 0, routines: [] };
-        daysMap[d].count++;
-        daysMap[d].routines.push(h.routineName);
-        let vol = 0;
-        h.sets?.forEach(s => { vol += ((parseFloat(s.weight) || 0) * (parseInt(s.reps, 10) || 0)); });
-        daysMap[d].totalTonnage += vol;
-      }
-    });
-
-    return daysMap;
-  },
-
-  // 11. Личные рекорды в тренировке (PR detector)
-  checkWorkoutPRs(historyRecord) {
-    const priorHistory = this.getHistory().filter(h => String(h.id) !== String(historyRecord.id));
-    const prs = [];
-
-    historyRecord.sets?.forEach(s => {
-      const w = parseFloat(s.weight) || 0;
-      if (w > 0 && s.exerciseName) {
-        let maxPriorW = 0;
-        priorHistory.forEach(h => {
-          h.sets?.forEach(ps => {
-            if (ps.exerciseName === s.exerciseName) {
-              const pw = parseFloat(ps.weight) || 0;
-              if (pw > maxPriorW) maxPriorW = pw;
-            }
-          });
-        });
-
-        if (w > maxPriorW && maxPriorW > 0) {
-          if (!prs.some(p => p.exerciseName === s.exerciseName)) {
-            prs.push({
-              exerciseName: s.exerciseName,
-              weight: w,
-              priorWeight: maxPriorW,
-              diff: Math.round((w - maxPriorW) * 10) / 10
-            });
-          }
-        }
-      }
-    });
-
-    return prs;
-  },
-
-  // 12. Настройки таймера отдыха
-  getRestTimerSeconds() {
-    return parseInt(getStore(KEYS.SETTINGS, {})?.restTimerSec, 10) || 90;
-  },
-  setRestTimerSeconds(sec) {
-    const settings = getStore(KEYS.SETTINGS, {});
-    settings.restTimerSec = parseInt(sec, 10) || 90;
-    setStore(KEYS.SETTINGS, settings);
-    return settings.restTimerSec;
-  },
-
-  // 13. Черновик текущей тренировки (Quick Add)
-  getActiveDraft() {
-    return getStore(KEYS.ACTIVE_DRAFT, null);
-  },
-  saveActiveDraft(draft) {
-    setStore(KEYS.ACTIVE_DRAFT, draft);
-    return draft;
-  },
-  clearActiveDraft() {
-    if (typeof localStorage !== 'undefined') localStorage.removeItem(KEYS.ACTIVE_DRAFT);
-  },
-
-  // 14. Трекер привычек (Habits)
+  // ---------------------------------------------------------------------------
+  // БЛОК 10. ТРЕКЕР ПРИВЫЧЕК И СЕРИЙ (Habits Tracker & Streaks Engine)
+  // ---------------------------------------------------------------------------
   getHabits() {
     return getStore(KEYS.HABITS, []);
   },
+
   saveHabit(habit) {
     const habits = this.getHabits();
     if (habit.id) {
@@ -652,6 +550,7 @@ const Storage = {
     setStore(KEYS.HABITS, habits);
     return habit;
   },
+
   deleteHabit(id) {
     const habits = this.getHabits().filter(h => String(h.id) !== String(id));
     setStore(KEYS.HABITS, habits);
@@ -666,14 +565,17 @@ const Storage = {
     if (changed) setStore(KEYS.HABIT_LOGS, logs);
     return true;
   },
+
   getHabitLogs() {
     return getStore(KEYS.HABIT_LOGS, {});
   },
+
   isHabitCompleted(dateStr, habitId) {
     const logs = this.getHabitLogs();
     const dayList = logs[dateStr];
     return Array.isArray(dayList) && dayList.some(hid => String(hid) === String(habitId));
   },
+
   toggleHabit(dateStr, habitId) {
     const logs = this.getHabitLogs();
     if (!logs[dateStr]) logs[dateStr] = [];
@@ -689,6 +591,7 @@ const Storage = {
     setStore(KEYS.HABIT_LOGS, logs);
     return isCompleted;
   },
+
   getHabitStats(habitId) {
     const habits = this.getHabits();
     const habit = habits.find(h => String(h.id) === String(habitId));
@@ -763,6 +666,7 @@ const Storage = {
 
     return { currentStreak, bestStreak, totalCompleted, weeklyRate };
   },
+
   getDailyHabitProgress(dateStr) {
     const habits = this.getHabits();
     if (!habits.length) return { total: 0, completed: 0, percentage: 0 };
@@ -776,7 +680,48 @@ const Storage = {
     };
   },
 
-  // 15. Экспорт и сброс
+  // ---------------------------------------------------------------------------
+  // БЛОК 11. СИСТЕМНЫЕ НАСТРОЙКИ (Theme & Rest Timer Settings)
+  // ---------------------------------------------------------------------------
+  getTheme() {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        return localStorage.getItem(KEYS.THEME) || 'dark';
+      }
+      return _memStore[KEYS.THEME] || 'dark';
+    } catch {
+      return 'dark';
+    }
+  },
+
+  setTheme(theme) {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(KEYS.THEME, theme);
+      } else {
+        _memStore[KEYS.THEME] = theme;
+      }
+      return theme;
+    } catch (e) {
+      console.error('Ошибка сохранения темы:', e);
+      return theme;
+    }
+  },
+
+  getRestTimerSeconds() {
+    return parseInt(getStore(KEYS.SETTINGS, {})?.restTimerSec, 10) || 90;
+  },
+
+  setRestTimerSeconds(sec) {
+    const settings = getStore(KEYS.SETTINGS, {});
+    settings.restTimerSec = parseInt(sec, 10) || 90;
+    setStore(KEYS.SETTINGS, settings);
+    return settings.restTimerSec;
+  },
+
+  // ---------------------------------------------------------------------------
+  // БЛОК 12. РЕЗЕРВНОЕ КОПИРОВАНИЕ И СБРОС (Export, Import & Reset Engine)
+  // ---------------------------------------------------------------------------
   exportBackup() {
     return JSON.stringify({
       version: '1.0',
@@ -790,6 +735,7 @@ const Storage = {
       habitLogs: this.getHabitLogs(),
     }, null, 2);
   },
+
   importBackup(jsonStr) {
     try {
       const data = JSON.parse(jsonStr);
@@ -805,6 +751,7 @@ const Storage = {
       return false;
     }
   },
+
   resetAllData() {
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem(KEYS.PROFILE);
@@ -819,33 +766,11 @@ const Storage = {
     this.saveProfile(DEFAULT_PROFILE);
     this.saveRoutines(DEFAULT_ROUTINES);
     return true;
-  },
-
-  // 15. Тема оформления ('dark', 'light', 'auto')
-  getTheme() {
-    try {
-      if (typeof localStorage !== 'undefined') {
-        return localStorage.getItem(KEYS.THEME) || 'dark';
-      }
-      return _memStore[KEYS.THEME] || 'dark';
-    } catch {
-      return 'dark';
-    }
-  },
-  setTheme(theme) {
-    try {
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(KEYS.THEME, theme);
-      } else {
-        _memStore[KEYS.THEME] = theme;
-      }
-      return theme;
-    } catch (e) {
-      console.error('Ошибка сохранения темы:', e);
-      return theme;
-    }
   }
 };
 
+// -----------------------------------------------------------------------------
+// БЛОК 13. ЭКСПОРТ МОДУЛЯ (Module Interface Export)
+// -----------------------------------------------------------------------------
 if (typeof window !== 'undefined') window.Storage = Storage;
 if (typeof module !== 'undefined') module.exports = Storage;

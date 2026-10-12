@@ -1,22 +1,36 @@
-// VIV Fitness - Rest Timer Component
-// Виджет таймера отдыха между подходами
+// =============================================================================
+// VIV Fitness - Компонент таймера отдыха между подходами (Rest Timer)
+// =============================================================================
+// Назначение: Плавающий неблокирующий виджет таймера в нижней части экрана.
+// Обеспечивает обратный отсчет, паузу, добавление времени (+30с), звуковые сигналы
+// и тактильный отклик при окончании времени отдыха.
+// =============================================================================
 
 (function () {
   'use strict';
 
-      const restTimerState = {
+  // ---------------------------------------------------------------------------
+  // БЛОК 1. Состояние активного таймера отдыха (Timer State)
+  // ---------------------------------------------------------------------------
+  const restTimerState = {
     totalSeconds: 90,
     remainingSeconds: 0,
     intervalId: null,
     isPaused: false,
   };
 
+  // ---------------------------------------------------------------------------
+  // БЛОК 2. Форматирование времени (Секунды -> MM:SS)
+  // ---------------------------------------------------------------------------
   function formatTimerSeconds(sec) {
     const m = Math.floor(sec / 60);
     const s = sec % 60;
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   }
 
+  // ---------------------------------------------------------------------------
+  // БЛОК 3. Управление обратным отсчетом (Start / Stop / Pause / Add Time)
+  // ---------------------------------------------------------------------------
   function startRestTimer(seconds) {
     const sec = seconds !== undefined ? seconds : (window.Storage ? window.Storage.getRestTimerSeconds() : 90);
     restTimerState.totalSeconds = sec;
@@ -76,8 +90,10 @@
       : `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>`;
   }
 
-  
-    function updateRestTimerWidget() {
+  // ---------------------------------------------------------------------------
+  // БЛОК 4. Отрисовка и точечное обновление DOM виджета (Widget Renderer)
+  // ---------------------------------------------------------------------------
+  function updateRestTimerWidget() {
     const root = document.getElementById('rest-timer-root');
     if (!root) return;
 
@@ -90,7 +106,7 @@
     const existingBar = root.querySelector('.rest-timer-bar');
 
     if (!existingBar) {
-      // Первичная отрисовка: монтируем виджет один раз
+      // Первичный монтаж виджета в DOM
       root.innerHTML = `
         <div class="rest-timer-bar">
           <div class="rest-timer-info">
@@ -115,7 +131,7 @@
       return;
     }
 
-    // Точечное обновление в существующем DOM без пересоздания виджета (без скачков и мерцания прозрачности)
+    // Точечное обновление без мерцания и скачков прозрачности
     const timeEl = existingBar.querySelector('.rest-timer-time');
     if (timeEl && timeEl.textContent !== timeStr) {
       timeEl.textContent = timeStr;
@@ -136,9 +152,10 @@
     }
   }
 
-  // Экспорт в глобальную область видимости
-  
-    window.restTimerState = restTimerState;
+  // ---------------------------------------------------------------------------
+  // БЛОК 5. Экспорт функций таймера в глобальную область (window)
+  // ---------------------------------------------------------------------------
+  window.restTimerState = restTimerState;
   window.formatTimerSeconds = formatTimerSeconds;
   window.startRestTimer = startRestTimer;
   window.stopRestTimer = stopRestTimer;

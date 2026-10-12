@@ -1,11 +1,18 @@
-// VIV Fitness - Chart Component (Canvas)
-// Высокопроизводительная отрисовка графиков прогресса с поддержкой темной и светлой тем
+// =============================================================================
+// VIV Fitness - Компонент графиков прогресса на HTML5 Canvas (Chart Renderer)
+// =============================================================================
+// Назначение: Быстрый рендеринг динамики веса тела, рабочего тоннажа и 1RM
+// с адаптацией под Retina-экраны (devicePixelRatio), умными бейджами без наложения,
+// поддержкой тем оформления (Dark/Light) и аккуратными подписями дат.
+// =============================================================================
 
 (function () {
   'use strict';
 
-      
-    function drawChart(canvasId, points, valueGetter, unit) {
+  // ---------------------------------------------------------------------------
+  // БЛОК 1. Главная функция отрисовки графиков на Canvas (drawChart)
+  // ---------------------------------------------------------------------------
+  function drawChart(canvasId, points, valueGetter, unit) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -13,13 +20,17 @@
     const rect = canvas.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) return;
 
+    // Retina High-DPI масштабирование
     canvas.width = rect.width * dpr;
     canvas.height = rect.height * dpr;
     ctx.scale(dpr, dpr);
 
-    const w = rect.width, h = rect.height;
+    const w = rect.width;
+    const h = rect.height;
 
-    // Определение текущей темы
+    // -------------------------------------------------------------------------
+    // БЛОК 2. Палитра цветов в зависимости от темы оформления (Dark / Light)
+    // -------------------------------------------------------------------------
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
     const lineColor = isLight ? '#0f172a' : '#ffffff';
     const gridColor = isLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(120, 120, 128, 0.14)';
@@ -31,6 +42,9 @@
     const gradTop = isLight ? 'rgba(15, 23, 42, 0.14)' : 'rgba(255, 255, 255, 0.16)';
     const gradBottom = 'rgba(0, 0, 0, 0.0)';
 
+    // -------------------------------------------------------------------------
+    // БЛОК 3. Расчет диапазона данных и динамического масштаба оси Y
+    // -------------------------------------------------------------------------
     const values = points.map(p => {
       const val = typeof valueGetter === 'function' ? valueGetter(p) : p[valueGetter];
       return Math.max(0, Math.round((Number(val) || 0) * 10) / 10);
@@ -57,7 +71,9 @@
     const chartW = w - padLeft - padRight;
     const chartH = h - padTop - padBottom;
 
-    // Координатная сетка
+    // -------------------------------------------------------------------------
+    // БЛОК 4. Отрисовка координатной сетки и числовых меток
+    // -------------------------------------------------------------------------
     ctx.strokeStyle = gridColor;
     ctx.lineWidth = 1;
     for (let i = 0; i <= 4; i++) {
@@ -74,10 +90,10 @@
       ctx.fillText(`${gridVal}`, padLeft - 6, y + 3);
     }
 
-    // Расчет координат точек
     const totalPts = points.length;
     if (totalPts === 0) return;
 
+    // Расчет координат точек
     const coords = points.map((p, idx) => {
       const val = values[idx];
       const x = totalPts === 1 ? padLeft + chartW / 2 : padLeft + (chartW / (totalPts - 1)) * idx;
@@ -85,7 +101,9 @@
       return { x, y, point: p, val, idx };
     });
 
-    // Заливка под графиком
+    // -------------------------------------------------------------------------
+    // БЛОК 5. Заливка градиента под кривой и линия графика
+    // -------------------------------------------------------------------------
     ctx.beginPath();
     ctx.moveTo(coords[0].x, padTop + chartH);
     coords.forEach(c => ctx.lineTo(c.x, c.y));
@@ -97,7 +115,6 @@
     ctx.fillStyle = grad;
     ctx.fill();
 
-    // Линия графика
     ctx.beginPath();
     ctx.moveTo(coords[0].x, coords[0].y);
     coords.forEach(c => ctx.lineTo(c.x, c.y));
@@ -106,7 +123,7 @@
     ctx.lineJoin = 'round';
     ctx.stroke();
 
-    // Отрисовка базовых круглых маркеров
+    // Отрисовка узловых маркеров
     coords.forEach(c => {
       ctx.beginPath();
       ctx.arc(c.x, c.y, 3.5, 0, Math.PI * 2);
@@ -117,7 +134,9 @@
       ctx.stroke();
     });
 
-    // УМНЫЕ БЕЙДЖИ ЗНАЧЕНИЙ (защита от наложения друг на друга)
+    // -------------------------------------------------------------------------
+    // БЛОК 6. Умные бейджи ключевых значений (Collision Detection)
+    // -------------------------------------------------------------------------
     const maxIdx = values.indexOf(Math.max(...values));
     const candidateIndices = [];
     if (totalPts <= 4) {
@@ -128,7 +147,6 @@
       if (!candidateIndices.includes(0)) candidateIndices.push(0);
     }
 
-    // Фильтруем кандидатов: расстояние между бейджами строго не менее 52px
     const acceptedBadges = [];
     candidateIndices.forEach(idx => {
       const c = coords[idx];
@@ -162,7 +180,9 @@
       ctx.fillText(valText, bX + bW / 2, bY + 12);
     });
 
-    // ПОДПИСИ ПО ОСИ X (КОМПАКТНЫЕ ДАТЫ ДД.ММ БЕЗ НАЛЕЗАНИЯ)
+    // -------------------------------------------------------------------------
+    // БЛОК 7. Подписи оси X (Компактные даты ДД.ММ без наложения)
+    // -------------------------------------------------------------------------
     function formatXDate(rawDate) {
       if (!rawDate) return '';
       if (rawDate.length === 10 && rawDate.includes('-')) {
@@ -210,6 +230,8 @@
     });
   }
 
-  
-    window.drawChart = drawChart;
+  // ---------------------------------------------------------------------------
+  // БЛОК 8. Экспорт компонента графиков в глобальную область (window)
+  // ---------------------------------------------------------------------------
+  window.drawChart = drawChart;
 })();

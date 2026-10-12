@@ -1,13 +1,18 @@
-// Service Worker for VIV Fitness PWA (100% Offline Support)
-const CACHE_NAME = 'viv-core-v34';
+// =============================================================================
+// VIV Fitness - Service Worker (Офлайн-режим PWA и кэширование ресурсов)
+// =============================================================================
+// Назначение: Обеспечивает полную автономную работу приложения без интернета,
+// стратегию Network-First с возвратом к кэшу и бесшовное фоновое обновление.
+// =============================================================================
+
+// БЛОК 1. Идентификатор версии кэша и реестр критических ресурсов
+const CACHE_NAME = 'viv-core-v35';
 
 const CORE_ASSETS = [
   '/',
   '/index.html',
   '/style.css',
   '/css/theme.css',
-  '/app.js',
-  '/storage.js',
   '/manifest.json',
   '/js/app.js',
   '/js/core/storage.js',
@@ -23,25 +28,27 @@ const CORE_ASSETS = [
   '/js/screens/profile.js'
 ];
 
+// БЛОК 2. Событие установки (Pre-caching критических файлов)
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[SW] Pre-caching core assets for 100% offline access');
+      console.log('[SW] Кэширование ресурсов VIV для автономной работы...');
       return cache.addAll(CORE_ASSETS).catch((err) => {
-        console.warn('[SW] Some assets failed to cache:', err);
+        console.warn('[SW] Ошибка предварительного кэширования файлов:', err);
       });
     })
   );
 });
 
+// БЛОК 3. Событие активации (Очистка старых версий кэша)
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keyList) => {
       return Promise.all(
         keyList.map((key) => {
           if (key !== CACHE_NAME) {
-            console.log('[SW] Deleting old cache:', key);
+            console.log('[SW] Удаление устаревшего кэша:', key);
             return caches.delete(key);
           }
         })
@@ -50,11 +57,11 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// БЛОК 4. Стратегия сетевых запросов (Network-First с Fallback в кэш)
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
 
-  // Network First for fresh code on localhost, fallback to cache for offline
   if (url.origin === location.origin) {
     event.respondWith(
       fetch(event.request)

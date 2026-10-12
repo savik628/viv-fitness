@@ -1,20 +1,30 @@
-// VIV Fitness - Client Application Controller & Router
-// Модуль управления состоянием, навигацией и жизненным циклом PWA
+// =============================================================================
+// VIV Fitness - Главный контроллер приложения и маршрутизатор экранов
+// =============================================================================
+// Назначение: Управление глобальным состоянием (state), переключение табов хотбара,
+// синхронизация заголовков и управление жизненным циклом PWA.
+// =============================================================================
 
 (function () {
   'use strict';
 
-  // Telegram WebApp Setup
+  // ---------------------------------------------------------------------------
+  // БЛОК 1. Интеграция с Telegram WebApp SDK
+  // ---------------------------------------------------------------------------
   const tg = window.Telegram?.WebApp;
   if (tg) {
     tg.ready();
     tg.expand();
-    if (tg.colorScheme === 'dark') document.body.classList.add('telegram-theme');
+    if (tg.colorScheme === 'dark') {
+      document.body.classList.add('telegram-theme');
+    }
   }
 
-  // App State
+  // ---------------------------------------------------------------------------
+  // БЛОК 2. Глобальное состояние приложения (Application State Store)
+  // ---------------------------------------------------------------------------
   const state = {
-    currentTab: 'work', // Стартовый экран: Тренировки
+    currentTab: 'work', // Стартовый активный экран: 'work' (Тренировки)
     work: {
       routines: [],
       activeWorkout: null
@@ -38,7 +48,9 @@
 
   window.state = state;
 
-  // Navigation Helpers
+  // ---------------------------------------------------------------------------
+  // БЛОК 3. Управление навигацией и шапкой экрана (Header & Navigation)
+  // ---------------------------------------------------------------------------
   function setHeader(title, showBack = false, actionsHtml = '') {
     const screenTitle = document.getElementById('screen-title');
     const backBtn = document.getElementById('back-btn');
@@ -51,19 +63,23 @@
 
   function switchTab(tab) {
     state.currentTab = tab;
-    document.querySelectorAll('.nav-item').forEach(b => {
-      b.classList.toggle('active', b.dataset.tab === tab);
+    document.querySelectorAll('.nav-item').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === tab);
     });
 
+    // Защита от случайной потери несохраненной тренировки при уходе на другую вкладку
     if (tab !== 'work' && state.work.activeWorkout) {
       if (!confirm('Прервать текущую активную тренировку?')) return;
       state.work.activeWorkout = null;
       if (window.stopRestTimer) window.stopRestTimer();
     }
+
     render();
   }
 
-  // Main Render Router
+  // ---------------------------------------------------------------------------
+  // БЛОК 4. Центральный диспетчер рендера экранов (View Router)
+  // ---------------------------------------------------------------------------
   function render() {
     switch (state.currentTab) {
       case 'habits':
@@ -84,13 +100,16 @@
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // БЛОК 5. Инициализация слушателей событий и регистрация Service Worker
+  // ---------------------------------------------------------------------------
   function initApp() {
-    // Nav Items Listeners
+    // Слушатели переключения табов нижней панели (5 вкладок)
     document.querySelectorAll('.nav-item').forEach(btn => {
       btn.addEventListener('click', () => switchTab(btn.dataset.tab));
     });
 
-    // Back Button Handler
+    // Обработчик системной кнопки "Назад" в шапке
     const backBtn = document.getElementById('back-btn');
     if (backBtn) {
       backBtn.addEventListener('click', () => {
@@ -104,23 +123,27 @@
       });
     }
 
-    // Register Service Worker for PWA & 100% Offline Support
+    // Регистрация Service Worker для PWA и полного автономного режима
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js')
-          .then(reg => console.log('VIV ServiceWorker registered successfully:', reg.scope))
-          .catch(err => console.warn('VIV ServiceWorker registration failed:', err));
+          .then(reg => console.log('VIV ServiceWorker успешно зарегистрирован:', reg.scope))
+          .catch(err => console.warn('Ошибка регистрации ServiceWorker:', err));
       });
     }
 
+    // Первичный рендер активного экрана
     render();
   }
 
-  // Exports
+  // ---------------------------------------------------------------------------
+  // БЛОК 6. Экспорт публичных функций в глобальную область видимости (window)
+  // ---------------------------------------------------------------------------
   window.setHeader = setHeader;
   window.switchTab = switchTab;
   window.render = render;
 
+  // Безопасный запуск после загрузки DOM
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initApp);
   } else {

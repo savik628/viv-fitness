@@ -1,10 +1,17 @@
-// VIV Fitness - Modal Dialog Component
-// Централизованное управление всплывающими окнами (модалками)
+// =============================================================================
+// VIV Fitness - Компонент всплывающих модальных окон (Modal Manager)
+// =============================================================================
+// Назначение: Отображение шторки диалоговых окон, блокировка фона, закрытие
+// по клику на overlay или нажатию клавиши Escape, а также очистка таймеров анимаций.
+// =============================================================================
 
 (function () {
   'use strict';
 
-      function getOverlay() {
+  // ---------------------------------------------------------------------------
+  // БЛОК 1. Селекторы элементов модального контейнера в DOM
+  // ---------------------------------------------------------------------------
+  function getOverlay() {
     return document.getElementById('modal-overlay');
   }
 
@@ -12,6 +19,9 @@
     return document.getElementById('modal-container');
   }
 
+  // ---------------------------------------------------------------------------
+  // БЛОК 2. Методы управления показом и скрытием (Open / Close)
+  // ---------------------------------------------------------------------------
   function openModal(content) {
     const container = getContainer();
     const overlay = getOverlay();
@@ -20,6 +30,7 @@
   }
 
   function closeModal() {
+    // Безопасная остановка активных интервалов анимаций при закрытии окна
     if (window.state && window.state.animTimer) {
       clearInterval(window.state.animTimer);
       window.state.animTimer = null;
@@ -28,6 +39,9 @@
     if (overlay) overlay.classList.add('hidden');
   }
 
+  // ---------------------------------------------------------------------------
+  // БЛОК 3. Обработчики событий закрытия (Клик по оверлею и клавиша Escape)
+  // ---------------------------------------------------------------------------
   function initModalListeners() {
     const overlay = getOverlay();
     if (overlay) {
@@ -40,13 +54,17 @@
     });
   }
 
+  // Инициализация после загрузки разметки
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initModalListeners);
   } else {
     initModalListeners();
   }
 
-  
-    window.openModal = openModal;
+  // ---------------------------------------------------------------------------
+  // БЛОК 4. Экспорт функций модального окна в глобальную область (window)
+  // ---------------------------------------------------------------------------
+  window.openModal = openModal;
+  window.showModal = openModal;
   window.closeModal = closeModal;
 })();

@@ -1,11 +1,18 @@
-// VIV Fitness - Profile & Settings Screen (Screen 4: Профиль, Вес, Замеры, Тема, Отчёт)
-// Управление антропометрией, личными рекордами, переключением светлой/тёмной темы и экспортом данных
+// =============================================================================
+// VIV Fitness - Экран профиля, настроек, антропометрии и бэкапов (Profile Screen)
+// =============================================================================
+// Назначение: Управление профилем атлета, выбор темы оформления (Dark/Light/Auto),
+// ведение дневника веса и замеров тела, формирование печатного PDF-отчета,
+// экспорт и импорт резервных копий (JSON/буфер обмена) и внешние ссылки VIV.
+// =============================================================================
 
 (function () {
   'use strict';
 
-      
-    function renderProfile() {
+  // ---------------------------------------------------------------------------
+  // БЛОК 1. ГЛАВНЫЙ РЕНДЕР ЭКРАНА ПРОФИЛЯ (Profile Layout & Cards)
+  // ---------------------------------------------------------------------------
+  function renderProfile() {
     if (window.setHeader) window.setHeader('Профиль', false);
     const mainContent = document.getElementById('main-content');
     if (!mainContent) return;
@@ -83,7 +90,7 @@
         </div>
       </div>
 
-      <!-- 2. Profile Form -->
+      <!-- 2. ФОРМА ПАРАМЕТРОВ ПРОФИЛЯ -->
       <div class="card">
         <div class="form-group">
           <label class="form-label">Имя</label>
@@ -110,7 +117,7 @@
         <button class="btn btn-primary" onclick="saveProfile()" style="width:100%; margin-top:14px;">Сохранить параметры</button>
       </div>
 
-      <!-- 3. Bodyweight Tracker Card -->
+      <!-- 3. КАРТОЧКА ДИНАМИКИ ВЕСА ТЕЛА -->
       <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
           <div>
@@ -133,7 +140,7 @@
         </div>
       </div>
 
-      <!-- 4. Body Measurements Card -->
+      <!-- 4. КАРТОЧКА ЗАМЕРОВ ТЕЛА -->
       <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
           <div style="font-weight:bold; font-size:15.5px;">Замеры тела (см)</div>
@@ -164,7 +171,7 @@
         </div>
       </div>
 
-      <!-- 5. Rest Timer Settings -->
+      <!-- 5. НАСТРОЙКИ ТАЙМЕРА ОТДЫХА -->
       <div class="card">
         <div style="font-weight:bold; font-size:14px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:12px;">
           Таймер отдыха
@@ -180,7 +187,7 @@
         </div>
       </div>
 
-      <!-- 6. Coach PDF Report -->
+      <!-- 6. ПЕЧАТНЫЙ PDF ОТЧЕТ ТРЕНЕРА -->
       <div class="card">
         <div style="font-weight:bold; font-size:14px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:12px;">
           Отчёт атлета (PDF)
@@ -190,7 +197,7 @@
         </button>
       </div>
 
-      <!-- 7. Data Management -->
+      <!-- 7. УПРАВЛЕНИЕ ПАМЯТЬЮ И РЕЗЕРВНОЕ КОПИРОВАНИЕ -->
       <div class="card">
         <div style="font-weight:bold; font-size:14px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:12px;">
           Память устройства
@@ -216,11 +223,38 @@
     drawBodyweightChart(weightLogs);
   }
 
+  // ---------------------------------------------------------------------------
+  // БЛОК 2. ОБНОВЛЕНИЕ ПРОФИЛЯ И ТАЙМЕРА (Profile & Timer Settings)
+  // ---------------------------------------------------------------------------
+  function saveProfile() {
+    const nameInput = document.getElementById('prof-name');
+    const levelSelect = document.getElementById('prof-level');
+    const weightInput = document.getElementById('prof-weight');
+    const heightInput = document.getElementById('prof-height');
+
+    const name = nameInput?.value.trim() || '';
+    const level = levelSelect?.value || 'Начинающий';
+    const weight = parseFloat(weightInput?.value) || null;
+    const height = parseFloat(heightInput?.value) || null;
+
+    if (window.Storage) {
+      window.state.profile = window.Storage.saveProfile({ name, level, weight, height, notificationsEnabled: true });
+      if (weight) {
+        window.Storage.addBodyweightLog(weight);
+      }
+    }
+    alert('Профиль успешно сохранен!');
+    renderProfile();
+  }
+
   function updateDefaultRestTimer(sec) {
     if (window.Storage) window.Storage.setRestTimerSeconds(sec);
     renderProfile();
   }
 
+  // ---------------------------------------------------------------------------
+  // БЛОК 3. ТРЕКЕР ВЕСА ТЕЛА И ГРАФИК (Bodyweight Tracker & Modals)
+  // ---------------------------------------------------------------------------
   function drawBodyweightChart(logs) {
     const canvas = document.getElementById('bodyweightCanvas');
     if (!canvas || !logs || !logs.length) return;
@@ -299,6 +333,9 @@
     openWeightHistoryModal();
   }
 
+  // ---------------------------------------------------------------------------
+  // БЛОК 4. ДНЕВНИК ЗАМЕРОВ ТЕЛА (Body Measurements Modals)
+  // ---------------------------------------------------------------------------
   function openAddMeasurementModal() {
     const today = new Date().toISOString().substring(0, 10);
     const m = (window.Storage ? window.Storage.getMeasurements()[0] : null) || {};
@@ -382,6 +419,9 @@
     openMeasurementHistoryModal();
   }
 
+  // ---------------------------------------------------------------------------
+  // БЛОК 5. ГЕНЕРАТОР ПЕЧАТНОГО ОТЧЕТА АТЛЕТА (Coach PDF Report)
+  // ---------------------------------------------------------------------------
   function openCoachReportModal() {
     const prof = window.Storage ? window.Storage.getProfile() : {};
     const history = window.Storage ? window.Storage.getHistory() : [];
@@ -479,27 +519,9 @@
     window.print();
   }
 
-  function saveProfile() {
-    const nameInput = document.getElementById('prof-name');
-    const levelSelect = document.getElementById('prof-level');
-    const weightInput = document.getElementById('prof-weight');
-    const heightInput = document.getElementById('prof-height');
-
-    const name = nameInput?.value.trim() || '';
-    const level = levelSelect?.value || 'Начинающий';
-    const weight = parseFloat(weightInput?.value) || null;
-    const height = parseFloat(heightInput?.value) || null;
-
-    if (window.Storage) {
-      window.state.profile = window.Storage.saveProfile({ name, level, weight, height, notificationsEnabled: true });
-      if (weight) {
-        window.Storage.addBodyweightLog(weight);
-      }
-    }
-    alert('Профиль успешно сохранен!');
-    renderProfile();
-  }
-
+  // ---------------------------------------------------------------------------
+  // БЛОК 6. УПРАВЛЕНИЕ РЕЗЕРВНЫМИ КОПИЯМИ И СБРОС (Export / Import / Clipboard)
+  // ---------------------------------------------------------------------------
   function exportUserData() {
     if (!window.Storage) return;
     const blob = new Blob([window.Storage.exportBackup()], { type: 'application/json' });
@@ -532,8 +554,8 @@
         if (success) {
           alert('Данные успешно импортированы!');
           renderProfile();
-          if (window.renderWorkouts && window.state?.currentTab === 'work') {
-            window.renderWorkouts();
+          if (window.renderWork && window.state?.currentTab === 'work') {
+            window.renderWork();
           }
         } else {
           alert('Ошибка при импорте файла: неверный формат резервной копии.');
@@ -588,7 +610,9 @@
     }
   }
 
-  // Экран VIV (Сообщества и ссылки)
+  // ---------------------------------------------------------------------------
+  // БЛОК 7. ЭКРАН РЕСУРСОВ И СООБЩЕСТВ VIV (Shop & Social Links Screen)
+  // ---------------------------------------------------------------------------
   function renderShop() {
     if (window.setHeader) window.setHeader('VIV', false);
     const mainContent = document.getElementById('main-content');
@@ -645,7 +669,9 @@
     }
   }
 
-  // Перерисовка графика веса при смене темы
+  // ---------------------------------------------------------------------------
+  // БЛОК 8. РЕАКТИВНОСТЬ НА СМЕНУ ТЕМЫ И ЭКСПОРТ В WINDOW (Exports)
+  // ---------------------------------------------------------------------------
   window.addEventListener('viv-theme-changed', () => {
     if (window.state && window.state.currentTab === 'profile') {
       const logs = window.Storage ? window.Storage.getBodyweightHistory() : [];
@@ -653,7 +679,6 @@
     }
   });
 
-  // Экспорт
   window.renderProfile = renderProfile;
   window.updateDefaultRestTimer = updateDefaultRestTimer;
   window.drawBodyweightChart = drawBodyweightChart;

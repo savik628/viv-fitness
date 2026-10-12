@@ -1,19 +1,27 @@
-// VIV Fitness - Workout Screen (Screen 2: Программы и Активная тренировка)
-// Управление программами, выполнение тренировки, фиксация подходов, перестановка упражнений
+// =============================================================================
+// VIV Fitness - Экран тренировок и активной сессии (Workout Screen)
+// =============================================================================
+// Назначение: Управление программами тренировок (создание, редактирование, удаление),
+// проведение активной тренировки с таблицей подходов, таймером отдыха, вызовом
+// калькулятора блинов, авто-детекцией личных рекордов (PR) и сохранением в статистику.
+// =============================================================================
 
 (function () {
   'use strict';
 
-      const TYPE_LABELS = {
+  // ---------------------------------------------------------------------------
+  // БЛОК 1. ТИПЫ УПРАЖНЕНИЙ И ВСПОМОГАТЕЛЬНЫЙ СТЕППЕР (Types & Stepper Component)
+  // ---------------------------------------------------------------------------
+  const TYPE_LABELS = {
     weight_reps: 'С весом',
     bodyweight: 'Свой вес',
     distance: 'Дистанция',
     duration: 'Время'
   };
+
   const getExerciseTypeLabel = (t) => TYPE_LABELS[t] || 'С весом';
 
-  
-    function renderStepper(value, onMinus, onPlus, onChange, step = 1) {
+  function renderStepper(value, onMinus, onPlus, onChange, step = 1) {
     const valDisplay = (value !== 0 && value !== '0' && value !== null && value !== undefined && !isNaN(value)) ? value : '';
     return `
       <div class="stepper-container col-stepper">
@@ -24,6 +32,9 @@
     `;
   }
 
+  // ---------------------------------------------------------------------------
+  // БЛОК 2. СПИСОК СОХРАНЕННЫХ ПРОГРАММ (Routines List Screen)
+  // ---------------------------------------------------------------------------
   function renderWork() {
     const mainContent = document.getElementById('main-content');
     if (!mainContent) return;
@@ -94,6 +105,15 @@
     renderActiveWorkoutScreen();
   }
 
+  function deleteRoutine(id) {
+    if (!confirm('Вы действительно хотите удалить эту программу?')) return;
+    if (window.Storage) window.Storage.deleteRoutine(id);
+    renderWork();
+  }
+
+  // ---------------------------------------------------------------------------
+  // БЛОК 3. АКТИВНАЯ ТРЕНИРОВОЧНАЯ СЕССИЯ (Active Workout Screen & Sets Table)
+  // ---------------------------------------------------------------------------
   function renderActiveWorkoutScreen() {
     const mainContent = document.getElementById('main-content');
     if (!mainContent) return;
@@ -182,6 +202,9 @@
       </div>`;
   }
 
+  // ---------------------------------------------------------------------------
+  // БЛОК 4. УПРАВЛЕНИЕ ПОДХОДАМИ И ПЕРЕМЕЩЕНИЕ (Sets Manipulation & Reordering)
+  // ---------------------------------------------------------------------------
   function moveActiveWorkoutEx(idx, dir) {
     const aw = window.state.work.activeWorkout;
     if (!aw || !aw.exercises) return;
@@ -233,6 +256,9 @@
     renderActiveWorkoutScreen();
   }
 
+  // ---------------------------------------------------------------------------
+  // БЛОК 5. ЗАВЕРШЕНИЕ ТРЕНИРОВКИ И РЕКОРДЫ (Finish Workout & PR Detection)
+  // ---------------------------------------------------------------------------
   function finishWorkout() {
     const aw = window.state.work.activeWorkout;
     if (!aw) return;
@@ -254,6 +280,7 @@
       id: Date.now(),
       routineName: aw.routineName,
       date: new Date().toISOString().substring(0, 10),
+      duration: durationMin,
       sets: []
     };
 
@@ -333,13 +360,9 @@
     if (window.switchTab) window.switchTab('stats');
   }
 
-  function deleteRoutine(id) {
-    if (!confirm('Вы действительно хотите удалить эту программу?')) return;
-    if (window.Storage) window.Storage.deleteRoutine(id);
-    renderWork();
-  }
-
-  // Редактор программ
+  // ---------------------------------------------------------------------------
+  // БЛОК 6. МОДАЛЬНЫЙ РЕДАКТОР ПРОГРАММ (Workout Routine Creator & Editor)
+  // ---------------------------------------------------------------------------
   let editorState = { id: null, name: '', exercises: [] };
 
   function openCreateWorkoutModal() {
@@ -465,7 +488,9 @@
     renderWork();
   }
 
-  // Экспорт
+  // ---------------------------------------------------------------------------
+  // БЛОК 7. ЭКСПОРТ В GLOBAL WINDOW (Module Exports)
+  // ---------------------------------------------------------------------------
   window.TYPE_LABELS = TYPE_LABELS;
   window.getExerciseTypeLabel = getExerciseTypeLabel;
   window.renderStepper = renderStepper;
