@@ -17,6 +17,7 @@
   let _isManualEditing = false;
   let _scrollTimeout = null;
   let _lastScrolledIndex = -1;
+  let _isInitializing = false;
 
   function getOverlay() {
     if (!_pickerOverlay) {
@@ -65,6 +66,7 @@
     const max = _activeOptions.max;
 
     _currentValue = clamp(parseFloat(_activeOptions.value) || 0, min, max);
+    _isInitializing = true;
     _isManualEditing = false;
     _lastScrolledIndex = -1;
 
@@ -79,6 +81,21 @@
       items.push(i / precisionMultiplier);
     }
     _activeOptions._items = items;
+
+    // Находим точный стартовый индекс соответствующий _currentValue
+    let initialIdx = items.findIndex(v => Math.abs(v - _currentValue) < (step / 2));
+    if (initialIdx === -1) {
+      let minDiff = Infinity;
+      items.forEach((v, idx) => {
+        const diff = Math.abs(v - _currentValue);
+        if (diff < minDiff) {
+          minDiff = diff;
+          initialIdx = idx;
+        }
+      });
+    }
+    if (initialIdx === -1) initialIdx = 0;
+    _lastScrolledIndex = initialIdx;
 
     // Фильтруем быстрые дельты под шаг
     let deltas = _activeOptions.deltas;
@@ -129,7 +146,7 @@
         <div class="wheel-picker-drum" id="picker-drum">
           <div class="wheel-picker-spacer"></div>
           ${items.map((val, idx) => `
-            <div class="wheel-picker-item" data-idx="${idx}" data-val="${val}">
+            <div class="wheel-picker-item ${idx === initialIdx ? 'selected' : ''}" data-idx="${idx}" data-val="${val}">
               ${formatValue(val, step)}
             </div>
           `).join('')}
@@ -138,6 +155,12 @@
       </div>
     `;
 
+    // Синхронно позиционируем барабан ДО показа и навешивания скролла
+    const drum = document.getElementById('picker-drum');
+    if (drum) {
+      drum.scrollTop = initialIdx * _itemHeight;
+    }
+
     // Показываем оверлей
     overlay.classList.remove('hidden');
     overlay.classList.remove('closing');
@@ -145,9 +168,12 @@
     // Навешиваем слушатели
     bindPickerEvents();
 
-    // Прокручиваем к выбранному значению
+    // Прокручиваем к выбранному значению и снимаем блокировку инициализации
     requestAnimationFrame(() => {
       scrollToValue(_currentValue, false);
+      setTimeout(() => {
+        _isInitializing = false;
+      }, 120);
     });
   }
 
@@ -275,6 +301,7 @@
   // Скролл и позиционирование барабана
   // ---------------------------------------------------------------------------
   function onDrumScroll() {
+    if (_isInitializing) return;
     const drum = document.getElementById('picker-drum');
     if (!drum || !_activeOptions?._items) return;
 
@@ -295,6 +322,7 @@
   }
 
   function syncValueFromScroll() {
+    if (_isInitializing) return;
     const drum = document.getElementById('picker-drum');
     if (!drum || !_activeOptions?._items) return;
     const idx = Math.max(0, Math.min(_activeOptions._items.length - 1, Math.round(drum.scrollTop / _itemHeight)));

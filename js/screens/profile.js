@@ -189,17 +189,7 @@
         </div>
       </div>
 
-      <!-- 6. ПЕЧАТНЫЙ PDF ОТЧЕТ ТРЕНЕРА -->
-      <div class="card">
-        <div style="font-weight:bold; font-size:14px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:12px;">
-          Отчёт атлета (PDF)
-        </div>
-        <button class="btn btn-green" onclick="openCoachReportModal()" style="width:100%;">
-          Сформировать отчёт для печати / PDF
-        </button>
-      </div>
-
-      <!-- 7. УПРАВЛЕНИЕ ПАМЯТЬЮ И РЕЗЕРВНОЕ КОПИРОВАНИЕ -->
+      <!-- 6. УПРАВЛЕНИЕ ПАМЯТЬЮ И РЕЗЕРВНОЕ КОПИРОВАНИЕ -->
       <div class="card">
         <div style="font-weight:bold; font-size:14px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:12px;">
           Память устройства

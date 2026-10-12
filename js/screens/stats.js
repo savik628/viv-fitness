@@ -30,7 +30,7 @@
       <div class="sub-tabs">
         <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'progress' ? 'active' : ''}" onclick="switchStatsSubTab('progress')">Прогресс</button>
         <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'calendar' ? 'active' : ''}" onclick="switchStatsSubTab('calendar')">Календарь</button>
-        <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'report' ? 'active' : ''}" onclick="switchStatsSubTab('report')">Отчёт PDF</button>
+        <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'report' ? 'active' : ''}" onclick="switchStatsSubTab('report')">Отчёт VIV</button>
       </div>
       <div id="stats-tab-content"></div>`;
 
@@ -49,7 +49,7 @@
   }
 
   // ---------------------------------------------------------------------------
-  // БЛОК 1.1. АТЛЕТИЧЕСКИЙ ОТЧЁТ PDF (VIV Athlete Performance Report)
+  // БЛОК 1.1. АТЛЕТИЧЕСКИЙ ОТЧЁТ (VIV Athlete Performance Report - Apple / Nike Style)
   // ---------------------------------------------------------------------------
   function renderStatsReportTab() {
     const container = document.getElementById('stats-tab-content');
@@ -61,9 +61,6 @@
     const latestW = weightLogs.length ? weightLogs[weightLogs.length - 1].weight : (prof.weight || null);
     const initialW = weightLogs.length ? weightLogs[0].weight : (prof.weight || null);
     const weightDiff = (latestW != null && initialW != null) ? Math.round((latestW - initialW) * 10) / 10 : 0;
-
-    const measurements = window.Storage ? window.Storage.getMeasurements() : [];
-    const latestM = measurements[0] || { chest: 0, waist: 0, bicep: 0, thigh: 0 };
 
     let totalVolume = 0;
     let totalSets = 0;
@@ -108,151 +105,164 @@
 
     container.innerHTML = `
       <div class="report-tab-wrapper">
-        <!-- Верхняя панель действий -->
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:8px;">
-          <div>
-            <div style="font-size:16px; font-weight:800; color:var(--text-primary);">Атлетический отчёт</div>
-            <div style="font-size:12px; color:var(--text-secondary);">Готов к печати и экспорту в PDF</div>
+        <!-- Верхняя панель экспорта в PDF -->
+        <div class="apple-report-action-bar">
+          <div class="apple-report-title-box">
+            <div class="apple-report-top-title">Атлетический отчёт</div>
+            <div class="apple-report-top-sub">Apple Fitness & Nike Athletic Style</div>
           </div>
-          <button class="btn btn-green" onclick="triggerPrintReport()" style="display:inline-flex; align-items:center; gap:6px; padding:8px 14px; font-weight:700;">
+          <button class="btn btn-green apple-export-btn" onclick="triggerPrintReport()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
             Экспорт в PDF
           </button>
         </div>
 
-        <!-- Документ отчёта -->
-        <div id="viv-athlete-pdf-document" class="printable-athlete-doc">
-          <!-- Шапка документа -->
-          <div class="doc-header">
-            <div class="doc-logo-title">
-              <span class="doc-logo-accent">VIV</span> FITNESS
-            </div>
-            <div class="doc-badge">ATHLETIC PERFORMANCE REPORT</div>
-            <div class="doc-meta-date">Дата формирования: ${todayDateStr}</div>
-          </div>
-
-          <!-- 1. Профиль атлета -->
-          <div class="doc-section">
-            <div class="doc-section-title">1. ПРОФИЛЬ АТЛЕТА</div>
-            <div class="doc-profile-grid">
-              <div class="doc-kv"><span>Имя:</span><strong>${esc(prof.name || 'Атлет')}</strong></div>
-              <div class="doc-kv"><span>Уровень:</span><strong>${esc(prof.level || 'Начинающий')}</strong></div>
-              <div class="doc-kv"><span>Рост:</span><strong>${prof.height ? `${prof.height} см` : '—'}</strong></div>
-              <div class="doc-kv"><span>Вес тела:</span><strong>${latestW ? `${latestW} кг` : '—'} ${weightDiff !== 0 ? `(${weightDiff > 0 ? `+${weightDiff}` : weightDiff} кг)` : ''}</strong></div>
+        <!-- Документ отчёта: лаконичный, стиль Apple Fitness / Nike, логотип VIV по центру -->
+        <div id="viv-athlete-pdf-document" class="printable-athlete-doc apple-fitness-report">
+          <!-- Шапка ПО ЦЕНТРУ с логотипом VIV -->
+          <div class="apple-report-branding">
+            <div class="apple-report-logo">VIV</div>
+            <div class="apple-report-tagline">ATHLETIC PERFORMANCE REPORT</div>
+            <div class="apple-report-date">${todayDateStr}</div>
+            <div class="apple-athlete-pill">
+              <span class="apple-athlete-name">${esc(prof.name || 'Атлет')}</span>
+              <span class="apple-dot">•</span>
+              <span class="apple-athlete-level">${esc(prof.level || 'Начинающий')}</span>
+              ${latestW ? `
+                <span class="apple-dot">•</span>
+                <span class="apple-athlete-weight">${latestW} кг ${weightDiff !== 0 ? `(${weightDiff > 0 ? `+${weightDiff}` : weightDiff})` : ''}</span>
+              ` : ''}
             </div>
           </div>
 
-          <!-- 2. Сводные показатели -->
-          <div class="doc-section">
-            <div class="doc-section-title">2. СВОДНЫЕ ТРЕНИРОВОЧНЫЕ ПОКАЗАТЕЛИ</div>
-            <div class="doc-kpi-grid">
-              <div class="doc-kpi-card">
-                <div class="doc-kpi-label">Всего тренировок</div>
-                <div class="doc-kpi-value">${history.length}</div>
+          <!-- ГЛАВНЫЙ АКЦЕНТ: HERO CARD СУММАРНЫЙ ТОННАЖ С НЕОНОВЫМ КОЛЬЦОМ -->
+          <div class="apple-hero-card">
+            <div class="apple-ring-container">
+              <svg class="apple-ring-svg" viewBox="0 0 140 140">
+                <defs>
+                  <linearGradient id="appleRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#22c55e" />
+                    <stop offset="60%" stop-color="#10b981" />
+                    <stop offset="100%" stop-color="#a3e635" />
+                  </linearGradient>
+                </defs>
+                <circle class="apple-ring-bg" cx="70" cy="70" r="54" />
+                <circle class="apple-ring-bar" cx="70" cy="70" r="54" stroke="url(#appleRingGrad)" />
+              </svg>
+              <div class="apple-ring-inner-icon">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 5v14M18 5v14M2 9v6M22 9v6M6 12h12"/></svg>
               </div>
-              <div class="doc-kpi-card">
-                <div class="doc-kpi-label">Суммарный тоннаж</div>
-                <div class="doc-kpi-value">${Math.round(totalVolume).toLocaleString('ru-RU')} кг</div>
+            </div>
+            <div class="apple-hero-info">
+              <div class="apple-hero-kicker">HERO METRIC • ГЛАВНЫЙ ПОКАЗАТЕЛЬ</div>
+              <div class="apple-hero-num-wrap">
+                <span class="apple-hero-num">${Math.round(totalVolume).toLocaleString('ru-RU')}</span>
+                <span class="apple-hero-unit">КГ</span>
               </div>
-              <div class="doc-kpi-card">
-                <div class="doc-kpi-label">Всего подходов</div>
-                <div class="doc-kpi-value">${totalSets}</div>
-              </div>
-              <div class="doc-kpi-card">
-                <div class="doc-kpi-label">Время под нагрузкой</div>
-                <div class="doc-kpi-value">${totalHours} ч</div>
-              </div>
+              <div class="apple-hero-label">Суммарный тоннаж</div>
+              <div class="apple-hero-sub">Поднято за ${history.length} тренировок и ${totalSets} подходов</div>
             </div>
           </div>
 
-          <!-- 3. Антропометрия -->
-          <div class="doc-section">
-            <div class="doc-section-title">3. АНТРОПОМЕТРИЯ (ЗАМЕРЫ ТЕЛА)</div>
-            <div class="doc-measurements-grid">
-              <div class="doc-measure-chip"><span>Грудь:</span> <strong>${latestM.chest ? `${latestM.chest} см` : '—'}</strong></div>
-              <div class="doc-measure-chip"><span>Талия:</span> <strong>${latestM.waist ? `${latestM.waist} см` : '—'}</strong></div>
-              <div class="doc-measure-chip"><span>Бицепс:</span> <strong>${latestM.bicep ? `${latestM.bicep} см` : '—'}</strong></div>
-              <div class="doc-measure-chip"><span>Бедро:</span> <strong>${latestM.thigh ? `${latestM.thigh} см` : '—'}</strong></div>
+          <!-- СВОДНЫЕ ВИДЖЕТ-КАРТОЧКИ В СТИЛЕ APPLE FITNESS -->
+          <div class="apple-widgets-grid">
+            <div class="apple-widget-card">
+              <div class="apple-widget-header">
+                <span class="apple-widget-title">Тренировки</span>
+                <span class="apple-widget-icon" style="color:#22c55e;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                </span>
+              </div>
+              <div class="apple-widget-val">${history.length} <span class="apple-widget-unit">сессий</span></div>
+              <div class="apple-widget-foot">Время: ${totalHours} ч под нагрузкой</div>
+            </div>
+
+            <div class="apple-widget-card">
+              <div class="apple-widget-header">
+                <span class="apple-widget-title">Подходы</span>
+                <span class="apple-widget-icon" style="color:#00d2ff;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+              </div>
+              <div class="apple-widget-val">${totalSets} <span class="apple-widget-unit">сетов</span></div>
+              <div class="apple-widget-foot">В среднем ${history.length ? Math.round(totalSets / history.length) : 0} на тренировку</div>
+            </div>
+
+            <div class="apple-widget-card">
+              <div class="apple-widget-header">
+                <span class="apple-widget-title">Дисциплина</span>
+                <span class="apple-widget-icon" style="color:#f59e0b;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                </span>
+              </div>
+              <div class="apple-widget-val">${maxStreak} <span class="apple-widget-unit">дней</span></div>
+              <div class="apple-widget-foot">Серия привычек (${habits.length} активных)</div>
             </div>
           </div>
 
-          <!-- 4. Личные рекорды -->
-          <div class="doc-section">
-            <div class="doc-section-title">4. ЛИЧНЫЕ РЕКОРДЫ В УПРАЖНЕНИЯХ (PR)</div>
+          <!-- ЛИЧНЫЕ РЕКОРДЫ В СТИЛЕ NIKE / APPLE AWARDS -->
+          <div class="apple-section">
+            <div class="apple-section-header">
+              <div class="apple-section-title">Личные рекорды в упражнениях</div>
+              <span class="apple-section-badge">${bestsList.length} PR</span>
+            </div>
             ${bestsList.length ? `
-              <table class="doc-table">
-                <thead>
-                  <tr>
-                    <th>Упражнение</th>
-                    <th style="text-align:right;">Макс. вес</th>
-                    <th style="text-align:right;">Повторения</th>
-                    <th style="text-align:right;">Дата фиксации</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${bestsList.map(b => `
-                    <tr>
-                      <td><strong>${esc(b.name)}</strong></td>
-                      <td style="text-align:right;">${b.weight} кг</td>
-                      <td style="text-align:right;">${b.reps} повт</td>
-                      <td style="text-align:right; color:var(--text-secondary); font-size:11.5px;">${b.date || '—'}</td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-            ` : `
-              <div style="font-size:12px; color:var(--text-secondary); padding:8px 0;">Личные рекорды будут отображаться по мере завершения тренировок.</div>
-            `}
-          </div>
-
-          <!-- 5. Журнал недавних сессий -->
-          <div class="doc-section">
-            <div class="doc-section-title">5. ЖУРНАЛ ПОСЛЕДНИХ ТРЕНИРОВОЧНЫХ СЕССИЙ</div>
-            ${history.length ? `
-              <table class="doc-table">
-                <thead>
-                  <tr>
-                    <th>Дата</th>
-                    <th>Программа</th>
-                    <th style="text-align:right;">Подходы</th>
-                    <th style="text-align:right;">Тоннаж</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${history.slice(0, 6).map(h => {
-                    let wVol = 0;
-                    h.sets?.forEach(s => { wVol += (parseFloat(s.weight) || 0) * (parseInt(s.reps, 10) || 0); });
-                    return `
-                      <tr>
-                        <td style="font-size:12px;">${h.date}</td>
-                        <td><strong>${esc(h.routineName || 'Тренировка')}</strong></td>
-                        <td style="text-align:right;">${h.sets ? h.sets.length : 0}</td>
-                        <td style="text-align:right;">${Math.round(wVol).toLocaleString('ru-RU')} кг</td>
-                      </tr>
-                    `;
-                  }).join('')}
-                </tbody>
-              </table>
-            ` : `
-              <div style="font-size:12px; color:var(--text-secondary); padding:8px 0;">Нет завершенных тренировок.</div>
-            `}
-          </div>
-
-          <!-- 6. Дисциплина и режим -->
-          ${habits.length ? `
-            <div class="doc-section">
-              <div class="doc-section-title">6. ДИСЦИПЛИНА И РЕЖИМ ДНЯ</div>
-              <div style="display:flex; justify-content:space-between; align-items:center; background:var(--card-bg-elevated); padding:10px 14px; border-radius:10px; border:1px solid var(--border-color); font-size:13px;">
-                <div>Активных привычек в трекере: <strong>${habits.length}</strong></div>
-                <div>Максимальная серия (стрик): <strong style="color:var(--accent-color);">${maxStreak} дней</strong></div>
+              <div class="apple-records-grid">
+                ${bestsList.map(b => `
+                  <div class="apple-record-card">
+                    <div class="apple-record-icon-badge">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path></svg>
+                    </div>
+                    <div class="apple-record-main">
+                      <div class="apple-record-name">${esc(b.name)}</div>
+                      <div class="apple-record-sub">${b.reps} повт • ${b.date || '—'}</div>
+                    </div>
+                    <div class="apple-record-badge">
+                      <span class="apple-record-val">${b.weight}</span>
+                      <span class="apple-record-unit">кг</span>
+                    </div>
+                  </div>
+                `).join('')}
               </div>
-            </div>
-          ` : ''}
+            ` : `
+              <div class="apple-empty-box">Личные рекорды появятся по мере фиксации максимальных весов в сессиях.</div>
+            `}
+          </div>
 
-          <!-- Подвал документа -->
-          <div class="doc-footer">
-            <div>VIV FITNESS CLUB • АТЛЕТИЧЕСКИЙ ПРОГРЕСС И МОНИТОРИНГ ФОРМЫ</div>
-            <div style="margin-top:2px;">Сгенерировано в приложении VIV Fitness на устройстве атлета.</div>
+          <!-- ПОСЛЕДНИЕ ТРЕНИРОВКИ В СТИЛЕ КАРТОЧЕК APPLE WORKOUTS -->
+          <div class="apple-section">
+            <div class="apple-section-header">
+              <div class="apple-section-title">История тренировочных сессий</div>
+              <span class="apple-section-badge">Недавние</span>
+            </div>
+            ${history.length ? `
+              <div class="apple-history-list">
+                ${history.slice(0, 6).map(h => {
+                  let wVol = 0;
+                  h.sets?.forEach(s => { wVol += (parseFloat(s.weight) || 0) * (parseInt(s.reps, 10) || 0); });
+                  return `
+                    <div class="apple-history-row">
+                      <div class="apple-history-info">
+                        <div class="apple-history-name">${esc(h.routineName || 'Тренировка')}</div>
+                        <div class="apple-history-date">${h.date} • ${h.sets ? h.sets.length : 0} подходов</div>
+                      </div>
+                      <div class="apple-history-tonnage-box">
+                        <div class="apple-history-tonnage-val">${Math.round(wVol).toLocaleString('ru-RU')} кг</div>
+                        <div class="apple-history-tonnage-label">тоннаж</div>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            ` : `
+              <div class="apple-empty-box">Нет завершенных тренировок.</div>
+            `}
+          </div>
+
+          <!-- ЛАКОНИЧНЫЙ ЦЕНТРИРОВАННЫЙ ПОДВАЛ -->
+          <div class="apple-report-footer">
+            <div class="apple-footer-brand">VIV</div>
+            <div class="apple-footer-text">ATHLETIC PERFORMANCE SYSTEM</div>
           </div>
         </div>
       </div>

@@ -51,7 +51,15 @@
     const aw = window.state.work.activeWorkout;
     if (!aw || !aw.exercises[exIdx] || !aw.exercises[exIdx].sets[sIdx]) return;
     const set = aw.exercises[exIdx].sets[sIdx];
-    const val = parseFloat(set[field]) || 0;
+    let val = parseFloat(set[field]);
+    if (isNaN(val)) {
+      const inpEl = document.getElementById(`set-input-${exIdx}-${sIdx}-${field}`);
+      if (inpEl) {
+        val = parseFloat(inpEl.tagName === 'INPUT' ? inpEl.value : inpEl.textContent) || 0;
+      } else {
+        val = 0;
+      }
+    }
 
     let cfg = {
       title: 'Значение',
@@ -274,6 +282,7 @@
                     </button>
                   ` : ''}
                   <span class="badge">${getExerciseTypeLabel(ex.type)}</span>
+                  <button class="modal-close-btn" style="width:24px; height:24px; font-size:13px; opacity:0.65; margin-left:2px;" onclick="removeActiveWorkoutEx(${exIdx})" title="Удалить упражнение">✕</button>
                 </div>
               </div>
               <div class="sets-table-header">
@@ -307,7 +316,11 @@
             </div>
           `;
         }).join('')}
-        <button class="btn btn-green" onclick="finishWorkout()" style="width:100%; margin-top:14px; padding:14px; font-weight:700;">
+        <button class="btn btn-outline" onclick="openAddExerciseToActiveWorkoutModal()" style="width:100%; margin-top:10px; margin-bottom:10px; padding:13px; font-weight:700; border-style:dashed; display:flex; align-items:center; justify-content:center; gap:8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Добавить упражнение
+        </button>
+        <button class="btn btn-green" onclick="finishWorkout()" style="width:100%; margin-top:4px; padding:14px; font-weight:700;">
           Завершить тренировку
         </button>
       </div>`;
@@ -394,6 +407,148 @@
     if (sets.length <= 1) return alert('Тренировка должна содержать хотя бы 1 подход');
     sets.splice(sIdx, 1);
     sets.forEach((s, idx) => s.setNumber = idx + 1);
+    rerenderActiveWorkoutPreservingScroll();
+  }
+
+  function removeActiveWorkoutEx(exIdx) {
+    const aw = window.state.work.activeWorkout;
+    if (!aw || !aw.exercises) return;
+    if (aw.exercises.length <= 1) {
+      alert('Тренировка должна содержать хотя бы одно упражнение');
+      return;
+    }
+    const ex = aw.exercises[exIdx];
+    const hasCompleted = ex.sets?.some(s => s.completed);
+    if (hasCompleted && !confirm(`Удалить упражнение «${ex.name}» и его выполненные подходы?`)) {
+      return;
+    }
+    aw.exercises.splice(exIdx, 1);
+    syncActiveDraft();
+    if (window.triggerHaptic) window.triggerHaptic('light');
+    rerenderActiveWorkoutPreservingScroll();
+  }
+
+  function openAddExerciseToActiveWorkoutModal() {
+    if (!window.openModal) return;
+
+    const quickExercises = [
+      { name: 'Жим штанги лёжа', type: 'weight_reps', muscle: 'chest' },
+      { name: 'Приседания со штангой', type: 'weight_reps', muscle: 'legs' },
+      { name: 'Становая тяга', type: 'weight_reps', muscle: 'back' },
+      { name: 'Подтягивания', type: 'bodyweight', muscle: 'back' },
+      { name: 'Отжимания на брусьях', type: 'bodyweight', muscle: 'chest' },
+      { name: 'Армейский жим', type: 'weight_reps', muscle: 'shoulders' },
+      { name: 'Тяга штанги в наклоне', type: 'weight_reps', muscle: 'back' },
+      { name: 'Подъём штанги на бицепс', type: 'weight_reps', muscle: 'arms' },
+      { name: 'Французский жим', type: 'weight_reps', muscle: 'arms' },
+      { name: 'Скручивания (пресс)', type: 'bodyweight', muscle: 'core' },
+      { name: 'Планка', type: 'duration', muscle: 'core' },
+      { name: 'Бег', type: 'distance', muscle: 'cardio' }
+    ];
+
+    window.openModal(`
+      <div style="padding:4px 0;">
+        <div style="font-size:18px; font-weight:800; margin-bottom:14px; text-align:center;">Добавить упражнение</div>
+        <div style="margin-bottom:12px;">
+          <label style="display:block; font-size:12px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; margin-bottom:6px;">Название</label>
+          <input id="active-new-ex-name" class="form-input" placeholder="Например: Жим гантелей лёжа" autocomplete="off" autofocus onkeydown="if(event.key==='Enter'){event.preventDefault();confirmAddActiveExercise();}">
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <div style="font-size:11.5px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; margin-bottom:6px;">Быстрый выбор:</div>
+          <div style="display:flex; flex-wrap:wrap; gap:6px; max-height:115px; overflow-y:auto; padding:2px;">
+            ${quickExercises.map(q => `
+              <button type="button" class="filter-chip" style="font-size:11.5px; padding:4px 8px;" onclick="selectQuickActiveExercise('${esc(q.name)}', '${q.type}', '${q.muscle}')">
+                ${esc(q.name)}
+              </button>
+            `).join('')}
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:18px;">
+          <div>
+            <label style="display:block; font-size:12px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; margin-bottom:6px;">Тип нагрузки</label>
+            <select id="active-new-ex-type" class="form-select">
+              <option value="weight_reps">С весом (кг + повт)</option>
+              <option value="bodyweight">Свой вес (повторы)</option>
+              <option value="distance">Дистанция (км)</option>
+              <option value="duration">Время (сек)</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block; font-size:12px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; margin-bottom:6px;">Группа мышц</label>
+            <select id="active-new-ex-muscle" class="form-select">
+              <option value="chest">Грудь</option>
+              <option value="back">Спина</option>
+              <option value="legs">Ноги</option>
+              <option value="shoulders">Плечи</option>
+              <option value="arms">Руки</option>
+              <option value="core">Пресс / Кор</option>
+              <option value="cardio">Кардио</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:10px;">
+          <button class="btn btn-secondary" style="flex:1;" onclick="if(window.closeModal)window.closeModal();">Отмена</button>
+          <button class="btn btn-green" style="flex:1; font-weight:700;" onclick="confirmAddActiveExercise()">+ Добавить</button>
+        </div>
+      </div>
+    `);
+
+    setTimeout(() => {
+      const inp = document.getElementById('active-new-ex-name');
+      if (inp) inp.focus();
+    }, 100);
+  }
+
+  function selectQuickActiveExercise(name, type, muscle) {
+    const nameInp = document.getElementById('active-new-ex-name');
+    const typeSel = document.getElementById('active-new-ex-type');
+    const muscleSel = document.getElementById('active-new-ex-muscle');
+    if (nameInp) nameInp.value = name;
+    if (typeSel && type) typeSel.value = type;
+    if (muscleSel && muscle) muscleSel.value = muscle;
+  }
+
+  function confirmAddActiveExercise() {
+    const nameInp = document.getElementById('active-new-ex-name');
+    const typeSel = document.getElementById('active-new-ex-type');
+    const muscleSel = document.getElementById('active-new-ex-muscle');
+    const name = nameInp ? nameInp.value.trim() : '';
+    if (!name) {
+      alert('Пожалуйста, введите название упражнения');
+      return;
+    }
+
+    const type = typeSel ? typeSel.value : 'weight_reps';
+    const muscle = muscleSel ? muscleSel.value : 'chest';
+    const aw = window.state.work.activeWorkout;
+    if (!aw) return;
+    if (!aw.exercises) aw.exercises = [];
+
+    const lastSets = window.Storage?.getLastExerciseSets ? window.Storage.getLastExerciseSets(name) : null;
+    const sets = (lastSets && lastSets.length > 0)
+      ? lastSets.map((s, idx) => ({
+          setNumber: idx + 1,
+          reps: s.reps || 0,
+          weight: s.weight || 0,
+          distance: s.distance || 0,
+          duration: s.duration || 0,
+          completed: false
+        }))
+      : [{ setNumber: 1, reps: 0, weight: 0, distance: 0, duration: 0, completed: false }];
+
+    aw.exercises.push({
+      name,
+      type,
+      primaryMuscle: muscle,
+      sets
+    });
+
+    syncActiveDraft();
+    if (window.closeModal) window.closeModal();
+    if (window.triggerHaptic) window.triggerHaptic('success');
     rerenderActiveWorkoutPreservingScroll();
   }
 
@@ -700,6 +855,10 @@
   window.promptAddExercise = promptAddExercise;
   window.addEditorExerciseFromInput = addEditorExerciseFromInput;
   window.removeEditorEx = removeEditorEx;
+  window.removeActiveWorkoutEx = removeActiveWorkoutEx;
+  window.openAddExerciseToActiveWorkoutModal = openAddExerciseToActiveWorkoutModal;
+  window.selectQuickActiveExercise = selectQuickActiveExercise;
+  window.confirmAddActiveExercise = confirmAddActiveExercise;
   window.saveEditorRoutine = saveEditorRoutine;
   window.openSetPicker = openSetPicker;
 })();

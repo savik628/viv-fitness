@@ -2191,161 +2191,457 @@ canvas {
   padding-bottom: 24px;
 }
 
-.printable-athlete-doc {
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 16px;
-  padding: 22px 20px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-}
-
-.doc-header {
-  border-bottom: 2px solid var(--border-color);
-  padding-bottom: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.doc-logo-title {
-  font-size: 20px;
-  font-weight: 900;
-  letter-spacing: 1.5px;
-  color: var(--text-primary);
-}
-
-.doc-logo-accent {
-  color: var(--accent-color, #22c55e);
-}
-
-.doc-badge {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 1px;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-}
-
-.doc-meta-date {
-  font-size: 11px;
-  color: var(--text-secondary);
-  margin-top: 2px;
-}
-
-.doc-section {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.doc-section-title {
-  font-size: 11.5px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: var(--text-secondary);
-  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
-  padding-bottom: 4px;
-}
-
-.doc-profile-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px 14px;
-  background: var(--card-bg-elevated);
-  padding: 12px 14px;
-  border-radius: 10px;
-  border: 1px solid var(--border-color);
-}
-
-.doc-kv {
+.apple-report-action-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 12.5px;
-}
-
-.doc-kv span {
-  color: var(--text-secondary);
-}
-
-.doc-kv strong {
-  color: var(--text-primary);
-}
-
-.doc-kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  margin-bottom: 14px;
   gap: 8px;
 }
 
-@media (min-width: 480px) {
-  .doc-kpi-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
+.apple-report-title-box {
+  min-width: 0;
 }
 
-.doc-kpi-card {
-  background: var(--card-bg-elevated);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: 10px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.doc-kpi-label {
-  font-size: 10.5px;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  font-weight: 600;
-}
-
-.doc-kpi-num {
-  font-size: 18px;
+.apple-report-top-title {
+  font-size: 17px;
   font-weight: 800;
   color: var(--text-primary);
   letter-spacing: -0.3px;
 }
 
-.doc-table {
-  width: 100%;
-  border-collapse: collapse;
+.apple-report-top-sub {
   font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
 }
 
-.doc-table th {
-  text-align: left;
+.apple-export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-weight: 700;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+/* Карточка отчёта в стиле Apple Fitness / Nike */
+.apple-fitness-report {
+  background: #000000;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 24px 18px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  color: #ffffff;
+}
+
+/* Центрированный брендинг VIV */
+.apple-report-branding {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.apple-report-logo {
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: 5px;
+  color: #ffffff;
+  line-height: 1;
+  text-shadow: 0 2px 10px rgba(255, 255, 255, 0.15);
+}
+
+.apple-report-tagline {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 2.5px;
+  color: var(--accent-color, #22c55e);
+  text-transform: uppercase;
+  margin-top: 5px;
+}
+
+.apple-report-date {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 4px;
+}
+
+.apple-athlete-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.apple-dot {
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 10px;
+}
+
+.apple-athlete-name {
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* HERO CARD: СУММАРНЫЙ ТОННАЖ С НЕОНОВЫМ КОЛЬЦОМ */
+.apple-hero-card {
+  background: linear-gradient(145deg, #18181b 0%, #111113 100%);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 20px;
+  padding: 18px 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.apple-ring-container {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.apple-ring-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.apple-ring-bg {
+  stroke: rgba(255, 255, 255, 0.08);
+  stroke-width: 12;
+  fill: none;
+}
+
+.apple-ring-bar {
+  stroke-width: 12;
+  fill: none;
+  stroke-linecap: round;
+  stroke-dasharray: 339.29;
+  stroke-dashoffset: 42;
+  filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.45));
+}
+
+.apple-ring-inner-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--accent-color, #22c55e);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.apple-hero-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.apple-hero-kicker {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: var(--accent-color, #22c55e);
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.apple-hero-num-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.apple-hero-num {
+  font-size: 32px;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: -1px;
+  line-height: 1;
+}
+
+.apple-hero-unit {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--accent-color, #22c55e);
+}
+
+.apple-hero-label {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  margin-top: 3px;
+}
+
+.apple-hero-sub {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 2px;
+}
+
+/* Сводные виджеты */
+.apple-widgets-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+@media (max-width: 480px) {
+  .apple-widgets-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+}
+
+.apple-widget-card {
+  background: #18181b;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px;
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.apple-widget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.apple-widget-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.55);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.apple-widget-val {
+  font-size: 18px;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.apple-widget-unit {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.apple-widget-foot {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Секции отчёта */
+.apple-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.apple-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 2px;
+}
+
+.apple-section-title {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.apple-section-badge {
   font-size: 10px;
   font-weight: 700;
+  color: var(--accent-color, #22c55e);
+  background: rgba(34, 197, 94, 0.1);
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+
+/* Сетка рекордов (PR) */
+.apple-records-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+@media (max-width: 440px) {
+  .apple-records-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.apple-record-card {
+  background: #18181b;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.apple-record-icon-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--accent-color, #22c55e);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.apple-record-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.apple-record-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.apple-record-sub {
+  font-size: 10.5px;
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: 1px;
+}
+
+.apple-record-badge {
+  background: rgba(34, 197, 94, 0.14);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 8px;
+  padding: 4px 8px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.apple-record-val {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--accent-color, #22c55e);
+}
+
+.apple-record-unit {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Журнал тренировок */
+.apple-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.apple-history-row {
+  background: #18181b;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.apple-history-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.apple-history-date {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: 1px;
+}
+
+.apple-history-tonnage-val {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--accent-color, #22c55e);
+  text-align: right;
+}
+
+.apple-history-tonnage-label {
+  font-size: 9px;
   text-transform: uppercase;
-  color: var(--text-secondary);
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--border-color);
+  color: rgba(255, 255, 255, 0.4);
+  text-align: right;
 }
 
-.doc-table td {
-  padding: 7px 8px;
-  border-bottom: 1px solid var(--border-color);
-  color: var(--text-primary);
-}
-
-.doc-footer {
-  border-top: 1px solid var(--border-color);
-  padding-top: 10px;
-  margin-top: 6px;
-  font-size: 10px;
-  color: var(--text-secondary);
+.apple-empty-box {
+  background: #18181b;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
   text-align: center;
-  line-height: 1.4;
 }
 
-/* Print Media Styles */
+/* Подвал */
+.apple-report-footer {
+  text-align: center;
+  padding-top: 14px;
+  margin-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.apple-footer-brand {
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 4px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.apple-footer-text {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: rgba(255, 255, 255, 0.35);
+  margin-top: 2px;
+}
+
+/* Стили печати для Apple Fitness Report */
 @media print {
   body {
     background: #ffffff !important;
@@ -2358,7 +2654,7 @@ canvas {
   .sub-tabs,
   .btn,
   button,
-  .report-tab-wrapper > div:first-child,
+  .apple-report-action-bar,
   #picker-overlay,
   .modal-overlay {
     display: none !important;
@@ -2375,56 +2671,81 @@ canvas {
     padding: 0 !important;
   }
 
-  .printable-athlete-doc {
+  .apple-fitness-report {
     background: #ffffff !important;
     color: #000000 !important;
     border: 1px solid #000000 !important;
     box-shadow: none !important;
-    padding: 16px !important;
+    padding: 18px !important;
     border-radius: 0 !important;
   }
 
-  .doc-logo-title,
-  .doc-badge,
-  .doc-section-title,
-  .doc-meta-date,
-  .doc-kpi-label,
-  .doc-kpi-num,
-  .doc-kv strong,
-  .doc-kv span,
-  .doc-table th,
-  .doc-table td,
-  .doc-footer {
+  .apple-report-logo {
     color: #000000 !important;
   }
 
-  .doc-logo-accent {
+  .apple-report-tagline {
+    color: #000000 !important;
+  }
+
+  .apple-report-date,
+  .apple-hero-sub,
+  .apple-widget-foot,
+  .apple-record-sub,
+  .apple-history-date {
+    color: #555555 !important;
+  }
+
+  .apple-athlete-pill {
+    background: #f4f4f5 !important;
+    border: 1px solid #cccccc !important;
+    color: #000000 !important;
+  }
+
+  .apple-athlete-name {
+    color: #000000 !important;
+  }
+
+  .apple-hero-card,
+  .apple-widget-card,
+  .apple-record-card,
+  .apple-history-row {
+    background: #fafafa !important;
+    border: 1px solid #dddddd !important;
+    color: #000000 !important;
+  }
+
+  .apple-hero-num,
+  .apple-widget-val,
+  .apple-record-name,
+  .apple-history-name {
+    color: #000000 !important;
+  }
+
+  .apple-hero-label,
+  .apple-section-title {
+    color: #000000 !important;
+  }
+
+  .apple-hero-unit,
+  .apple-record-val,
+  .apple-history-tonnage-val {
     color: #000000 !important;
     font-weight: 900 !important;
   }
 
-  .doc-profile-grid,
-  .doc-kpi-card,
-  div[style*="background:var(--card-bg-elevated)"] {
-    background: #f8f9fa !important;
-    border: 1px solid #cccccc !important;
+  .apple-ring-bg {
+    stroke: #e4e4e7 !important;
   }
 
-  .doc-header {
-    border-bottom: 2px solid #000000 !important;
+  .apple-ring-bar {
+    stroke: #000000 !important;
+    filter: none !important;
   }
 
-  .doc-section-title {
-    border-bottom: 1px solid #999999 !important;
-  }
-
-  .doc-table th,
-  .doc-table td {
-    border-bottom: 1px solid #cccccc !important;
-  }
-
-  .doc-footer {
-    border-top: 1px solid #999999 !important;
+  .apple-footer-brand,
+  .apple-footer-text {
+    color: #666666 !important;
   }
 }
 
