@@ -19,8 +19,16 @@
   // ---------------------------------------------------------------------------
   // БЛОК 2. Открытие модального окна калькулятора (Modal Layout)
   // ---------------------------------------------------------------------------
-  function openPlateCalculatorModal(targetWeight = 60, targetExIdx = null) {
-    plateCalcTargetWeight = parseFloat(targetWeight) || 60;
+  function openPlateCalculatorModal(targetWeight = null, targetExIdx = null) {
+    let resolvedWeight = parseFloat(targetWeight);
+    if ((!resolvedWeight || isNaN(resolvedWeight)) && targetExIdx !== null && window.state?.work?.activeWorkout) {
+      const ex = window.state.work.activeWorkout.exercises[targetExIdx];
+      if (ex && Array.isArray(ex.sets)) {
+        const activeSet = ex.sets.find(s => !s.completed && parseFloat(s.weight) > 0) || ex.sets.find(s => parseFloat(s.weight) > 0);
+        if (activeSet) resolvedWeight = parseFloat(activeSet.weight);
+      }
+    }
+    plateCalcTargetWeight = resolvedWeight > 0 ? resolvedWeight : 60;
     plateCalcBarWeight = 20;
     plateCalcTargetExIdx = targetExIdx;
 
@@ -178,11 +186,15 @@
     if (plateCalcTargetExIdx !== null && window.state && window.state.work && window.state.work.activeWorkout) {
       const ex = window.state.work.activeWorkout.exercises[plateCalcTargetExIdx];
       if (ex) {
-        ex.sets.forEach(s => (s.weight = plateCalcTargetWeight));
+        ex.sets.forEach((s, sIdx) => {
+          s.weight = plateCalcTargetWeight;
+          const inp = document.getElementById(`set-input-${plateCalcTargetExIdx}-${sIdx}-weight`);
+          if (inp) inp.value = plateCalcTargetWeight;
+        });
+        if (window.Storage) window.Storage.saveActiveDraft(window.state.work.activeWorkout);
       }
     }
     if (window.closeModal) window.closeModal();
-    if (window.renderActiveWorkoutScreen) window.renderActiveWorkoutScreen();
   }
 
   // ---------------------------------------------------------------------------

@@ -25,13 +25,19 @@
   function openModal(content) {
     const container = getContainer();
     const overlay = getOverlay();
-    if (container) container.innerHTML = content;
+    const wasAlreadyOpen = overlay && !overlay.classList.contains('hidden');
+    if (container) {
+      container.style.animation = wasAlreadyOpen ? 'none' : '';
+      container.innerHTML = content;
+    }
     if (overlay) overlay.classList.remove('hidden');
   }
 
   function closeModal() {
     const overlay = getOverlay();
+    const container = getContainer();
     if (overlay) overlay.classList.add('hidden');
+    if (container) container.style.animation = '';
   }
 
   // ---------------------------------------------------------------------------

@@ -201,7 +201,9 @@
       `;
     }
 
+    const prevScroll = container.scrollTop;
     container.innerHTML = html;
+    container.scrollTop = prevScroll;
   }
 
   // ---------------------------------------------------------------------------
