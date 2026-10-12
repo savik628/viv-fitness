@@ -21,19 +21,22 @@
     const mainContent = document.getElementById('main-content');
     if (!mainContent) return;
 
-    const validTabs = ['progress', 'calendar'];
+    const validTabs = ['summary', 'progress', 'calendar'];
     if (!validTabs.includes(window.state.stats.activeSubTab)) {
-      window.state.stats.activeSubTab = 'progress';
+      window.state.stats.activeSubTab = 'summary';
     }
 
     mainContent.innerHTML = `
       <div class="sub-tabs">
+        <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'summary' ? 'active' : ''}" onclick="switchStatsSubTab('summary')">Сводка</button>
         <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'progress' ? 'active' : ''}" onclick="switchStatsSubTab('progress')">Прогресс</button>
         <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'calendar' ? 'active' : ''}" onclick="switchStatsSubTab('calendar')">Календарь</button>
       </div>
       <div id="stats-tab-content"></div>`;
 
-    if (window.state.stats.activeSubTab === 'calendar') {
+    if (window.state.stats.activeSubTab === 'summary') {
+      renderStatsSummaryTab();
+    } else if (window.state.stats.activeSubTab === 'calendar') {
       renderStatsCalendarTab();
     } else {
       renderStatsProgressTab();
@@ -43,6 +46,270 @@
   function switchStatsSubTab(tab) {
     window.state.stats.activeSubTab = tab;
     renderStats();
+  }
+
+  // ---------------------------------------------------------------------------
+  // БЛОК 1.1. СВОДКА ЗА ДЕНЬ (Apple Fitness Style Summary Dashboard)
+  // ---------------------------------------------------------------------------
+  function renderStatsSummaryTab() {
+    const container = document.getElementById('stats-tab-content');
+    if (!container) return;
+
+    const todayStr = window.getLocalDateStr ? window.getLocalDateStr() : new Date().toISOString().substring(0, 10);
+    const dateObj = new Date();
+    const dayName = dateObj.toLocaleDateString('ru-RU', { weekday: 'long' });
+    const dayDate = dateObj.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+    const formattedDate = dayName.charAt(0).toUpperCase() + dayName.slice(1) + ', ' + dayDate;
+
+    // 1. Тренировочные данные за сегодня
+    const history = window.Storage ? window.Storage.getHistory() : [];
+    const todayWorkouts = history.filter(h => h.date === todayStr);
+
+    let todayVolume = 0;
+    let todaySets = 0;
+    let todayDurationSec = 0;
+    todayWorkouts.forEach(w => {
+      todayDurationSec += (w.duration || 0);
+      if (Array.isArray(w.sets)) {
+        todaySets += w.sets.length;
+        w.sets.forEach(s => {
+          const wgt = parseFloat(s.weight) || 0;
+          const rps = parseInt(s.reps, 10) || 0;
+          todayVolume += wgt * rps;
+        });
+      }
+    });
+
+    const todayDurationMin = Math.round(todayDurationSec / 60);
+    const targetVolume = Math.max(2000, todayVolume > 0 ? Math.ceil(todayVolume / 500) * 500 : 2000);
+    const volumePct = targetVolume > 0 ? Math.min(100, Math.round((todayVolume / targetVolume) * 100)) : 0;
+
+    // 2. Данные по привычкам за сегодня
+    const habits = window.Storage ? window.Storage.getHabits() : [];
+    const habitProgress = window.Storage ? window.Storage.getDailyHabitProgress(todayStr) : { total: 0, completed: 0, percentage: 0 };
+    const totalHabits = habitProgress.total || habits.length;
+    const completedHabits = habitProgress.completed || 0;
+    const habitsPct = totalHabits > 0 ? Math.min(100, Math.round((completedHabits / totalHabits) * 100)) : 0;
+
+    // 3. Данные по стрику / дисциплине
+    let maxStreak = 0;
+    habits.forEach(h => {
+      const st = window.Storage ? window.Storage.getHabitStats(h.id) : { currentStreak: 0 };
+      if (st.currentStreak > maxStreak) maxStreak = st.currentStreak;
+    });
+    if (maxStreak === 0 && todayWorkouts.length > 0) maxStreak = 1;
+    const targetStreak = 7;
+    const streakPct = Math.min(100, Math.round((maxStreak / targetStreak) * 100));
+
+    // 4. Данные по весу тела
+    const bwLogs = window.Storage ? window.Storage.getBodyweightLogs() : [];
+    const latestWeight = bwLogs.length ? bwLogs[bwLogs.length - 1].weight : (window.state?.profile?.weight || 75);
+    let weightDiffText = 'Текущий вес';
+    if (bwLogs.length > 1) {
+      const prevWeight = bwLogs[bwLogs.length - 2].weight;
+      const diff = Math.round((latestWeight - prevWeight) * 10) / 10;
+      if (diff > 0) weightDiffText = `+${diff} кг к прошлому`;
+      else if (diff < 0) weightDiffText = `${diff} кг к прошлому`;
+      else weightDiffText = 'Без изменений';
+    }
+
+    // 5. Параметры SVG колец активности
+    const c1 = 326.73; // r = 52
+    const offset1 = c1 - (c1 * (volumePct / 100));
+
+    const c2 = 238.76; // r = 38
+    const offset2 = c2 - (c2 * (habitsPct / 100));
+
+    const c3 = 150.80; // r = 24
+    const offset3 = c3 - (c3 * (streakPct / 100));
+
+    // 6. Мини-графики столбиков (12 колонок как в Apple Fitness)
+    const miniBarsHtml = Array.from({ length: 12 }).map((_, i) => {
+      const hasSet = i < todaySets;
+      const barHeight = hasSet ? Math.min(26, Math.max(8, (i + 1) * 3)) : 4;
+      return `<div class="summary-mini-bar ${hasSet ? 'active-purple' : ''}" style="height:${barHeight}px;"></div>`;
+    }).join('');
+
+    const miniBwBarsHtml = Array.from({ length: 12 }).map((_, i) => {
+      const isFilled = i >= 4 && i <= 8;
+      const h = isFilled ? 18 : 6;
+      return `<div class="summary-mini-bar ${isFilled ? 'active-cyan' : ''}" style="height:${h}px;"></div>`;
+    }).join('');
+
+    const routines = window.Storage ? window.Storage.getRoutines() : [];
+    const featuredRoutine = routines[0] || null;
+
+    container.innerHTML = `
+      <div class="apple-fitness-summary">
+        <!-- Шапка сводки -->
+        <div class="summary-header-block">
+          <div>
+            <div class="summary-title-main">Сводка</div>
+            <div class="summary-date-sub">${esc(formattedDate)}</div>
+          </div>
+          <div class="badge" style="background:var(--card-bg-elevated); border:1px solid var(--border-color); font-size:12px; padding:4px 10px;">
+            VIV Activity
+          </div>
+        </div>
+
+        <!-- Карточка: Кольца активности (Activity Rings) -->
+        <div class="activity-rings-card">
+          <div class="activity-rings-card-title">Кольца активности</div>
+          <div class="activity-rings-content">
+            <div class="activity-rings-svg-wrap">
+              <svg width="130" height="130" viewBox="0 0 140 140" class="activity-rings-svg">
+                <!-- Фоны дорожек -->
+                <circle cx="70" cy="70" r="52" stroke="rgba(255, 45, 85, 0.22)" stroke-width="11" fill="none" />
+                <circle cx="70" cy="70" r="38" stroke="rgba(48, 209, 88, 0.22)" stroke-width="11" fill="none" />
+                <circle cx="70" cy="70" r="24" stroke="rgba(0, 240, 255, 0.22)" stroke-width="11" fill="none" />
+
+                <!-- Прогресс колец -->
+                <circle cx="70" cy="70" r="52" stroke="#ff2d55" stroke-width="11" fill="none" stroke-linecap="round"
+                        stroke-dasharray="326.73" stroke-dashoffset="${offset1}" style="transition: stroke-dashoffset 0.8s cubic-bezier(0.16, 1, 0.3, 1);" />
+                <circle cx="70" cy="70" r="38" stroke="#30d158" stroke-width="11" fill="none" stroke-linecap="round"
+                        stroke-dasharray="238.76" stroke-dashoffset="${offset2}" style="transition: stroke-dashoffset 0.8s cubic-bezier(0.16, 1, 0.3, 1);" />
+                <circle cx="70" cy="70" r="24" stroke="#00f0ff" stroke-width="11" fill="none" stroke-linecap="round"
+                        stroke-dasharray="150.80" stroke-dashoffset="${offset3}" style="transition: stroke-dashoffset 0.8s cubic-bezier(0.16, 1, 0.3, 1);" />
+              </svg>
+            </div>
+
+            <!-- Легенда и показатели справа -->
+            <div class="rings-legend-list">
+              <div class="ring-stat-item">
+                <div class="ring-stat-label">Тоннаж / Объем</div>
+                <div class="ring-stat-val val-red">
+                  ${todayVolume.toLocaleString('ru-RU')}/${targetVolume.toLocaleString('ru-RU')} <span class="ring-stat-unit">КГ</span>
+                </div>
+              </div>
+
+              <div class="ring-stat-item">
+                <div class="ring-stat-label">Привычки</div>
+                <div class="ring-stat-val val-green">
+                  ${completedHabits}/${totalHabits} <span class="ring-stat-unit">ВЫПОЛНЕНО</span>
+                </div>
+              </div>
+
+              <div class="ring-stat-item">
+                <div class="ring-stat-label">Дисциплина</div>
+                <div class="ring-stat-val val-cyan">
+                  ${maxStreak} <span class="ring-stat-unit">ДНЕЙ ПОДРЯД</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2 квадратные метрические карточки в ряд -->
+        <div class="summary-metric-cards-grid">
+          <!-- Подходы -->
+          <div class="summary-metric-card" onclick="switchStatsSubTab('calendar')" style="cursor:pointer;" title="Нажмите для перехода в журнал">
+            <div>
+              <div class="summary-metric-top">
+                <span class="summary-metric-title">Подходы</span>
+                <span class="summary-metric-chevron">›</span>
+              </div>
+              <div class="summary-metric-sub">Сегодня</div>
+              <div class="summary-metric-num num-purple">${todaySets}</div>
+            </div>
+            <div class="summary-mini-bars">
+              ${miniBarsHtml}
+            </div>
+          </div>
+
+          <!-- Вес тела -->
+          <div class="summary-metric-card" onclick="openWeightModalFromSummary()" style="cursor:pointer;" title="Нажмите для записи веса">
+            <div>
+              <div class="summary-metric-top">
+                <span class="summary-metric-title">Вес тела</span>
+                <span class="summary-metric-chevron">›</span>
+              </div>
+              <div class="summary-metric-sub">${esc(weightDiffText)}</div>
+              <div class="summary-metric-num num-cyan">${latestWeight} <span style="font-size:14px; font-weight:700;">КГ</span></div>
+            </div>
+            <div class="summary-mini-bars">
+              ${miniBwBarsHtml}
+            </div>
+          </div>
+        </div>
+
+        <!-- Карточка тренировки дня -->
+        <div class="summary-featured-workout-card">
+          ${todayWorkouts.length > 0 ? `
+            <div class="summary-featured-badge">✓ Тренировка завершена</div>
+            <div class="summary-featured-title">${esc(todayWorkouts[0].routineName || 'Тренировка')}</div>
+            <div class="summary-featured-meta">
+              <span>⏱ ${todayDurationMin} мин</span>
+              <span>⚡ ${todaySets} подходов</span>
+              <span>🏋️ ${todayVolume.toLocaleString('ru-RU')} кг</span>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="switchStatsSubTab('calendar')">Посмотреть в журнале</button>
+          ` : `
+            <div class="summary-featured-badge" style="color:#38bdf8;">Активность дня</div>
+            <div class="summary-featured-title">${featuredRoutine ? esc(featuredRoutine.name) : 'Силовая тренировка'}</div>
+            <div class="summary-featured-meta">
+              <span>${featuredRoutine ? `${featuredRoutine.exercises.length} упражнений` : 'Создайте первую программу'}</span>
+              <span>Регулярность формирует результат</span>
+            </div>
+            <div style="display:flex; gap:8px;">
+              ${featuredRoutine ? `
+                <button class="btn btn-green" style="flex:1;" onclick="startWorkoutFromSummary(${featuredRoutine.id})">Начать тренировку</button>
+              ` : `
+                <button class="btn btn-green" style="flex:1;" onclick="window.switchTab ? window.switchTab('work') : null">Перейти к программам</button>
+              `}
+            </div>
+          `}
+        </div>
+
+        <!-- Быстрый чеклист привычек на сегодня -->
+        ${habits.length > 0 ? `
+          <div class="card" style="padding:14px 16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <div style="font-size:13.5px; font-weight:700; color:var(--text-primary);">Привычки на сегодня</div>
+              <button class="btn btn-outline btn-sm" style="padding:3px 8px; font-size:11px;" onclick="window.switchTab ? window.switchTab('habits') : null">Все привычки ›</button>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              ${habits.slice(0, 4).map(h => {
+                const isDone = window.Storage ? window.Storage.isHabitCompleted(todayStr, h.id) : false;
+                return `
+                  <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px; background:var(--card-bg-elevated); border:1px solid var(--border-subtle); border-radius:10px;">
+                    <div style="display:flex; align-items:center; gap:8px; min-width:0;">
+                      <span style="font-size:16px;">${h.emoji || '🎯'}</span>
+                      <span style="font-size:13px; font-weight:600; text-decoration:${isDone ? 'line-through' : 'none'}; color:${isDone ? 'var(--text-secondary)' : 'var(--text-primary)'}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                        ${esc(h.title)}
+                      </span>
+                    </div>
+                    <button class="habit-checkbox-btn ${isDone ? 'checked' : ''}" style="width:28px; height:28px; border-radius:8px; font-size:12px;" onclick="toggleSummaryHabit(${h.id}, '${todayStr}')">✓</button>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  function startWorkoutFromSummary(routineId) {
+    if (window.startWorkout) {
+      window.startWorkout(routineId);
+      if (window.switchTab) window.switchTab('work');
+    }
+  }
+
+  function toggleSummaryHabit(habitId, dateStr) {
+    if (window.Storage) {
+      window.Storage.toggleHabit(dateStr, habitId);
+      if (window.triggerHaptic) window.triggerHaptic('impact');
+      renderStatsSummaryTab();
+    }
+  }
+
+  function openWeightModalFromSummary() {
+    if (window.openLogWeightModal) {
+      window.openLogWeightModal();
+    } else if (window.switchTab) {
+      window.switchTab('profile');
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -450,6 +717,10 @@
   // ---------------------------------------------------------------------------
   window.renderStats = renderStats;
   window.switchStatsSubTab = switchStatsSubTab;
+  window.renderStatsSummaryTab = renderStatsSummaryTab;
+  window.startWorkoutFromSummary = startWorkoutFromSummary;
+  window.toggleSummaryHabit = toggleSummaryHabit;
+  window.openWeightModalFromSummary = openWeightModalFromSummary;
   window.renderStatsProgressTab = renderStatsProgressTab;
   window.changeStatsRoutine = changeStatsRoutine;
   window.changeStatsExercise = changeStatsExercise;

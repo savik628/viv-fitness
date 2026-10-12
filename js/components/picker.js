@@ -95,9 +95,9 @@
 
     container.innerHTML = `
       <div class="wheel-picker-header">
-        <button type="button" class="wheel-picker-btn-text" id="picker-cancel-btn">Отмена</button>
+        <button type="button" class="wheel-picker-btn-cancel" id="picker-cancel-btn">Отмена</button>
         <div class="wheel-picker-title">${window.escapeHtml ? window.escapeHtml(_activeOptions.title) : _activeOptions.title}</div>
-        <button type="button" class="wheel-picker-btn-done" id="picker-confirm-btn">Готово</button>
+        <button type="button" class="wheel-picker-btn-confirm" id="picker-confirm-btn">Готово</button>
       </div>
 
       <div class="wheel-picker-display-card" id="picker-display-card" title="Нажмите, чтобы ввести число вручную">
@@ -144,6 +144,11 @@
           <div class="wheel-picker-spacer"></div>
         </div>
       </div>
+
+      <div class="wheel-picker-footer-actions">
+        <button type="button" class="btn btn-outline" style="flex:1;" id="picker-cancel-btn-bottom">Отмена</button>
+        <button type="button" class="btn btn-green" style="flex:1.6;" id="picker-confirm-btn-bottom">Готово</button>
+      </div>
     `;
 
     // Показываем оверлей
@@ -167,42 +172,42 @@
     const container = getContainer();
     const drum = document.getElementById('picker-drum');
     const cancelBtn = document.getElementById('picker-cancel-btn');
+    const cancelBtnBottom = document.getElementById('picker-cancel-btn-bottom');
     const confirmBtn = document.getElementById('picker-confirm-btn');
+    const confirmBtnBottom = document.getElementById('picker-confirm-btn-bottom');
     const displayCard = document.getElementById('picker-display-card');
     const manualInput = document.getElementById('picker-manual-input');
     const manualBox = document.getElementById('picker-manual-box');
     const displayVal = document.getElementById('picker-display-val');
     const hintEl = document.getElementById('picker-hint');
 
-    // Кнопка Отмена
-    if (cancelBtn) {
-      cancelBtn.onclick = () => {
-        if (_activeOptions?.onCancel) _activeOptions.onCancel();
-        closeNumberPicker();
-      };
-    }
+    const handleCancel = () => {
+      if (_activeOptions?.onCancel) _activeOptions.onCancel();
+      closeNumberPicker();
+    };
 
-    // Кнопка Готово
-    if (confirmBtn) {
-      confirmBtn.onclick = () => {
-        applyManualInputIfActive();
-        if (_activeOptions?.onConfirm) {
-          _activeOptions.onConfirm(_currentValue);
-        }
-        if (window.triggerHaptic) window.triggerHaptic('success');
-        closeNumberPicker();
-      };
-    }
+    const handleConfirm = () => {
+      applyManualInputIfActive();
+      if (_activeOptions?.onConfirm) {
+        _activeOptions.onConfirm(_currentValue);
+      }
+      if (window.triggerHaptic) window.triggerHaptic('success');
+      closeNumberPicker();
+    };
+
+    // Кнопки Отмена (верхняя и нижняя)
+    if (cancelBtn) cancelBtn.onclick = handleCancel;
+    if (cancelBtnBottom) cancelBtnBottom.onclick = handleCancel;
+
+    // Кнопки Готово (верхняя и нижняя)
+    if (confirmBtn) confirmBtn.onclick = handleConfirm;
+    if (confirmBtnBottom) confirmBtnBottom.onclick = handleConfirm;
 
     // Закрытие по клику на фон оверлея
     if (overlay) {
       overlay.onclick = (e) => {
         if (e.target === overlay) {
-          applyManualInputIfActive();
-          if (_activeOptions?.onConfirm) {
-            _activeOptions.onConfirm(_currentValue);
-          }
-          closeNumberPicker();
+          handleConfirm();
         }
       };
     }
@@ -248,7 +253,7 @@
         if (e.key === 'Enter') {
           e.preventDefault();
           applyManualInputIfActive();
-          if (confirmBtn) confirmBtn.click();
+          handleConfirm();
         }
       });
       manualInput.addEventListener('blur', () => {
@@ -278,8 +283,33 @@
         }
       });
 
+      // Строгая блокировка горизонтальных жестов и смещений
+      let touchStartX = 0;
+      let touchStartY = 0;
+      drum.addEventListener('touchstart', (e) => {
+        if (e.touches && e.touches.length) {
+          touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
+        }
+      }, { passive: true });
+
+      drum.addEventListener('touchmove', (e) => {
+        if (drum.scrollLeft !== 0) drum.scrollLeft = 0;
+        if (e.touches && e.touches.length) {
+          const dx = Math.abs(e.touches[0].clientX - touchStartX);
+          const dy = Math.abs(e.touches[0].clientY - touchStartY);
+          if (dx > dy && dx > 5) {
+            // Предотвращаем горизонтальное смещение
+            e.preventDefault();
+          }
+        }
+      }, { passive: false });
+
       // Скролл барабана
-      drum.addEventListener('scroll', onDrumScroll, { passive: true });
+      drum.addEventListener('scroll', () => {
+        if (drum.scrollLeft !== 0) drum.scrollLeft = 0;
+        onDrumScroll();
+      }, { passive: true });
     }
   }
 

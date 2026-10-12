@@ -39,12 +39,23 @@
           <button class="modal-close-btn" onclick="closeModal()">✕</button>
         </div>
         <div class="plate-calc-container">
-          <div class="plate-weight-display-box">
-            <button class="stepper-btn" style="width:34px; height:34px; border:1px solid var(--border-color); border-radius:8px;" onclick="changePlateTargetWeight(-5)">-5</button>
-            <button class="stepper-btn" style="width:34px; height:34px; border:1px solid var(--border-color); border-radius:8px;" onclick="changePlateTargetWeight(-2.5)">-2.5</button>
-            <div id="plate-calc-val" class="plate-weight-val" style="cursor:pointer;" onclick="openPlateTargetWeightPicker()" title="Нажмите для барабанного или клавиатурного ввода">${plateCalcTargetWeight} кг</div>
-            <button class="stepper-btn" style="width:34px; height:34px; border:1px solid var(--border-color); border-radius:8px;" onclick="changePlateTargetWeight(2.5)">+2.5</button>
-            <button class="stepper-btn" style="width:34px; height:34px; border:1px solid var(--border-color); border-radius:8px;" onclick="changePlateTargetWeight(5)">+5</button>
+          <!-- Интерактивная плашка выбора веса (барабанное колесо / ввод) -->
+          <div class="plate-wheel-trigger-card" onclick="openPlateTargetWeightPicker()" role="button" tabindex="0" title="Нажмите для вращения колеса или ввода с клавиатуры">
+            <div style="font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; color:var(--text-secondary);">Целевой вес штанги</div>
+            <div id="plate-calc-val" class="plate-weight-val">${plateCalcTargetWeight} кг</div>
+            <div class="plate-wheel-hint">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              <span>Крутить колесо прокрутки</span>
+            </div>
+          </div>
+
+          <!-- Быстрые дельты без стрелок -->
+          <div class="wheel-picker-deltas-row" style="margin-bottom:10px;">
+            ${[-10, -5, -2.5, 2.5, 5, 10].map(d => `
+              <button type="button" class="wheel-picker-delta-chip" onclick="changePlateTargetWeight(${d})">
+                ${d > 0 ? `+${d}` : d}
+              </button>
+            `).join('')}
           </div>
 
           <!-- Быстрый выбор популярных весов -->
@@ -55,28 +66,50 @@
           </div>
 
           <!-- Выбор веса грифа (мужской 20 кг / женский 15 кг) -->
-          <div style="display:flex; justify-content:center; gap:6px; margin-bottom:12px;">
+          <div style="display:flex; justify-content:center; gap:8px; margin-bottom:12px;">
             <button id="plate-bar-20" class="filter-chip ${plateCalcBarWeight === 20 ? 'active' : ''}" onclick="setPlateBarWeight(20)">Гриф 20 кг</button>
             <button id="plate-bar-15" class="filter-chip ${plateCalcBarWeight === 15 ? 'active' : ''}" onclick="setPlateBarWeight(15)">Гриф 15 кг</button>
           </div>
 
-          <!-- Визуализация грифа и надетых блинов -->
-          <div class="barbell-visual">
+          <!-- Визуализация грифа и надетых блинов С ДВУХ СТОРОН -->
+          <div class="barbell-visual barbell-visual-symmetrical">
             <div class="barbell-shaft"></div>
-            <div class="barbell-sleeve-wrap">
-              <div class="barbell-collar"></div>
-              <div id="plate-calc-stack" class="barbell-plates-stack"></div>
+            <!-- Левая втулка -->
+            <div class="barbell-sleeve-side sleeve-left">
+              <div id="plate-calc-stack-left" class="barbell-plates-stack stack-left"></div>
+              <div class="barbell-collar collar-left"></div>
+            </div>
+            <!-- Центр грифа -->
+            <div class="barbell-center-knurl"></div>
+            <!-- Правая втулка -->
+            <div class="barbell-sleeve-side sleeve-right">
+              <div class="barbell-collar collar-right"></div>
+              <div id="plate-calc-stack-right" class="barbell-plates-stack stack-right"></div>
             </div>
           </div>
 
-          <!-- Сводка блинов на каждую сторону -->
-          <div id="plate-calc-summary" class="plate-summary-card"></div>
+          <!-- Компактные бейджи надетых блинов на сторону -->
+          <div id="plate-calc-loaded-summary" class="plate-loaded-chips-row"></div>
+
+          <!-- Инфо-гид: какой цвет соответствует какому весу -->
+          <div class="plate-legend-box">
+            <div class="plate-legend-header">Номиналы олимпийских блинов</div>
+            <div class="plate-legend-grid">
+              <div class="plate-legend-chip"><span class="plate-disc-dot dot-25"></span><strong>25 кг</strong> Красный</div>
+              <div class="plate-legend-chip"><span class="plate-disc-dot dot-20"></span><strong>20 кг</strong> Синий</div>
+              <div class="plate-legend-chip"><span class="plate-disc-dot dot-15"></span><strong>15 кг</strong> Жёлтый</div>
+              <div class="plate-legend-chip"><span class="plate-disc-dot dot-10"></span><strong>10 кг</strong> Зелёный</div>
+              <div class="plate-legend-chip"><span class="plate-disc-dot dot-5"></span><strong>5 кг</strong> Белый</div>
+              <div class="plate-legend-chip"><span class="plate-disc-dot dot-2_5"></span><strong>2.5 кг</strong> Чёрный</div>
+              <div class="plate-legend-chip"><span class="plate-disc-dot dot-1_25"></span><strong>1.25 кг</strong> Серый</div>
+            </div>
+          </div>
 
           <div style="display:flex; gap:8px; margin-top:14px;">
             ${plateCalcTargetExIdx !== null ? `
-              <button id="plate-calc-apply-btn" class="btn btn-green" style="flex:1;" onclick="applyPlateWeightToExercise()">Применить к подходам</button>
+              <button id="plate-calc-apply-btn" class="btn btn-green" style="flex:1.4;" onclick="applyPlateWeightToExercise()">Применить к подходам</button>
             ` : ''}
-            <button class="btn btn-secondary" style="flex:1;" onclick="closeModal()">Закрыть</button>
+            <button class="btn btn-outline" style="flex:1;" onclick="closeModal()">Закрыть</button>
           </div>
         </div>
       `);
@@ -106,55 +139,64 @@
     if (b20) b20.classList.toggle('active', plateCalcBarWeight === 20);
     if (b15) b15.classList.toggle('active', plateCalcBarWeight === 15);
 
-    // Отрисовка цветных дисков на втулке
-    const stackEl = document.getElementById('plate-calc-stack');
-    if (stackEl) {
-      const plateClassMap = {
-        25: 'plate-25',
-        20: 'plate-20',
-        15: 'plate-15',
-        10: 'plate-10',
-        5: 'plate-5',
-        2.5: 'plate-2_5',
-        1.25: 'plate-1_25'
-      };
+    const plateClassMap = {
+      25: 'plate-25',
+      20: 'plate-20',
+      15: 'plate-15',
+      10: 'plate-10',
+      5: 'plate-5',
+      2.5: 'plate-2_5',
+      1.25: 'plate-1_25'
+    };
 
-      const discsHtml = [];
-      res.perSide.forEach(p => {
-        for (let i = 0; i < p.count; i++) {
-          const cls = plateClassMap[p.weight] || 'plate-10';
-          discsHtml.push(`<div class="plate-disc ${cls}"></div>`);
-        }
-      });
+    // Отрисовка цветных дисков С ДВУХ СТОРОН
+    // Правая сторона: от воротника наружу (тяжелые блины прижаты к collar-right)
+    const rightDiscs = [];
+    // Левая сторона: зеркально (тяжелые блины прижаты к collar-left)
+    const leftDiscs = [];
 
-      stackEl.innerHTML = discsHtml.join('');
-    }
+    res.perSide.forEach(p => {
+      for (let i = 0; i < p.count; i++) {
+        const cls = plateClassMap[p.weight] || 'plate-10';
+        rightDiscs.push(`<div class="plate-disc ${cls}"></div>`);
+        leftDiscs.unshift(`<div class="plate-disc ${cls}"></div>`);
+      }
+    });
 
-    // Текстовая сводка
-    const sumEl = document.getElementById('plate-calc-summary');
-    if (sumEl) {
-      sumEl.innerHTML = `
-        <div style="font-weight:700; font-size:12.5px; margin-bottom:8px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">
-          С каждой стороны надеть:
-        </div>
-        ${res.perSide.length ? `
-          <div style="display:flex; flex-direction:column; gap:5px;">
+    const stackRight = document.getElementById('plate-calc-stack-right');
+    const stackLeft = document.getElementById('plate-calc-stack-left');
+    if (stackRight) stackRight.innerHTML = rightDiscs.join('');
+    if (stackLeft) stackLeft.innerHTML = leftDiscs.join('');
+
+    // Сводка надетых блинов в виде цветных бейджей
+    const loadedSummary = document.getElementById('plate-calc-loaded-summary');
+    if (loadedSummary) {
+      if (res.perSide.length) {
+        loadedSummary.innerHTML = `
+          <div style="font-size:11.5px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; width:100%; text-align:center; margin-bottom:4px;">
+            На каждой стороне:
+          </div>
+          <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:6px;">
             ${res.perSide.map(p => `
-              <div style="display:flex; justify-content:space-between; font-size:13.5px;">
-                <span><strong>${p.count} × ${p.weight} кг</strong></span>
-                <span style="color:var(--text-secondary)">${p.count * p.weight} кг</span>
-              </div>
+              <span class="badge" style="display:inline-flex; align-items:center; gap:5px; padding:3px 8px; font-size:12px;">
+                <span class="plate-disc-dot dot-${String(p.weight).replace('.', '_')}"></span>
+                <strong>${p.count} × ${p.weight} кг</strong>
+              </span>
             `).join('')}
           </div>
-        ` : `
-          <div style="color:var(--text-secondary); font-size:13px;">Только гриф</div>
-        `}
-        ${res.remainder > 0 ? `
-          <div style="color:#eab308; font-size:12px; margin-top:8px;">
-            Остаток: ${res.remainder * 2} кг
+          ${res.remainder > 0 ? `
+            <div style="color:#eab308; font-size:11.5px; margin-top:4px; text-align:center;">
+              Остаток: +${res.remainder * 2} кг
+            </div>
+          ` : ''}
+        `;
+      } else {
+        loadedSummary.innerHTML = `
+          <div style="font-size:12px; color:var(--text-secondary); text-align:center;">
+            Только пустой гриф (${plateCalcBarWeight} кг)
           </div>
-        ` : ''}
-      `;
+        `;
+      }
     }
 
     const applyBtn = document.getElementById('plate-calc-apply-btn');

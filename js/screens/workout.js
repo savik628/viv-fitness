@@ -34,22 +34,17 @@
     }
   }
 
-  function renderStepper(value, onMinus, onPlus, onChange, step = 1, inputId = '', onInputClick = '') {
+  function renderSetPill(value, inputId = '', onInputClick = '', placeholder = '0') {
     const valDisplay = (value !== 0 && value !== '0' && value !== null && value !== undefined && !isNaN(value)) ? value : '';
     return `
-      <div class="stepper-container col-stepper">
-        <button type="button" class="stepper-btn" onclick="${onMinus}">-</button>
-        <input ${inputId ? `id="${inputId}"` : ''} 
-               class="stepper-input" 
-               type="text" 
-               inputmode="decimal" 
-               readonly 
-               value="${valDisplay}" 
-               placeholder="0" 
-               ${onInputClick ? `onclick="${onInputClick}" style="cursor:pointer;"` : `onchange="${onChange}"`}>
-        <button type="button" class="stepper-btn" onclick="${onPlus}">+</button>
+      <div class="set-val-box col-stepper" ${onInputClick ? `onclick="${onInputClick}"` : ''} role="button" tabindex="0">
+        <span ${inputId ? `id="${inputId}"` : ''} class="set-val-text ${!valDisplay ? 'placeholder' : ''}">${valDisplay || placeholder}</span>
       </div>
     `;
+  }
+
+  function renderStepper(value, onMinus, onPlus, onChange, step = 1, inputId = '', onInputClick = '') {
+    return renderSetPill(value, inputId, onInputClick);
   }
 
   function openSetPicker(exIdx, sIdx, field) {
@@ -117,7 +112,13 @@
           setVal(exIdx, sIdx, field, newVal);
           const inpEl = document.getElementById(`set-input-${exIdx}-${sIdx}-${field}`);
           if (inpEl) {
-            inpEl.value = newVal !== 0 ? newVal : '';
+            const valDisplay = (newVal !== 0 && newVal !== '0' && newVal !== null && newVal !== undefined && !isNaN(newVal)) ? newVal : '';
+            if (inpEl.tagName === 'INPUT') {
+              inpEl.value = valDisplay;
+            } else {
+              inpEl.textContent = valDisplay || (field === 'distance' ? '0.0' : '0');
+              inpEl.classList.toggle('placeholder', !valDisplay);
+            }
           }
         }
       });
@@ -361,7 +362,13 @@
 
     const inpEl = document.getElementById(`set-input-${exIdx}-${sIdx}-${field}`);
     if (inpEl) {
-      inpEl.value = nextVal !== 0 ? nextVal : '';
+      const valDisplay = nextVal !== 0 ? nextVal : '';
+      if (inpEl.tagName === 'INPUT') {
+        inpEl.value = valDisplay;
+      } else {
+        inpEl.textContent = valDisplay || (field === 'distance' ? '0.0' : '0');
+        inpEl.classList.toggle('placeholder', !valDisplay);
+      }
       syncActiveDraft();
     } else {
       rerenderActiveWorkoutPreservingScroll();
@@ -659,6 +666,7 @@
   window.TYPE_LABELS = TYPE_LABELS;
   window.getExerciseTypeLabel = getExerciseTypeLabel;
   window.renderStepper = renderStepper;
+  window.renderSetPill = renderSetPill;
   window.renderWork = renderWork;
   window.startWorkout = startWorkout;
   window.renderActiveWorkoutScreen = renderActiveWorkoutScreen;
