@@ -326,16 +326,7 @@
     return dateStr;
   }
 
-  function setProfileQuickDate(inputId, textId, offsetDays) {
-    const d = new Date();
-    d.setDate(d.getDate() + offsetDays);
-    const dateStr = fmtDate(d);
-    const input = document.getElementById(inputId);
-    if (input) input.value = dateStr;
-    const txt = document.getElementById(textId);
-    if (txt) txt.textContent = formatDisplayDate(dateStr);
-    if (window.triggerHaptic) window.triggerHaptic('light');
-  }
+
 
   function onDateInputChange(inputId, textId) {
     const input = document.getElementById(inputId);
@@ -534,16 +525,7 @@
   }
 
   // ---------------------------------------------------------------------------
-  // БЛОК 5. ГЕНЕРАТОР ПЕЧАТНОГО ОТЧЕТА АТЛЕТА (Coach PDF Report)
-  // ---------------------------------------------------------------------------
-  function openCoachReportModal() {
-    if (window.switchTab) {
-      window.switchTab('stats');
-      if (window.switchStatsSubTab) {
-        window.switchStatsSubTab('report');
-      }
-    }
-  }
+
 
   // ---------------------------------------------------------------------------
   // БЛОК 6. УПРАВЛЕНИЕ РЕЗЕРВНЫМИ КОПИЯМИ И СБРОС (Export / Import / Clipboard)
@@ -693,7 +675,6 @@
   window.saveMeasurementEntry = saveMeasurementEntry;
   window.openMeasurementHistoryModal = openMeasurementHistoryModal;
   window.deleteMeasurementLog = deleteMeasurementLog;
-  window.openCoachReportModal = openCoachReportModal;
   window.saveProfile = saveProfile;
   window.exportUserData = exportUserData;
   window.triggerImportUserData = triggerImportUserData;
@@ -705,7 +686,6 @@
   window.openProfileWeightPicker = openProfileWeightPicker;
   window.openBwWeightPicker = openBwWeightPicker;
   window.openMeasurementPicker = openMeasurementPicker;
-  window.setProfileQuickDate = setProfileQuickDate;
   window.onDateInputChange = onDateInputChange;
   window.triggerNativeDatePicker = triggerNativeDatePicker;
 })();

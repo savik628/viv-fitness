@@ -76,15 +76,7 @@
   // ---------------------------------------------------------------------------
   // БЛОК 1.1. АТЛЕТИЧЕСКИЙ ОТЧЁТ VIV
   // ---------------------------------------------------------------------------
-  function plural(n, forms) {
-    const num = Math.abs(Math.round(n || 0));
-    const rem100 = num % 100;
-    const rem10 = num % 10;
-    if (rem100 >= 11 && rem100 <= 19) return forms[2];
-    if (rem10 === 1) return forms[0];
-    if (rem10 >= 2 && rem10 <= 4) return forms[1];
-    return forms[2];
-  }
+
 
   function fmtDateIso(d) {
     const year = d.getFullYear();

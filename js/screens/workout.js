@@ -302,12 +302,12 @@
                   </div>
                   <div class="col-set-num">${s.setNumber}</div>
                   ${isWeight ? `
-                    ${renderStepper(s.weight, `stepVal(${exIdx},${sIdx},'weight',-2.5)`, `stepVal(${exIdx},${sIdx},'weight',2.5)`, `setVal(${exIdx},${sIdx},'weight',this.value)`, 0.5, `set-input-${exIdx}-${sIdx}-weight`, `openSetPicker(${exIdx},${sIdx},'weight')`)}
-                    ${renderStepper(s.reps, `stepVal(${exIdx},${sIdx},'reps',-1)`, `stepVal(${exIdx},${sIdx},'reps',1)`, `setVal(${exIdx},${sIdx},'reps',this.value)`, 1, `set-input-${exIdx}-${sIdx}-reps`, `openSetPicker(${exIdx},${sIdx},'reps')`)}
+                    ${renderSetPill(s.weight, `set-input-${exIdx}-${sIdx}-weight`, `openSetPicker(${exIdx},${sIdx},'weight')`)}
+                    ${renderSetPill(s.reps, `set-input-${exIdx}-${sIdx}-reps`, `openSetPicker(${exIdx},${sIdx},'reps')`)}
                   ` : ''}
-                  ${isBodyweight ? renderStepper(s.reps, `stepVal(${exIdx},${sIdx},'reps',-1)`, `stepVal(${exIdx},${sIdx},'reps',1)`, `setVal(${exIdx},${sIdx},'reps',this.value)`, 1, `set-input-${exIdx}-${sIdx}-reps`, `openSetPicker(${exIdx},${sIdx},'reps')`) : ''}
-                  ${isDist ? renderStepper(s.distance, `stepVal(${exIdx},${sIdx},'distance',-0.5)`, `stepVal(${exIdx},${sIdx},'distance',0.5)`, `setVal(${exIdx},${sIdx},'distance',this.value)`, 0.1, `set-input-${exIdx}-${sIdx}-distance`, `openSetPicker(${exIdx},${sIdx},'distance')`) : ''}
-                  ${isDur ? renderStepper(s.duration, `stepVal(${exIdx},${sIdx},'duration',-10)`, `stepVal(${exIdx},${sIdx},'duration',10)`, `setVal(${exIdx},${sIdx},'duration',this.value)`, 5, `set-input-${exIdx}-${sIdx}-duration`, `openSetPicker(${exIdx},${sIdx},'duration')`) : ''}
+                  ${isBodyweight ? renderSetPill(s.reps, `set-input-${exIdx}-${sIdx}-reps`, `openSetPicker(${exIdx},${sIdx},'reps')`) : ''}
+                  ${isDist ? renderSetPill(s.distance, `set-input-${exIdx}-${sIdx}-distance`, `openSetPicker(${exIdx},${sIdx},'distance')`) : ''}
+                  ${isDur ? renderSetPill(s.duration, `set-input-${exIdx}-${sIdx}-duration`, `openSetPicker(${exIdx},${sIdx},'duration')`) : ''}
                   <div class="col-action">
                     <button class="modal-close-btn" style="width:24px; height:24px; font-size:14px;" onclick="removeSet(${exIdx}, ${sIdx})">✕</button>
                   </div>
@@ -368,27 +368,6 @@
     }
   }
 
-  function stepVal(exIdx, sIdx, field, delta) {
-    const set = window.state.work.activeWorkout.exercises[exIdx].sets[sIdx];
-    let cur = Math.max(0, (parseFloat(set[field]) || 0) + delta);
-    const nextVal = (field === 'reps' || field === 'duration') ? Math.round(cur) : parseFloat(cur.toFixed(1));
-    set[field] = nextVal;
-
-    const inpEl = document.getElementById(`set-input-${exIdx}-${sIdx}-${field}`);
-    if (inpEl) {
-      const valDisplay = nextVal !== 0 ? nextVal : '';
-      if (inpEl.tagName === 'INPUT') {
-        inpEl.value = valDisplay;
-      } else {
-        inpEl.textContent = valDisplay || (field === 'distance' ? '0.0' : '0');
-        inpEl.classList.toggle('placeholder', !valDisplay);
-      }
-      syncActiveDraft();
-    } else {
-      rerenderActiveWorkoutPreservingScroll();
-    }
-  }
-
   function setVal(exIdx, sIdx, field, val) {
     const set = window.state.work.activeWorkout.exercises[exIdx].sets[sIdx];
     const num = Math.max(0, parseFloat(val) || 0);
@@ -432,21 +411,6 @@
   function openAddExerciseToActiveWorkoutModal() {
     if (!window.openModal) return;
 
-    const quickExercises = [
-      { name: 'Жим штанги лёжа', type: 'weight_reps', muscle: 'chest' },
-      { name: 'Приседания со штангой', type: 'weight_reps', muscle: 'legs' },
-      { name: 'Становая тяга', type: 'weight_reps', muscle: 'back' },
-      { name: 'Подтягивания', type: 'bodyweight', muscle: 'back' },
-      { name: 'Отжимания на брусьях', type: 'bodyweight', muscle: 'chest' },
-      { name: 'Армейский жим', type: 'weight_reps', muscle: 'shoulders' },
-      { name: 'Тяга штанги в наклоне', type: 'weight_reps', muscle: 'back' },
-      { name: 'Подъём штанги на бицепс', type: 'weight_reps', muscle: 'arms' },
-      { name: 'Французский жим', type: 'weight_reps', muscle: 'arms' },
-      { name: 'Скручивания (пресс)', type: 'bodyweight', muscle: 'core' },
-      { name: 'Планка', type: 'duration', muscle: 'core' },
-      { name: 'Бег', type: 'distance', muscle: 'cardio' }
-    ];
-
     window.openModal(`
       <div style="padding:4px 0;">
         <div style="font-size:18px; font-weight:800; margin-bottom:14px; text-align:center;">Добавить упражнение</div>
@@ -455,28 +419,14 @@
           <input id="active-new-ex-name" class="form-input" placeholder="Название упражнения" autocomplete="off" autofocus onkeydown="if(event.key==='Enter'){event.preventDefault();confirmAddActiveExercise();}">
         </div>
 
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:18px;">
-          <div>
-            <label style="display:block; font-size:12px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; margin-bottom:6px;">Тип нагрузки</label>
-            <select id="active-new-ex-type" class="form-select">
-              <option value="weight_reps">С весом</option>
-              <option value="bodyweight">Свой вес</option>
-              <option value="distance">Дистанция</option>
-              <option value="duration">Время</option>
-            </select>
-          </div>
-          <div>
-            <label style="display:block; font-size:12px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; margin-bottom:6px;">Группа мышц</label>
-            <select id="active-new-ex-muscle" class="form-select">
-              <option value="chest">Грудь</option>
-              <option value="back">Спина</option>
-              <option value="legs">Ноги</option>
-              <option value="shoulders">Плечи</option>
-              <option value="arms">Руки</option>
-              <option value="core">Пресс / Кор</option>
-              <option value="cardio">Кардио</option>
-            </select>
-          </div>
+        <div style="margin-bottom:18px;">
+          <label style="display:block; font-size:12px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; margin-bottom:6px;">Тип нагрузки</label>
+          <select id="active-new-ex-type" class="form-select">
+            <option value="weight_reps">С весом</option>
+            <option value="bodyweight">Свой вес</option>
+            <option value="distance">Дистанция</option>
+            <option value="duration">Время</option>
+          </select>
         </div>
 
         <div style="display:flex; gap:10px;">
@@ -490,15 +440,6 @@
       const inp = document.getElementById('active-new-ex-name');
       if (inp) inp.focus();
     }, 100);
-  }
-
-  function selectQuickActiveExercise(name, type, muscle) {
-    const nameInp = document.getElementById('active-new-ex-name');
-    const typeSel = document.getElementById('active-new-ex-type');
-    const muscleSel = document.getElementById('active-new-ex-muscle');
-    if (nameInp) nameInp.value = name;
-    if (typeSel && type) typeSel.value = type;
-    if (muscleSel && muscle) muscleSel.value = muscle;
   }
 
   function persistExerciseToRoutine(routineId, routineName, newEx) {
@@ -541,7 +482,6 @@
     }
 
     const type = typeSel ? typeSel.value : 'weight_reps';
-    const muscle = muscleSel ? muscleSel.value : 'chest';
     const aw = window.state.work.activeWorkout;
     if (!aw) return;
     if (!aw.exercises) aw.exercises = [];
@@ -561,7 +501,7 @@
     const newExerciseObj = {
       name,
       type,
-      primaryMuscle: muscle,
+      primaryMuscle: 'all',
       sets
     };
     aw.exercises.push(newExerciseObj);
@@ -868,7 +808,6 @@
   window.renderActiveWorkoutScreen = renderActiveWorkoutScreen;
   window.moveActiveWorkoutEx = moveActiveWorkoutEx;
   window.toggleSetComplete = toggleSetComplete;
-  window.stepVal = stepVal;
   window.setVal = setVal;
   window.addSet = addSet;
   window.removeSet = removeSet;
@@ -886,7 +825,6 @@
   window.removeEditorEx = removeEditorEx;
   window.removeActiveWorkoutEx = removeActiveWorkoutEx;
   window.openAddExerciseToActiveWorkoutModal = openAddExerciseToActiveWorkoutModal;
-  window.selectQuickActiveExercise = selectQuickActiveExercise;
   window.confirmAddActiveExercise = confirmAddActiveExercise;
   window.saveEditorRoutine = saveEditorRoutine;
   window.openSetPicker = openSetPicker;
