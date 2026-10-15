@@ -21,24 +21,41 @@
   }
 
   // ---------------------------------------------------------------------------
-  // БЛОК 1.1. Централизованный модуль управления логотипом VIV (App Logo)
+  // БЛОК 2. Централизованный модуль управления логотипом VIV (App Logo)
   // ---------------------------------------------------------------------------
   window.AppLogo = {
     mode: 'icon', // Везде используется официальный логотип (иконка приложения icon.svg)
     iconSrc: 'icon.svg',
+
+    /**
+     * Рендеринг HTML-разметки логотипа VIV
+     * @param {Object} [options] - Параметры рендера (className, style, height, small)
+     * @returns {string} HTML-тег <img> с логотипом
+     */
     render(options = {}) {
       const cls = options.className || '';
       const style = options.style || '';
       const height = options.small ? '14px' : (options.height || '24px');
       return `<img src="${this.iconSrc}" alt="VIV" class="app-logo-badge ${cls}" style="display:inline-block; vertical-align:middle; height:${height}; width:auto; border:none; outline:none; background:transparent; ${style}">`;
     },
+
+    /**
+     * Получение текстового названия бренда
+     * @returns {string} 'VIV'
+     */
     getText() {
       return 'VIV';
     },
+
     setMode(mode) {
       this.mode = 'icon';
     },
+
     toggleMode() {},
+
+    /**
+     * Синхронизация всех мест вывода логотипа в активном DOM
+     */
     syncAll() {
       document.querySelectorAll('.viv-logo-target').forEach(el => {
         const isSmall = el.dataset.logoSmall === 'true';
@@ -57,7 +74,7 @@
   };
 
   // ---------------------------------------------------------------------------
-  // БЛОК 2. Глобальное состояние приложения (Application State Store)
+  // БЛОК 3. Глобальное состояние приложения (Application State Store)
   // ---------------------------------------------------------------------------
   const todayLocal = window.getLocalDateStr ? window.getLocalDateStr() : new Date().toISOString().substring(0, 10);
 
@@ -86,8 +103,15 @@
   window.state = state;
 
   // ---------------------------------------------------------------------------
-  // БЛОК 3. Управление навигацией и шапкой экрана (Header & Navigation)
+  // БЛОК 4. Управление заголовком и кнопками верхней панели (Header Component)
   // ---------------------------------------------------------------------------
+
+  /**
+   * Обновление заголовка экрана, видимости кнопки "Назад" и кнопок действий
+   * @param {string} title - Текст заголовка экрана
+   * @param {boolean} [showBack=false] - Показывать ли кнопку "Назад"
+   * @param {string} [actionsHtml=''] - Дополнительный HTML для правой части шапки
+   */
   function setHeader(title, showBack = false, actionsHtml = '') {
     const screenTitle = document.getElementById('screen-title');
     const backBtn = document.getElementById('back-btn');
@@ -98,6 +122,14 @@
     if (headerActions) headerActions.innerHTML = actionsHtml;
   }
 
+  // ---------------------------------------------------------------------------
+  // БЛОК 5. Переключение основных экранов хотбара (Tab Navigation)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Смена активной вкладки с подтверждением прерывания незавершенной тренировки
+   * @param {'habits'|'work'|'stats'|'profile'|'shop'} tab - Идентификатор вкладки
+   */
   function switchTab(tab) {
     // Защита от случайной потери несохраненной тренировки при уходе на другую вкладку
     if (tab !== 'work' && state.work.activeWorkout) {
@@ -116,8 +148,12 @@
   }
 
   // ---------------------------------------------------------------------------
-  // БЛОК 4. Центральный диспетчер рендера экранов (View Router)
+  // БЛОК 6. Центральный маршрутизатор экранов (View Router)
   // ---------------------------------------------------------------------------
+
+  /**
+   * Вызов соответствующей функции рендера для текущей активной вкладки
+   */
   function render() {
     switch (state.currentTab) {
       case 'habits':
@@ -143,8 +179,12 @@
   }
 
   // ---------------------------------------------------------------------------
-  // БЛОК 5. Инициализация слушателей событий и регистрация Service Worker
+  // БЛОК 7. Инициализация приложения, событий и Service Worker (PWA Lifecycle)
   // ---------------------------------------------------------------------------
+
+  /**
+   * Первичный монтаж слушателей кнопок навигации, Service Worker и старт
+   */
   function initApp() {
     // Слушатели переключения табов нижней панели (5 вкладок)
     document.querySelectorAll('.nav-item').forEach(btn => {
@@ -189,16 +229,18 @@
   }
 
   // ---------------------------------------------------------------------------
-  // БЛОК 6. Экспорт публичных функций в глобальную область видимости (window)
+  // БЛОК 8. Безопасный запуск приложения при готовности DOM (Bootstrap)
   // ---------------------------------------------------------------------------
-  window.setHeader = setHeader;
-  window.switchTab = switchTab;
-  window.render = render;
-
-  // Безопасный запуск после загрузки DOM
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initApp);
   } else {
     initApp();
   }
+
+  // ---------------------------------------------------------------------------
+  // БЛОК 9. Экспорт публичных функций в глобальную область видимости (window)
+  // ---------------------------------------------------------------------------
+  window.setHeader = setHeader;
+  window.switchTab = switchTab;
+  window.render = render;
 })();

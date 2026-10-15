@@ -15,6 +15,11 @@
   const ThemeManager = {
     currentTheme: 'dark',
 
+    /**
+     * Вычисление действующей темы ('dark' или 'light') с учетом авто-режима ОС
+     * @param {string} pref - Пользовательское предпочтение ('dark', 'light', 'auto')
+     * @returns {'dark'|'light'} Результирующая цветовая схема
+     */
     getEffectiveTheme(pref) {
       if (pref === 'auto') {
         return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -27,6 +32,11 @@
     // -------------------------------------------------------------------------
     // БЛОК 2. Применение темы к DOM и оповещение компонентов (Apply Theme)
     // -------------------------------------------------------------------------
+
+    /**
+     * Применение темы: установка data-theme на <html>, метатега theme-color и генерация события
+     * @param {string} theme - 'dark' | 'light' | 'auto'
+     */
     applyTheme(theme) {
       const effective = this.getEffectiveTheme(theme);
       document.documentElement.setAttribute('data-theme', effective);
@@ -54,6 +64,11 @@
     // -------------------------------------------------------------------------
     // БЛОК 3. Чтение и сохранение пользовательского выбора (Persistence)
     // -------------------------------------------------------------------------
+
+    /**
+     * Сохранение новой темы и немедленное применение
+     * @param {string} newTheme - 'dark' | 'light' | 'auto'
+     */
     setTheme(newTheme) {
       if (!['dark', 'light', 'auto'].includes(newTheme)) newTheme = 'dark';
       this.currentTheme = newTheme;
@@ -63,6 +78,10 @@
       this.applyTheme(newTheme);
     },
 
+    /**
+     * Получение сохраненной темы из LocalStorage
+     * @returns {string} 'dark' | 'light' | 'auto'
+     */
     getTheme() {
       if (window.Storage && window.Storage.getTheme) {
         return window.Storage.getTheme();
@@ -73,6 +92,10 @@
     // -------------------------------------------------------------------------
     // БЛОК 4. Инициализация и системный слушатель смены темы ОС (Init & Media)
     // -------------------------------------------------------------------------
+
+    /**
+     * Инициализация темы при старте и регистрация слушателя matchMedia
+     */
     init() {
       const saved = this.getTheme();
       this.currentTheme = saved;

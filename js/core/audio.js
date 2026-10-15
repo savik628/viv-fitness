@@ -13,6 +13,10 @@
   // ---------------------------------------------------------------------------
   let _sharedAudioCtx = null;
 
+  /**
+   * Ленивая инициализация и возобновление общего AudioContext
+   * @returns {AudioContext|null}
+   */
   function getAudioContext() {
     try {
       if (!_sharedAudioCtx) {
@@ -30,6 +34,11 @@
     }
   }
 
+  /**
+   * Воспроизведение синусоидального звукового бипа заданной частоты и длительности
+   * @param {number} [freq=880] - Частота сигнала в Гц
+   * @param {number} [duration=0.18] - Длительность звучания в секундах
+   */
   function playTimerBeep(freq = 880, duration = 0.18) {
     try {
       const ctx = getAudioContext();
@@ -54,6 +63,10 @@
   // ---------------------------------------------------------------------------
   // БЛОК 2. Мелодия завершения таймера отдыха (Final Gong Sequence)
   // ---------------------------------------------------------------------------
+
+  /**
+   * Тройной аккорд завершения отдыха: G5 -> G5 -> C6
+   */
   function playTimerFinishSequence() {
     playTimerBeep(784, 0.15); // Нота G5
     setTimeout(() => playTimerBeep(784, 0.15), 180);
@@ -63,6 +76,11 @@
   // ---------------------------------------------------------------------------
   // БЛОК 3. Тактильный виброотклик (Telegram Haptic / Vibration API)
   // ---------------------------------------------------------------------------
+
+  /**
+   * Запуск тактильной отдачи устройства с поддержкой Telegram WebApp и W3C Vibration API
+   * @param {'impact'|'light'|'medium'|'heavy'|'success'} [type='impact'] - Характер вибрации
+   */
   function triggerHaptic(type = 'impact') {
     try {
       if (window.Telegram?.WebApp?.HapticFeedback) {

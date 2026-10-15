@@ -1,9 +1,14 @@
 // =============================================================================
 // VIV Fitness - Экран профиля, настроек, антропометрии и бэкапов (Profile Screen)
 // =============================================================================
-// Назначение: Управление профилем атлета, выбор темы оформления (Dark/Light/Auto),
-// ведение дневника веса и замеров тела, формирование печатного PDF-отчета,
-// экспорт и импорт резервных копий (JSON/буфер обмена) и внешние ссылки VIV.
+// Назначение модуля:
+// 1. Управление антропометрией атлета (имя, рост, вес) и настройка дефолтного
+//    таймера отдыха между рабочими подходами.
+// 2. Мгновенное переключение темы оформления интерфейса (Dark / Light).
+// 3. Ведение дневника массы тела с динамическим графиком изменения веса.
+// 4. Дневник замеров тела (грудь, талия, бицепс, бедро) с историей.
+// 5. Движок резервного копирования: экспорт/импорт JSON-файлов и полный сброс.
+// 6. Каталог официальных сообществ и ресурсов VIV.
 // =============================================================================
 
 (function () {
@@ -12,14 +17,25 @@
   // ---------------------------------------------------------------------------
   // БЛОК 1. ГЛАВНЫЙ РЕНДЕР ЭКРАНА ПРОФИЛЯ (Profile Layout & Cards)
   // ---------------------------------------------------------------------------
+  /**
+   * Возвращает локальную дату в формате 'ГГГГ-ММ-ДД' с учётом часового пояса.
+   */
   function fmtDate(d = new Date()) {
     return window.getLocalDateStr ? window.getLocalDateStr(d) : d.toISOString().substring(0, 10);
   }
 
+  /**
+   * Экранирование HTML-символов для безопасности интерфейса.
+   */
   function esc(str) {
     return window.escapeHtml ? window.escapeHtml(str) : (str || '');
   }
 
+  /**
+   * Рендерит главный экран настроек и профиля:
+   * аватар атлета, тему оформления, карточки параметров тела, настройки таймера,
+   * кнопки дневников веса и замеров, блок резервного копирования и сброса.
+   */
   function renderProfile() {
     if (window.setHeader) window.setHeader('Профиль', false);
     const mainContent = document.getElementById('main-content');
@@ -193,6 +209,9 @@
   // ---------------------------------------------------------------------------
   // БЛОК 2. ОБНОВЛЕНИЕ ПРОФИЛЯ И ТАЙМЕРА (Profile & Timer Settings)
   // ---------------------------------------------------------------------------
+  /**
+   * Открывает барабанный пикер для удобного выбора роста атлета (100–250 см).
+   */
   function openProfileHeightPicker() {
     const inp = document.getElementById('prof-height');
     const val = parseFloat(inp?.value) || 175;
@@ -212,6 +231,9 @@
     }
   }
 
+  /**
+   * Открывает барабанный пикер для выбора текущего веса в профиле (30–300 кг).
+   */
   function openProfileWeightPicker() {
     const inp = document.getElementById('prof-weight');
     const val = parseFloat(inp?.value) || 75;
@@ -231,6 +253,9 @@
     }
   }
 
+  /**
+   * Открывает барабанный пикер для точной фиксации веса при взвешивании.
+   */
   function openBwWeightPicker() {
     const inp = document.getElementById('bw-weight');
     const val = parseFloat(inp?.value) || (window.Storage?.getProfile()?.weight || 75);
@@ -250,6 +275,9 @@
     }
   }
 
+  /**
+   * Универсальный пикер для антропометрических замеров тела (грудь, талия, бицепс, бедро).
+   */
   function openMeasurementPicker(inputId, metricTitle) {
     const inp = document.getElementById(inputId);
     const val = parseFloat(inp?.value) || 0;
@@ -269,6 +297,9 @@
     }
   }
 
+  /**
+   * Считывает данные из полей профиля и перманентно сохраняет их в Storage.
+   */
   function saveProfile() {
     const nameInput = document.getElementById('prof-name');
     const heightInput = document.getElementById('prof-height');
@@ -291,6 +322,9 @@
     renderProfile();
   }
 
+  /**
+   * Устанавливает длительность отдыха между подходами по умолчанию (60, 90, 120, 180 сек).
+   */
   function updateDefaultRestTimer(sec) {
     if (window.Storage) window.Storage.setRestTimerSeconds(sec);
     renderProfile();
@@ -299,6 +333,9 @@
   // ---------------------------------------------------------------------------
   // БЛОК 3. ТРЕКЕР ВЕСА ТЕЛА И ГРАФИК (Bodyweight Tracker & Modals)
   // ---------------------------------------------------------------------------
+  /**
+   * Отрисовывает динамический линейный график изменения массы тела атлета на Canvas.
+   */
   function drawBodyweightChart(logs) {
     const canvas = document.getElementById('bodyweightCanvas');
     if (!canvas || !logs || !logs.length) return;
@@ -314,6 +351,9 @@
     }
   }
 
+  /**
+   * Форматирует дату 'ГГГГ-ММ-ДД' в дружелюбный текстовый вид (например: '15 окт. 2026 г.').
+   */
   function formatDisplayDate(dateStr) {
     if (!dateStr) return 'Сегодня';
     try {
@@ -326,8 +366,9 @@
     return dateStr;
   }
 
-
-
+  /**
+   * Синхронизирует отображаемый текст даты при изменении скрытого нативного datepicker.
+   */
   function onDateInputChange(inputId, textId) {
     const input = document.getElementById(inputId);
     if (!input) return;
@@ -335,6 +376,9 @@
     if (txt) txt.textContent = formatDisplayDate(input.value);
   }
 
+  /**
+   * Программно открывает системный нативный диалог выбора даты (showPicker).
+   */
   function triggerNativeDatePicker(inputId) {
     const input = document.getElementById(inputId);
     if (!input) return;
@@ -345,6 +389,9 @@
     input.click();
   }
 
+  /**
+   * Открывает диалоговое окно добавления нового взвешивания массы тела.
+   */
   function openAddWeightModal() {
     const today = fmtDate();
     const curW = (window.Storage ? window.Storage.getProfile()?.weight : '') || '';
@@ -380,6 +427,9 @@
     }
   }
 
+  /**
+   * Сохраняет новое значение веса тела в историю и обновляет график.
+   */
   function saveBodyweightEntry() {
     const dateInput = document.getElementById('bw-date');
     const weightInput = document.getElementById('bw-weight');
@@ -392,6 +442,9 @@
     renderProfile();
   }
 
+  /**
+   * Открывает модальное окно с подробным списком всех сохраненных взвешиваний.
+   */
   function openWeightHistoryModal() {
     const logs = (window.Storage ? window.Storage.getBodyweightHistory() : []).slice().reverse();
     if (window.openModal) {
@@ -415,6 +468,9 @@
     }
   }
 
+  /**
+   * Удаляет запись взвешивания из истории.
+   */
   function deleteWeightLog(id) {
     if (window.Storage) window.Storage.deleteBodyweightLog(id);
     renderProfile();
@@ -424,6 +480,10 @@
   // ---------------------------------------------------------------------------
   // БЛОК 4. ДНЕВНИК ЗАМЕРОВ ТЕЛА (Body Measurements Modals)
   // ---------------------------------------------------------------------------
+  /**
+   * Открывает диалоговое окно для внесения антропометрических параметров:
+   * обхват груди, талии, бицепса и бедра в сантиметрах с поддержкой барабанного пикера.
+   */
   function openAddMeasurementModal() {
     const today = fmtDate();
     const m = (window.Storage ? window.Storage.getMeasurements()[0] : null) || {};
@@ -473,6 +533,9 @@
     }
   }
 
+  /**
+   * Валидирует и записывает замер тела в хранилище антропометрии.
+   */
   function saveMeasurementEntry() {
     const dateInput = document.getElementById('bm-date');
     const date = dateInput ? dateInput.value : fmtDate();
@@ -490,6 +553,9 @@
     renderProfile();
   }
 
+  /**
+   * Открывает диалог с полной историей антропометрических замеров с возможностью удаления.
+   */
   function openMeasurementHistoryModal() {
     const list = window.Storage ? window.Storage.getMeasurements() : [];
     if (window.openModal) {
@@ -518,6 +584,9 @@
     }
   }
 
+  /**
+   * Удаляет запись замера из истории.
+   */
   function deleteMeasurementLog(id) {
     if (window.Storage) window.Storage.deleteMeasurement(id);
     renderProfile();
@@ -525,11 +594,12 @@
   }
 
   // ---------------------------------------------------------------------------
-
-
+  // БЛОК 5. УПРАВЛЕНИЕ РЕЗЕРВНЫМИ КОПИЯМИ И СБРОС (Export / Import / Reset Engine)
   // ---------------------------------------------------------------------------
-  // БЛОК 6. УПРАВЛЕНИЕ РЕЗЕРВНЫМИ КОПИЯМИ И СБРОС (Export / Import / Clipboard)
-  // ---------------------------------------------------------------------------
+  /**
+   * Экспортирует полную копию всех данных приложения (программы, история, привычки, замеры)
+   * в структурированный JSON-файл и автоматически начинает его загрузку.
+   */
   function exportUserData() {
     if (!window.Storage) return;
     const blob = new Blob([window.Storage.exportBackup()], { type: 'application/json' });
@@ -541,6 +611,9 @@
     URL.revokeObjectURL(url);
   }
 
+  /**
+   * Открывает скрытый файловый input для выбора JSON-файла бэкапа.
+   */
   function triggerImportUserData() {
     const fileInput = document.getElementById('import-backup-file');
     if (fileInput) {
@@ -549,6 +622,10 @@
     }
   }
 
+  /**
+   * Считывает и верифицирует загруженный JSON-файл резервной копии,
+   * перезаписывая локальное хранилище и обновляя экраны приложения.
+   */
   function handleImportFile(event) {
     const file = event?.target?.files?.[0];
     if (!file) return;
@@ -575,6 +652,9 @@
     reader.readAsText(file);
   }
 
+  /**
+   * Полностью очищает локальные данные приложения VIV с запросом подтверждения.
+   */
   function resetUserLocalData() {
     if (confirm('Сбросить все тренировки и настройки к начальному состоянию?')) {
       if (window.Storage) window.Storage.resetAllData();
@@ -584,8 +664,11 @@
   }
 
   // ---------------------------------------------------------------------------
-  // БЛОК 7. ЭКРАН РЕСУРСОВ И СООБЩЕСТВ VIV (Shop & Social Links Screen)
+  // БЛОК 6. ЭКРАН РЕСУРСОВ И СООБЩЕСТВ VIV (Shop & Social Links Screen)
   // ---------------------------------------------------------------------------
+  /**
+   * Рендерит экран ссылок на официальные медиа и сервисы бренда VIV.
+   */
   function renderShop() {
     if (window.setHeader) window.setHeader('VIV', false);
     const mainContent = document.getElementById('main-content');
@@ -636,6 +719,9 @@
     `;
   }
 
+  /**
+   * Корректно открывает внешние веб-ссылки внутри Telegram Mini App или в новом окне браузера/PWA.
+   */
   function openExternal(url, e) {
     if (window.Telegram?.WebApp && typeof window.Telegram.WebApp.openLink === 'function') {
       if (e && e.preventDefault) e.preventDefault();
@@ -655,8 +741,11 @@
   }
 
   // ---------------------------------------------------------------------------
-  // БЛОК 8. РЕАКТИВНОСТЬ НА СМЕНУ ТЕМЫ И ЭКСПОРТ В WINDOW (Exports)
+  // БЛОК 7. РЕАКТИВНОСТЬ НА СМЕНУ ТЕМЫ И ЭКСПОРТ В WINDOW (Module Exports)
   // ---------------------------------------------------------------------------
+  /**
+   * Реактивная перерисовка графика веса при переключении цветовой темы приложения.
+   */
   window.addEventListener('viv-theme-changed', () => {
     if (window.state && window.state.currentTab === 'profile') {
       const logs = window.Storage ? window.Storage.getBodyweightHistory() : [];
@@ -664,6 +753,9 @@
     }
   });
 
+  /**
+   * Публичный интерфейс экрана профиля.
+   */
   window.renderProfile = renderProfile;
   window.updateDefaultRestTimer = updateDefaultRestTimer;
   window.drawBodyweightChart = drawBodyweightChart;

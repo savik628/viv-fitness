@@ -9,6 +9,9 @@
 (function () {
   'use strict';
 
+  // ---------------------------------------------------------------------------
+  // БЛОК 1. Внутреннее состояние и кэш элементов барабанного селектора
+  // ---------------------------------------------------------------------------
   let _pickerOverlay = null;
   let _pickerContainer = null;
   let _activeOptions = null;
@@ -19,6 +22,10 @@
   let _lastScrolledIndex = -1;
   let _isInitializing = false;
 
+  /**
+   * Получение корневого оверлея пикера
+   * @returns {HTMLElement|null}
+   */
   function getOverlay() {
     if (!_pickerOverlay) {
       _pickerOverlay = document.getElementById('picker-overlay');
@@ -26,6 +33,10 @@
     return _pickerOverlay;
   }
 
+  /**
+   * Получение контейнера разметки пикера
+   * @returns {HTMLElement|null}
+   */
   function getContainer() {
     if (!_pickerContainer) {
       _pickerContainer = document.getElementById('picker-container');
@@ -33,12 +44,29 @@
     return _pickerContainer;
   }
 
+  // ---------------------------------------------------------------------------
+  // БЛОК 2. Математические и вспомогательные утилиты форматирования
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Ограничение числового значения диапазоном [min, max]
+   * @param {number|string} val - Исходное значение
+   * @param {number} min - Нижняя граница
+   * @param {number} max - Верхняя граница
+   * @returns {number}
+   */
   function clamp(val, min, max) {
     let num = Number(val);
     if (isNaN(num)) num = min;
     return Math.max(min, Math.min(max, num));
   }
 
+  /**
+   * Форматирование числа под шаг барабана (целое или с десятыми долями)
+   * @param {number} val - Число
+   * @param {number} step - Шаг сетки
+   * @returns {string}
+   */
   function formatValue(val, step) {
     const isInt = step >= 1 && Number.isInteger(step);
     if (isInt) return String(Math.round(val));
@@ -46,8 +74,12 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Открытие барабанного пикера
+  // БЛОК 3. Открытие и инициализация барабанного селектора (Open Picker)
   // ---------------------------------------------------------------------------
+  /**
+   * Открытие барабанного модального селектора
+   * @param {Object} options - Конфигурация пикера (title, value, min, max, step, deltas, onConfirm, onCancel)
+   */
   function openNumberPicker(options) {
     _activeOptions = Object.assign({
       title: 'Выберите число',
@@ -168,8 +200,12 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Привязка обработчиков событий
+  // БЛОК 4. Регистрация событий, кликов, ввода и вертикальных тач-жестов
   // ---------------------------------------------------------------------------
+
+  /**
+   * Привязка обработчиков событий кнопок отмены/подтверждения, дельт и барабана
+   */
   function bindPickerEvents() {
     const overlay = getOverlay();
     const container = getContainer();
@@ -288,8 +324,12 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Скролл и позиционирование барабана
+  // БЛОК 5. Синхронизация скролла, позиционирование и тактильный виброотклик
   // ---------------------------------------------------------------------------
+
+  /**
+   * Обработчик прокрутки барабана: вычисление индекса по scrollTop и haptic-тик
+   */
   function onDrumScroll() {
     if (_isInitializing) return;
     const drum = document.getElementById('picker-drum');
@@ -311,6 +351,9 @@
     }
   }
 
+  /**
+   * Точная синхронизация текущего значения по завершении скролла
+   */
   function syncValueFromScroll() {
     if (_isInitializing) return;
     const drum = document.getElementById('picker-drum');
@@ -321,6 +364,10 @@
     highlightActiveDrumItem(idx);
   }
 
+  /**
+   * Подсветка активного центрального элемента барабана классом .selected
+   * @param {number} activeIdx - Индекс выбранного элемента
+   */
   function highlightActiveDrumItem(activeIdx) {
     const drum = document.getElementById('picker-drum');
     if (!drum) return;
@@ -334,6 +381,15 @@
     });
   }
 
+  // ---------------------------------------------------------------------------
+  // БЛОК 6. Программная прокрутка, установка и шаговое изменение значений
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Плавная или мгновенная прокрутка барабана к заданному числу
+   * @param {number} val - Целевое число
+   * @param {boolean} smooth - Использовать ли плавную анимацию scroll
+   */
   function scrollToValue(val, smooth = true) {
     const drum = document.getElementById('picker-drum');
     if (!drum || !_activeOptions?._items) return;
@@ -363,6 +419,10 @@
     }
   }
 
+  /**
+   * Обновление числового значения в поле ручного ввода
+   * @param {number} val - Число для отображения
+   */
   function updateDisplayNum(val) {
     const manualInput = document.getElementById('picker-manual-input');
     if (manualInput && document.activeElement !== manualInput && _activeOptions) {
@@ -370,6 +430,11 @@
     }
   }
 
+  /**
+   * Программная установка значения с синхронизацией барабана
+   * @param {number} val - Новое значение
+   * @param {boolean} smooth - Плавная прокрутка барабана
+   */
   function setValue(val, smooth = true) {
     _currentValue = clamp(val, _activeOptions.min, _activeOptions.max);
     updateDisplayNum(_currentValue);
@@ -377,6 +442,10 @@
     if (window.triggerHaptic) window.triggerHaptic('light');
   }
 
+  /**
+   * Шаговое изменение значения на дельту (+1, -5 и т.д.)
+   * @param {number} delta - Шаг смещения
+   */
   function stepValue(delta) {
     const nextVal = clamp(_currentValue + delta, _activeOptions.min, _activeOptions.max);
     setValue(nextVal, true);
@@ -387,8 +456,12 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Закрытие барабанного пикера
+  // БЛОК 7. Закрытие барабанного пикера и очистка DOM (Close Picker)
   // ---------------------------------------------------------------------------
+
+  /**
+   * Закрытие барабанного пикера с анимацией затухания оверлея
+   */
   function closeNumberPicker() {
     const overlay = getOverlay();
     if (!overlay) return;
@@ -403,7 +476,9 @@
     }, 180);
   }
 
-  // Экспорт в глобальную область
+  // ---------------------------------------------------------------------------
+  // БЛОК 8. Экспорт функций барабанного пикера в глобальную область (window)
+  // ---------------------------------------------------------------------------
   window.openNumberPicker = openNumberPicker;
   window.closeNumberPicker = closeNumberPicker;
 })();

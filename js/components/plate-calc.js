@@ -205,24 +205,44 @@
   }
 
   // ---------------------------------------------------------------------------
-  // БЛОК 4. Обработчики изменения веса и пересчета (Controls & Actions)
+  // БЛОК 4. Управление целевым весом и весом грифа
   // ---------------------------------------------------------------------------
+
+  /**
+   * Смещение целевого веса штанги на заданную дельту (шаг)
+   * @param {number} delta - Прирост или уменьшение веса (например, +5, -10)
+   */
   function changePlateTargetWeight(delta) {
     plateCalcTargetWeight = Math.max(plateCalcBarWeight, Math.round((plateCalcTargetWeight + delta) * 10) / 10);
     updatePlateCalculatorUI();
   }
 
+  /**
+   * Быстрый выбор популярного фиксированного веса из чипов (40, 60, 80... кг)
+   * @param {number|string} w - Выбранный вес
+   */
   function setPlateQuickWeight(w) {
     plateCalcTargetWeight = Math.max(plateCalcBarWeight, parseFloat(w) || 20);
     updatePlateCalculatorUI();
   }
 
+  /**
+   * Смена типа/веса олимпийского грифа (20, 15 или 10 кг)
+   * @param {number} w - Масса пустого грифа в кг
+   */
   function setPlateBarWeight(w) {
     plateCalcBarWeight = w;
     plateCalcTargetWeight = Math.max(plateCalcBarWeight, plateCalcTargetWeight);
     updatePlateCalculatorUI();
   }
 
+  // ---------------------------------------------------------------------------
+  // БЛОК 5. Применение рассчитанного веса к текущему упражнению
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Применение рассчитанного веса сразу ко всем сетам целевого упражнения тренировки
+   */
   function applyPlateWeightToExercise() {
     if (plateCalcTargetExIdx !== null && window.state && window.state.work && window.state.work.activeWorkout) {
       const ex = window.state.work.activeWorkout.exercises[plateCalcTargetExIdx];
@@ -247,6 +267,13 @@
     if (window.closeModal) window.closeModal();
   }
 
+  // ---------------------------------------------------------------------------
+  // БЛОК 6. Вызов колесного селектора веса (Number Picker)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Открытие модального колесного селектора для точной настройки целевого веса
+   */
   function openPlateTargetWeightPicker() {
     if (window.openNumberPicker) {
       window.openNumberPicker({
@@ -266,7 +293,7 @@
   }
 
   // ---------------------------------------------------------------------------
-  // БЛОК 5. Экспорт функций калькулятора блинов в глобальную область (window)
+  // БЛОК 7. Экспорт методов калькулятора блинов в глобальную область (window)
   // ---------------------------------------------------------------------------
   window.openPlateCalculatorModal = openPlateCalculatorModal;
   window.openPlateTargetWeightPicker = openPlateTargetWeightPicker;

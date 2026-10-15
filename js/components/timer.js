@@ -23,6 +23,12 @@
   // ---------------------------------------------------------------------------
   // БЛОК 2. Форматирование времени (Секунды -> MM:SS)
   // ---------------------------------------------------------------------------
+
+  /**
+   * Преобразование секунд в строковый формат таймера MM:SS
+   * @param {number} sec - Количество секунд
+   * @returns {string} Строка вида "1:30" или "0:05"
+   */
   function formatTimerSeconds(sec) {
     const m = Math.floor(sec / 60);
     const s = sec % 60;
@@ -32,6 +38,11 @@
   // ---------------------------------------------------------------------------
   // БЛОК 3. Управление обратным отсчетом (Start / Stop / Pause / Add Time)
   // ---------------------------------------------------------------------------
+
+  /**
+   * Запуск обратного отсчета отдыха между подходами
+   * @param {number} [seconds] - Длительность отдыха в секундах (по умолчанию из настроек пользователя или 90с)
+   */
   function startRestTimer(seconds) {
     const sec = seconds !== undefined ? seconds : (window.Storage ? window.Storage.getRestTimerSeconds() : 90);
     restTimerState.totalSeconds = sec;
@@ -68,6 +79,9 @@
     }, 500);
   }
 
+  /**
+   * Полная остановка и сброс активного таймера отдыха
+   */
   function stopRestTimer() {
     if (restTimerState.intervalId) {
       clearInterval(restTimerState.intervalId);
@@ -78,6 +92,9 @@
     updateRestTimerWidget();
   }
 
+  /**
+   * Переключение паузы таймера (приостановка / возобновление с пересчетом endTime)
+   */
   function togglePauseRestTimer() {
     if (!restTimerState.intervalId && restTimerState.remainingSeconds === 0) return;
     restTimerState.isPaused = !restTimerState.isPaused;
@@ -87,6 +104,10 @@
     updateRestTimerWidget();
   }
 
+  /**
+   * Добавление дополнительного времени к текущему отсчету
+   * @param {number} [secs=30] - Количество добавляемых секунд
+   */
   function addRestTimerTime(secs = 30) {
     restTimerState.remainingSeconds += secs;
     restTimerState.endTime += secs * 1000;
@@ -94,6 +115,11 @@
     updateRestTimerWidget();
   }
 
+  /**
+   * Генерация SVG-иконки кнопки воспроизведения/паузы
+   * @param {boolean} isPaused - Находится ли таймер на паузе
+   * @returns {string} SVG разметка
+   */
   function getPauseIcon(isPaused) {
     return isPaused
       ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20"></polygon></svg>`
@@ -103,6 +129,10 @@
   // ---------------------------------------------------------------------------
   // БЛОК 4. Отрисовка и точечное обновление DOM виджета (Widget Renderer)
   // ---------------------------------------------------------------------------
+
+  /**
+   * Точечное обновление интерфейса плавающей плашки таймера в нижней части экрана
+   */
   function updateRestTimerWidget() {
     const root = document.getElementById('rest-timer-root');
     if (!root) return;
