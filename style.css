@@ -718,6 +718,42 @@ canvas {
   gap: 12px;
 }
 
+/* Иконки официальных ресурсов VIV */
+.social-icon-img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Вращение иконки сайта по часовой стрелке (1 полный оборот за 4 секунды) */
+@keyframes spinClockwise {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.social-icon-url-spin {
+  animation: spinClockwise 4s linear infinite;
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+
+/* Адаптивная контрастность иконок под темную и светлую тему */
+[data-theme="dark"] .social-icon-adaptive-dark,
+:root:not([data-theme="light"]) .social-icon-adaptive-dark {
+  filter: brightness(0) invert(1);
+}
+
+[data-theme="light"] .social-icon-adaptive-light {
+  filter: brightness(0);
+}
+
 .filter-chip {
   flex-shrink: 0;
   background-color: var(--card-bg);

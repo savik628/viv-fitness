@@ -685,7 +685,7 @@
         <a href="https://vivclub.ru" target="_blank" rel="noopener noreferrer" onclick="return openExternal('https://vivclub.ru', event);" class="social-btn">
           <div class="social-btn-content">
             <div style="width:38px; height:38px; background:var(--card-bg-elevated); border:1px solid var(--border-color); border-radius:10px; display:flex; align-items:center; justify-content:center;">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+              <img src="url_icon.svg" alt="Официальный сайт" class="social-icon-img social-icon-url-spin social-icon-adaptive-light">
             </div>
             <div>
               <div>Официальный сайт</div>
@@ -696,7 +696,7 @@
         <a href="https://t.me/vivclubru" target="_blank" rel="noopener noreferrer" onclick="return openExternal('https://t.me/vivclubru', event);" class="social-btn">
           <div class="social-btn-content">
             <div style="width:38px; height:38px; background:var(--card-bg-elevated); border:1px solid var(--border-color); border-radius:10px; display:flex; align-items:center; justify-content:center;">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+              <img src="tg_icon.svg" alt="Telegram" class="social-icon-img social-icon-adaptive-dark">
             </div>
             <div>
               <div>Telegram канал</div>
@@ -707,7 +707,7 @@
         <a href="https://www.instagram.com/vivclub.ru?stkn=MTF4aTZwc3ZucG03eg==" target="_blank" rel="noopener noreferrer" onclick="return openExternal('https://www.instagram.com/vivclub.ru?stkn=MTF4aTZwc3ZucG03eg==', event);" class="social-btn">
           <div class="social-btn-content">
             <div style="width:38px; height:38px; background:var(--card-bg-elevated); border:1px solid var(--border-color); border-radius:10px; display:flex; align-items:center; justify-content:center;">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+              <img src="ins_icon.svg" alt="Instagram" class="social-icon-img social-icon-adaptive-dark">
             </div>
             <div>
               <div>Instagram</div>
