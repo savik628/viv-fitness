@@ -718,17 +718,33 @@ canvas {
   gap: 12px;
 }
 
+/* Контейнер-бейдж для иконки официального ресурса */
+.social-icon-badge {
+  width: 38px;
+  height: 38px;
+  background-color: var(--card-bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
 /* Иконки официальных ресурсов VIV */
 .social-icon-img {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   object-fit: contain;
   display: block;
   user-select: none;
   -webkit-user-drag: none;
+  transition: filter 0.2s ease;
 }
 
-/* Вращение иконки сайта по часовой стрелке (1 полный оборот за 4 секунды) */
+/* Вращение иконки сайта по часовой стрелке (1 полный оборот за 8 секунд) */
 @keyframes spinClockwise {
   from {
     transform: rotate(0deg);
@@ -739,19 +755,33 @@ canvas {
 }
 
 .social-icon-url-spin {
-  animation: spinClockwise 4s linear infinite;
+  animation: spinClockwise 8s linear infinite;
   transform-origin: 50% 50%;
   will-change: transform;
 }
 
-/* Адаптивная контрастность иконок под темную и светлую тему */
+/* Адаптивная контрастность иконок под тёмную тему (Dark Mode):
+   - Иконка url_icon.svg уже белая (#fff) — отображается нативно без фильтра.
+   - Иконки tg_icon.svg и ins_icon.svg черные (#000) — инвертируются в белый цвет. */
 [data-theme="dark"] .social-icon-adaptive-dark,
 :root:not([data-theme="light"]) .social-icon-adaptive-dark {
   filter: brightness(0) invert(1);
 }
 
+[data-theme="dark"] .social-icon-adaptive-light,
+:root:not([data-theme="light"]) .social-icon-adaptive-light {
+  filter: none;
+}
+
+/* Адаптивная контрастность иконок под светлую тему (Light Mode):
+   - Иконка url_icon.svg белая (#fff) — инвертируется в контрастный чёрный цвет (#000).
+   - Иконки tg_icon.svg и ins_icon.svg черные (#000) — отображаются нативно без фильтра. */
 [data-theme="light"] .social-icon-adaptive-light {
   filter: brightness(0);
+}
+
+[data-theme="light"] .social-icon-adaptive-dark {
+  filter: none;
 }
 
 .filter-chip {

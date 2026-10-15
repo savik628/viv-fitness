@@ -684,7 +684,7 @@
         </div>
         <a href="https://vivclub.ru" target="_blank" rel="noopener noreferrer" onclick="return openExternal('https://vivclub.ru', event);" class="social-btn">
           <div class="social-btn-content">
-            <div style="width:38px; height:38px; background:var(--card-bg-elevated); border:1px solid var(--border-color); border-radius:10px; display:flex; align-items:center; justify-content:center;">
+            <div class="social-icon-badge">
               <img src="url_icon.svg" alt="Официальный сайт" class="social-icon-img social-icon-url-spin social-icon-adaptive-light">
             </div>
             <div>
@@ -695,7 +695,7 @@
         </a>
         <a href="https://t.me/vivclubru" target="_blank" rel="noopener noreferrer" onclick="return openExternal('https://t.me/vivclubru', event);" class="social-btn">
           <div class="social-btn-content">
-            <div style="width:38px; height:38px; background:var(--card-bg-elevated); border:1px solid var(--border-color); border-radius:10px; display:flex; align-items:center; justify-content:center;">
+            <div class="social-icon-badge">
               <img src="tg_icon.svg" alt="Telegram" class="social-icon-img social-icon-adaptive-dark">
             </div>
             <div>
@@ -706,7 +706,7 @@
         </a>
         <a href="https://www.instagram.com/vivclub.ru?stkn=MTF4aTZwc3ZucG03eg==" target="_blank" rel="noopener noreferrer" onclick="return openExternal('https://www.instagram.com/vivclub.ru?stkn=MTF4aTZwc3ZucG03eg==', event);" class="social-btn">
           <div class="social-btn-content">
-            <div style="width:38px; height:38px; background:var(--card-bg-elevated); border:1px solid var(--border-color); border-radius:10px; display:flex; align-items:center; justify-content:center;">
+            <div class="social-icon-badge">
               <img src="ins_icon.svg" alt="Instagram" class="social-icon-img social-icon-adaptive-dark">
             </div>
             <div>
