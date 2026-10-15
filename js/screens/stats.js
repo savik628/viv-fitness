@@ -86,27 +86,78 @@
     return forms[2];
   }
 
-  function renderStatsReportTab() {
-    const container = document.getElementById('stats-tab-content');
-    if (!container) return;
+  function fmtDateIso(d) {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
 
-    const prof = window.Storage ? window.Storage.getProfile() : {};
-    const history = window.Storage ? window.Storage.getHistory() : [];
-    const weightLogs = window.Storage ? window.Storage.getBodyweightHistory() : [];
-    const latestW = weightLogs.length ? weightLogs[weightLogs.length - 1].weight : (prof.weight || null);
-    const initialW = weightLogs.length ? weightLogs[0].weight : (prof.weight || null);
-    const weightDiff = (latestW != null && initialW != null) ? Math.round((latestW - initialW) * 10) / 10 : 0;
+  function getReportSelectedDate() {
+    if (!window.state) window.state = {};
+    if (!window.state.stats) window.state.stats = {};
+    if (!window.state.stats.reportSelectedDate) {
+      window.state.stats.reportSelectedDate = window.getLocalDateStr ? window.getLocalDateStr() : fmtDateIso(new Date());
+    }
+    return window.state.stats.reportSelectedDate;
+  }
 
-    // Расчет чистого силового тоннажа (исключая упражнения на время и дистанцию)
+  function selectReportDate(dateStr) {
+    if (!window.state) window.state = {};
+    if (!window.state.stats) window.state.stats = {};
+    window.state.stats.reportSelectedDate = dateStr;
+    if (window.triggerHaptic) window.triggerHaptic('light');
+    renderStatsReportTab();
+  }
+
+  function shiftReportWeek(deltaDays) {
+    const cur = getReportSelectedDate();
+    const [y, m, d] = cur.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    dateObj.setDate(dateObj.getDate() + deltaDays);
+    selectReportDate(fmtDateIso(dateObj));
+  }
+
+  function getReportWeekDates(refDateStr) {
+    const ref = refDateStr ? new Date(refDateStr + 'T12:00:00') : new Date();
+    const dayOfWeek = ref.getDay();
+    const distToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+
+    const monday = new Date(ref);
+    monday.setDate(ref.getDate() + distToMon);
+
+    const week = [];
+    const weekdaysNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+    const todayStr = window.getLocalDateStr ? window.getLocalDateStr() : fmtDateIso(new Date());
+
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const iso = fmtDateIso(d);
+      week.push({
+        dateStr: iso,
+        dayNum: d.getDate(),
+        weekday: weekdaysNames[i],
+        isToday: iso === todayStr
+      });
+    }
+    return week;
+  }
+
+  function calculateDayPureVolume(history, targetDateStr) {
     const volumeByExercise = {};
     let totalPureVolume = 0;
     let totalPureSets = 0;
 
+    if (!Array.isArray(history)) return { volumeByExercise, totalPureVolume, totalPureSets };
+
     history.forEach(h => {
+      const hDate = h.date ? h.date.substring(0, 10) : '';
+      if (hDate !== targetDateStr) return;
+
       h.sets?.forEach(s => {
         const w = parseFloat(s.weight) || 0;
         const r = parseInt(s.reps, 10) || 0;
-        // Учитывается исключительно силовой вес (кг); время (сек/мин) и дистанция исключены
         if (w > 0 && r > 0 && s.exerciseName && s.exerciseType !== 'distance' && s.exerciseType !== 'duration') {
           const vol = w * r;
           volumeByExercise[s.exerciseName] = (volumeByExercise[s.exerciseName] || 0) + vol;
@@ -116,11 +167,25 @@
       });
     });
 
+    return { volumeByExercise, totalPureVolume, totalPureSets };
+  }
+
+  function renderStatsReportTab() {
+    const container = document.getElementById('stats-tab-content');
+    if (!container) return;
+
+    const history = window.Storage ? window.Storage.getHistory() : [];
+    const curDateStr = getReportSelectedDate();
+    const todayStr = window.getLocalDateStr ? window.getLocalDateStr() : fmtDateIso(new Date());
+
+    // Расчет чистого силового тоннажа за выбранный день
+    const { volumeByExercise, totalPureVolume } = calculateDayPureVolume(history, curDateStr);
+
     const isTons = totalPureVolume >= 1000;
     const displayVol = isTons ? (Math.round((totalPureVolume / 1000) * 10) / 10) : Math.round(totalPureVolume);
     const volUnit = isTons ? 'ТОНН' : 'КГ';
 
-    // Список упражнений строго по убыванию чистого тоннажа
+    // Список упражнений строго по убыванию чистого тоннажа за выбранный день
     const sortedExercises = Object.keys(volumeByExercise)
       .map(name => {
         const vol = volumeByExercise[name];
@@ -132,11 +197,66 @@
       })
       .sort((a, b) => b.volume - a.volume);
 
-    const todayDateStr = new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+    // Недельная лента дат
+    const weekDays = getReportWeekDates(curDateStr);
+    const startParts = weekDays[0].dateStr.split('-').map(Number);
+    const endParts = weekDays[6].dateStr.split('-').map(Number);
+    const startDate = new Date(startParts[0], startParts[1] - 1, startParts[2]);
+    const endDate = new Date(endParts[0], endParts[1] - 1, endParts[2]);
+
+    let formattedWeekRange = '';
+    const startMonth = startDate.toLocaleDateString('ru-RU', { month: 'short' });
+    const endMonth = endDate.toLocaleDateString('ru-RU', { month: 'short' });
+
+    if (startDate.getMonth() === endDate.getMonth()) {
+      formattedWeekRange = `${startDate.getDate()} – ${endDate.getDate()} ${endDate.toLocaleDateString('ru-RU', { month: 'long' })}`;
+    } else {
+      formattedWeekRange = `${startDate.getDate()} ${startMonth} – ${endDate.getDate()} ${endMonth}`;
+    }
+
+    const [cy, cm, cd] = curDateStr.split('-').map(Number);
+    const selDateObj = new Date(cy, cm - 1, cd);
+    const formattedSelDate = selDateObj.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+    const isCurToday = curDateStr === todayStr;
+    const displayDateHeader = (isCurToday ? 'Сегодня, ' : '') + formattedSelDate;
+
     const logoHtml = window.AppLogo ? window.AppLogo.render({ className: 'apple-report-logo-text' }) : 'VIV';
 
     container.innerHTML = `
       <div class="report-tab-wrapper">
+        <!-- 1. Навигация по неделям (как в календаре привычек) -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding:0 2px;">
+          <button class="cal-nav-btn" onclick="shiftReportWeek(-7)" aria-label="Предыдущая неделя" title="Предыдущая неделя">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          </button>
+          <div style="text-align:center;">
+            <div style="font-size:15px; font-weight:700; letter-spacing:-0.2px; color:var(--text-primary); text-transform:capitalize;">${formattedWeekRange}</div>
+          </div>
+          <button class="cal-nav-btn" onclick="shiftReportWeek(7)" aria-label="Следующая неделя" title="Следующая неделя">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+        </div>
+
+        <!-- 2. Недельная лента дней -->
+        <div class="habit-week-strip" style="margin-bottom:14px;">
+          ${weekDays.map(w => {
+            const isSelected = w.dateStr === curDateStr;
+            const dayVol = calculateDayPureVolume(history, w.dateStr).totalPureVolume;
+            const hasWorkout = dayVol > 0;
+            return `
+              <button 
+                class="habit-day-pill ${isSelected ? 'active' : ''} ${w.isToday ? 'is-today' : ''}" 
+                onclick="selectReportDate('${w.dateStr}')"
+                title="${w.dayNum} ${w.weekday}${hasWorkout ? ' • ' + (dayVol >= 1000 ? (Math.round(dayVol / 100) / 10) + ' т' : Math.round(dayVol) + ' кг') : ''}"
+              >
+                <span class="habit-day-name">${w.weekday}</span>
+                <span class="habit-day-num">${w.dayNum}</span>
+                <span class="habit-day-dot ${hasWorkout ? 'full' : ''}" style="${hasWorkout ? 'background:var(--text-primary); box-shadow:0 0 6px var(--text-primary);' : ''}"></span>
+              </button>
+            `;
+          }).join('')}
+        </div>
+
         <div id="viv-athlete-pdf-document" class="printable-athlete-doc apple-fitness-report">
           <!-- Шапка ПО ЦЕНТРУ с чистым логотипом VIV (двойной клик сохраняет PNG) -->
           <div class="apple-report-branding">
@@ -149,7 +269,7 @@
                  onclick="handleVivLogoTouch(event)">
               ${logoHtml}
             </div>
-            <div class="apple-report-date">${todayDateStr}</div>
+            <div class="apple-report-date">${displayDateHeader}</div>
           </div>
 
           <!-- ГЛАВНЫЙ АКЦЕНТ: МОНОХРОМНОЕ КОЛЬЦО ТОННАЖА ПО ЦЕНТРУ -->
@@ -192,7 +312,7 @@
                 `).join('')}
               </div>
             ` : `
-              <div class="apple-empty-box">Нет завершенных силовых тренировок с весом.</div>
+              <div class="apple-empty-box">Нет завершенных тренировок за этот день.</div>
             `}
           </div>
 
@@ -218,23 +338,11 @@
   async function exportVivReportPng() {
     if (window.triggerHaptic) window.triggerHaptic('medium');
 
+    const curDateStr = getReportSelectedDate();
     const history = window.Storage ? window.Storage.getHistory() : [];
     
-    // Чистый силовой объем
-    const volumeByExercise = {};
-    let totalPureVolume = 0;
-
-    history.forEach(h => {
-      h.sets?.forEach(s => {
-        const w = parseFloat(s.weight) || 0;
-        const r = parseInt(s.reps, 10) || 0;
-        if (w > 0 && r > 0 && s.exerciseName && s.exerciseType !== 'distance' && s.exerciseType !== 'duration') {
-          const vol = w * r;
-          volumeByExercise[s.exerciseName] = (volumeByExercise[s.exerciseName] || 0) + vol;
-          totalPureVolume += vol;
-        }
-      });
-    });
+    // Чистый силовой объем за выбранный день
+    const { volumeByExercise, totalPureVolume } = calculateDayPureVolume(history, curDateStr);
 
     const isTons = totalPureVolume >= 1000;
     const displayVol = isTons ? (Math.round((totalPureVolume / 1000) * 10) / 10) : Math.round(totalPureVolume);
@@ -389,7 +497,9 @@
       }
     }
 
-    const dateStr = new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+    const [cy, cm, cd] = curDateStr.split('-').map(Number);
+    const selDateObj = new Date(cy, cm - 1, cd);
+    const dateStr = selDateObj.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
     const dateY = logoY + logoH + 16;
     ctx.font = '500 12px -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif';
     ctx.fillStyle = cTextSecondary;
@@ -463,7 +573,7 @@
       ctx.textAlign = 'center';
       ctx.font = '500 13px -apple-system, sans-serif';
       ctx.fillStyle = cTextMuted;
-      ctx.fillText('Нет завершенных силовых тренировок с весом.', cardX + cardW / 2, curExY + 32);
+      ctx.fillText('Нет завершенных тренировок за этот день.', cardX + cardW / 2, curExY + 32);
       curExY += 56 + exGap;
     } else {
       for (let i = 0; i < sortedExercises.length; i++) {
@@ -1013,6 +1123,8 @@
   window.renderStats = renderStats;
   window.switchStatsSubTab = switchStatsSubTab;
   window.renderStatsReportTab = renderStatsReportTab;
+  window.shiftReportWeek = shiftReportWeek;
+  window.selectReportDate = selectReportDate;
   window.triggerPrintReport = exportVivReportPng;
   window.renderStatsProgressTab = renderStatsProgressTab;
   window.changeStatsRoutine = changeStatsRoutine;

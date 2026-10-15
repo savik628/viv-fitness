@@ -194,6 +194,7 @@
     if (!routine) return;
 
     window.state.work.activeWorkout = {
+      routineId: routine.id,
       routineName: routine.name,
       startTime: Date.now(),
       exercises: routine.exercises.map(e => {
@@ -500,6 +501,35 @@
     if (muscleSel && muscle) muscleSel.value = muscle;
   }
 
+  function persistExerciseToRoutine(routineId, routineName, newEx) {
+    if (!window.Storage || !newEx || !newEx.name) return;
+    try {
+      const routines = window.Storage.getRoutines ? window.Storage.getRoutines() : [];
+      const target = routines.find(r => (routineId && String(r.id) === String(routineId)) || (r.name && routineName && r.name.trim().toLowerCase() === routineName.trim().toLowerCase()));
+      if (!target) return;
+      if (!Array.isArray(target.exercises)) target.exercises = [];
+      const exNameClean = newEx.name.trim().toLowerCase();
+      const exists = target.exercises.some(e => e.name && e.name.trim().toLowerCase() === exNameClean);
+      if (!exists) {
+        target.exercises.push({
+          name: newEx.name.trim(),
+          type: newEx.type || 'weight_reps',
+          primaryMuscle: newEx.primaryMuscle || 'chest',
+          defaultSets: 3,
+          defaultReps: 10
+        });
+        window.Storage.saveRoutine(target);
+        if (window.state?.work?.routines) {
+          const idx = window.state.work.routines.findIndex(r => String(r.id) === String(target.id));
+          if (idx !== -1) window.state.work.routines[idx] = target;
+          else window.state.work.routines.push(target);
+        }
+      }
+    } catch (e) {
+      console.warn('persistExerciseToRoutine error:', e);
+    }
+  }
+
   function confirmAddActiveExercise() {
     const nameInp = document.getElementById('active-new-ex-name');
     const typeSel = document.getElementById('active-new-ex-type');
@@ -528,12 +558,16 @@
         }))
       : [{ setNumber: 1, reps: 0, weight: 0, distance: 0, duration: 0, completed: false }];
 
-    aw.exercises.push({
+    const newExerciseObj = {
       name,
       type,
       primaryMuscle: muscle,
       sets
-    });
+    };
+    aw.exercises.push(newExerciseObj);
+
+    // Автоматически навсегда сохраняем упражнение в текущую программу тренировки
+    persistExerciseToRoutine(aw.routineId, aw.routineName, newExerciseObj);
 
     syncActiveDraft();
     if (window.closeModal) window.closeModal();
@@ -653,6 +687,12 @@
     if (window._pendingWorkoutRecord && window.Storage) {
       window.Storage.addWorkoutRecord(window._pendingWorkoutRecord);
       window._pendingWorkoutRecord = null;
+    }
+    const aw = window.state?.work?.activeWorkout;
+    if (aw && Array.isArray(aw.exercises)) {
+      aw.exercises.forEach(ex => {
+        persistExerciseToRoutine(aw.routineId, aw.routineName, ex);
+      });
     }
     if (window.stopRestTimer) window.stopRestTimer();
     window.state.work.activeWorkout = null;
