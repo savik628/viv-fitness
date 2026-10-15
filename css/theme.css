@@ -301,12 +301,32 @@
 /* ---------------------------------------------------------------------------
    БЛОК: Инверсия всех иконок VIV в белой теме (становятся чистым черным #000)
    --------------------------------------------------------------------------- */
-[data-theme="light"] img[src*="icon.svg"],
+[data-theme="light"] img[src="icon.svg"]:not(.social-icon-img),
+[data-theme="light"] img[src="./icon.svg"]:not(.social-icon-img),
 [data-theme="light"] .app-logo-badge,
 [data-theme="light"] .nav-item-logo img,
 [data-theme="light"] .apple-report-logo-interactive img,
-[data-theme="light"] .sub-tab-btn img[src*="icon.svg"] {
+[data-theme="light"] .sub-tab-btn img[src*="icon.svg"]:not(.social-icon-img) {
   filter: invert(1) !important;
+}
+
+/* Адаптивная контрастность монохромных соц-иконок VIV */
+[data-theme="dark"] .social-icon-adaptive-dark,
+:root:not([data-theme="light"]) .social-icon-adaptive-dark {
+  filter: brightness(0) invert(1) !important;
+}
+
+[data-theme="dark"] .social-icon-adaptive-light,
+:root:not([data-theme="light"]) .social-icon-adaptive-light {
+  filter: none !important;
+}
+
+[data-theme="light"] .social-icon-adaptive-light {
+  filter: brightness(0) !important;
+}
+
+[data-theme="light"] .social-icon-adaptive-dark {
+  filter: none !important;
 }
 
 /* ---------------------------------------------------------------------------
