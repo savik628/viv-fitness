@@ -12,10 +12,10 @@
   // ---------------------------------------------------------------------------
   // БЛОК 1. КОНСТАНТЫ ИКОНОК ПРИВЫЧЕК (Habit Icons Registry)
   // ---------------------------------------------------------------------------
-  const HABIT_EMOJIS = ['✅', '🛑', '🌙', '⏱️', '⚡', '💧', '🔥', '🎯', '❄️', '☀️', '🌿', '➡️'];
+  const HABIT_EMOJIS = ['💧', '🥗', '😴', '🏃', '📚', '🧠', '🎓', '🎯', '💰', '🧹', '💬', '⚡'];
 
   function getHabitEmoji(habit) {
-    return (habit && habit.emoji) ? habit.emoji : '⚡';
+    return (habit && habit.emoji) ? habit.emoji : '💧';
   }
 
   // ---------------------------------------------------------------------------
@@ -276,7 +276,7 @@
   // ---------------------------------------------------------------------------
   function openAddHabitModal(habitId = null) {
     const isEdit = habitId !== null;
-    let habit = { title: '', emoji: '✅' };
+    let habit = { title: '', emoji: '💧' };
 
     if (isEdit && window.Storage) {
       const habits = window.Storage.getHabits();
@@ -284,7 +284,7 @@
       if (found) habit = { ...found, emoji: getHabitEmoji(found) };
     }
 
-    let selectedEmoji = habit.emoji || '✅';
+    let selectedEmoji = habit.emoji || '💧';
 
     const modalHtml = `
       <div style="padding:16px;">
@@ -351,7 +351,7 @@
     const titleInput = document.getElementById('habit-title-input');
     const emojiInput = document.getElementById('habit-selected-emoji');
     const title = titleInput?.value.trim();
-    const emoji = emojiInput?.value || '✅';
+    const emoji = emojiInput?.value || '💧';
 
     if (!title) {
       alert('Введите название привычки');
