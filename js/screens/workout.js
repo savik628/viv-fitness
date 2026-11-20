@@ -275,7 +275,6 @@
           const isDist = ex.type === 'distance';
           const isDur = ex.type === 'duration';
 
-          const note = window.Storage?.getExerciseNote ? window.Storage.getExerciseNote(ex.name) : '';
           const lastSets = window.Storage?.getLastExerciseSets ? window.Storage.getLastExerciseSets(ex.name) : null;
 
           return `
@@ -299,10 +298,6 @@
                   <strong style="font-size:15.5px; font-weight:700; line-height:1.35; word-break:break-word; color:var(--text-primary);">${esc(ex.name)}</strong>
                 </div>
                 <div style="display:flex; gap:6px; align-items:center; flex-shrink:0; margin-top:1px;">
-                  <button class="btn btn-outline btn-sm" style="padding:4px 8px; font-size:11.5px; display:flex; align-items:center; gap:3px;" onclick="openExerciseNoteModal('${esc(ex.name)}')" title="Заметка к упражнению">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                    ${note ? 'Заметка' : '+ Заметка'}
-                  </button>
                   ${isWeight ? `
                     <button class="btn btn-outline btn-sm" style="padding:4px 8px; font-size:11.5px;" onclick="openPlateCalculatorModal(${(ex.sets?.find(s => !s.completed && parseFloat(s.weight) > 0)?.weight) || (ex.sets?.[0]?.weight) || 'null'}, ${exIdx})">
                       Блины
@@ -312,13 +307,6 @@
                   <button class="modal-close-btn" style="width:24px; height:24px; font-size:13px; opacity:0.65; margin-left:2px;" onclick="removeActiveWorkoutEx(${exIdx})" title="Удалить упражнение">✕</button>
                 </div>
               </div>
-
-              ${note ? `
-                <div class="ex-note-inline" onclick="openExerciseNoteModal('${esc(ex.name)}')">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-                  <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(note)}</span>
-                </div>
-              ` : ''}
 
               <div class="sets-table-header">
                 <div class="col-check">✓</div>
@@ -336,22 +324,12 @@
                 const ghostDist = ghost && ghost.distance ? ghost.distance : '0.0';
                 const ghostDur = ghost && ghost.duration ? ghost.duration : '0';
 
-                const tag = s.tag || 'normal';
-                let tagLabel = s.setNumber;
-                if (tag === 'warmup') tagLabel = 'W';
-                if (tag === 'drop') tagLabel = 'D';
-                if (tag === 'failure') tagLabel = 'F';
-
                 return `
                   <div id="set-row-${exIdx}-${sIdx}" class="sets-table-row ${s.completed ? 'completed' : ''}">
                     <div class="col-check">
                       <button id="set-check-${exIdx}-${sIdx}" class="set-check-btn ${s.completed ? 'checked' : ''}" onclick="toggleSetComplete(${exIdx}, ${sIdx})" title="Отметить подход">✓</button>
                     </div>
-                    <div class="col-set-num">
-                      <span class="set-tag-badge tag-${tag}" onclick="cycleSetTag(${exIdx}, ${sIdx})" title="Тип сета: ${tag}. Нажмите для переключения (Normal, W - Разминка, D - Дропсет, F - Отказ)">
-                        ${tagLabel}
-                      </span>
-                    </div>
+                    <div class="col-set-num">${s.setNumber}</div>
                     ${isWeight ? `
                       ${renderSetPill(s.weight, `set-input-${exIdx}-${sIdx}-weight`, `openSetPicker(${exIdx},${sIdx},'weight')`, ghostWeight)}
                       ${renderSetPill(s.reps, `set-input-${exIdx}-${sIdx}-reps`, `openSetPicker(${exIdx},${sIdx},'reps')`, ghostReps)}
@@ -404,62 +382,6 @@
     const temp = aw.exercises[idx];
     aw.exercises[idx] = aw.exercises[targetIdx];
     aw.exercises[targetIdx] = temp;
-    rerenderActiveWorkoutPreservingScroll();
-  }
-
-  /**
-   * Переключает тип/тег подхода (Normal -> Warmup -> Drop -> Failure)
-   */
-  function cycleSetTag(exIdx, sIdx) {
-    const aw = window.state.work.activeWorkout;
-    if (!aw || !aw.exercises[exIdx] || !aw.exercises[exIdx].sets[sIdx]) return;
-    const set = aw.exercises[exIdx].sets[sIdx];
-    const tags = ['normal', 'warmup', 'drop', 'failure'];
-    const currentTag = set.tag || 'normal';
-    const nextIdx = (tags.indexOf(currentTag) + 1) % tags.length;
-    set.tag = tags[nextIdx];
-    if (window.triggerHaptic) window.triggerHaptic('selection');
-    syncActiveDraft();
-    rerenderActiveWorkoutPreservingScroll();
-  }
-
-  /**
-   * Открывает окно редактирования постоянной заметки к упражнению
-   */
-  function openExerciseNoteModal(exerciseName) {
-    if (!exerciseName) return;
-    const currentNote = window.Storage?.getExerciseNote ? window.Storage.getExerciseNote(exerciseName) : '';
-    if (window.openModal) {
-      window.openModal(`
-        <div class="modal-header">
-          <div class="modal-title">Заметка: ${esc(exerciseName)}</div>
-          <button class="modal-close-btn" onclick="closeModal()">✕</button>
-        </div>
-        <div style="font-size:12.5px; color:var(--text-secondary); margin-bottom:12px;">
-          Заметка сохраняется и будет показываться каждый раз при выполнении этого упражнения (высота сиденья, хват, нюансы).
-        </div>
-        <div class="form-group">
-          <textarea id="ex-note-textarea" class="form-input" style="height:110px; resize:none; padding:10px; font-size:14px;" placeholder="Например: тренажер №3, упор на 2, широкий хват...">${esc(currentNote)}</textarea>
-        </div>
-        <div style="display:flex; gap:10px;">
-          <button class="btn btn-secondary" style="flex:1;" onclick="closeModal()">Отмена</button>
-          <button class="btn btn-green" style="flex:1;" onclick="saveExerciseNoteAction('${esc(exerciseName)}')">Сохранить</button>
-        </div>
-      `);
-      setTimeout(() => {
-        const ta = document.getElementById('ex-note-textarea');
-        if (ta) ta.focus();
-      }, 100);
-    }
-  }
-
-  function saveExerciseNoteAction(exerciseName) {
-    const ta = document.getElementById('ex-note-textarea');
-    const val = ta ? ta.value : '';
-    if (window.Storage?.saveExerciseNote) {
-      window.Storage.saveExerciseNote(exerciseName, val);
-    }
-    if (window.closeModal) window.closeModal();
     rerenderActiveWorkoutPreservingScroll();
   }
 
@@ -1343,9 +1265,6 @@
   window.renderActiveWorkoutScreen = renderActiveWorkoutScreen;
   window.moveActiveWorkoutEx = moveActiveWorkoutEx;
   window.toggleSetComplete = toggleSetComplete;
-  window.cycleSetTag = cycleSetTag;
-  window.openExerciseNoteModal = openExerciseNoteModal;
-  window.saveExerciseNoteAction = saveExerciseNoteAction;
   window.setVal = setVal;
   window.addSet = addSet;
   window.removeSet = removeSet;
