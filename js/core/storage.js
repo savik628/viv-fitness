@@ -24,6 +24,7 @@ const KEYS = {
   HABITS: 'viv_user_habits',
   HABIT_LOGS: 'viv_user_habit_logs',
   CHART_LIMIT: 'viv_chart_limit',
+  EXERCISE_NOTES: 'viv_exercise_notes',
 };
 
 // -----------------------------------------------------------------------------
@@ -228,12 +229,35 @@ const Storage = {
             distance: parseFloat(s.distance) || 0,
             duration: parseInt(s.duration, 10) || 0,
             rpe: s.rpe || '',
+            tag: s.tag || 'normal',
             completed: false,
           }));
         }
       }
     }
     return null;
+  },
+
+  /**
+   * Возвращает или сохраняет постоянную заметку к упражнению
+   */
+  getExerciseNote(exerciseName) {
+    if (!exerciseName) return '';
+    const notes = getStore(KEYS.EXERCISE_NOTES, {});
+    return notes[exerciseName.trim().toLowerCase()] || '';
+  },
+
+  saveExerciseNote(exerciseName, noteText) {
+    if (!exerciseName) return;
+    const notes = getStore(KEYS.EXERCISE_NOTES, {});
+    const key = exerciseName.trim().toLowerCase();
+    if (noteText && noteText.trim()) {
+      notes[key] = noteText.trim();
+    } else {
+      delete notes[key];
+    }
+    setStore(KEYS.EXERCISE_NOTES, notes);
+    return notes[key] || '';
   },
 
   addWorkoutRecord(record) {
@@ -252,6 +276,8 @@ const Storage = {
               reps: parseInt(s.reps, 10) || 0,
               distance: parseFloat(s.distance) || 0,
               duration: parseInt(s.duration, 10) || 0,
+              tag: s.tag || 'normal',
+              rpe: s.rpe || '',
             });
           });
         }
@@ -386,6 +412,7 @@ const Storage = {
         const r = parseInt(s.reps, 10) || 0;
         const dist = parseFloat(s.distance) || 0;
         const dur = parseInt(s.duration, 10) || 0;
+        const isWarmup = s.tag === 'warmup';
 
         item.totalSets++;
         item.totalVolume += (w * r);
@@ -395,7 +422,7 @@ const Storage = {
           item.hasWeightSets = true;
           if (w > item.maxWeight) item.maxWeight = w;
           if (r > item.maxWeightedReps) item.maxWeightedReps = r;
-          if (r > 0) {
+          if (r > 0 && !isWarmup) {
             const est = this.calculate1RM(w, r);
             if (est > item.max1RM) item.max1RM = est;
           }
@@ -492,13 +519,14 @@ const Storage = {
         const r = parseInt(s.reps, 10) || 0;
         const dist = parseFloat(s.distance) || 0;
         const dur = parseInt(s.duration, 10) || 0;
+        const isWarmup = s.tag === 'warmup';
         const setVol = w * r;
 
         if (w > 0) {
           hasWeightSets = true;
           if (w > maxWeight) maxWeight = w;
           if (r > maxWeightedReps) maxWeightedReps = r;
-          if (r > 0) {
+          if (r > 0 && !isWarmup) {
             const est = this.calculate1RM(w, r);
             if (est > max1RM) max1RM = est;
           }
@@ -992,7 +1020,54 @@ const Storage = {
       measurements: this.getMeasurements(),
       habits: this.getHabits(),
       habitLogs: this.getHabitLogs(),
+      exerciseNotes: getStore(KEYS.EXERCISE_NOTES, {}),
     }, null, 2);
+  },
+
+  /**
+   * Экспорт всей истории тренировок в формат CSV для Excel / Google Sheets
+   */
+  exportHistoryToCSV() {
+    const history = this.getHistory();
+    const rows = [
+      ['Дата', 'Тренировка', 'Длительность (мин)', 'Упражнение', 'Тип', 'Сет', 'Тег сета', 'Вес (кг)', 'Повторения', 'Дистанция (км)', 'Время (сек)', 'RPE']
+    ];
+
+    history.forEach(h => {
+      const date = h.date || '';
+      const rName = (h.routineName || 'Тренировка').replace(/"/g, '""');
+      const durMin = Math.round((h.duration || 0) / 60);
+
+      if (Array.isArray(h.sets)) {
+        h.sets.forEach((s, idx) => {
+          const exName = (s.exerciseName || '').replace(/"/g, '""');
+          const exType = s.exerciseType || 'weight_reps';
+          const setNum = s.setNumber || (idx + 1);
+          const tag = s.tag || 'normal';
+          const w = s.weight || 0;
+          const reps = s.reps || 0;
+          const dist = s.distance || 0;
+          const dur = s.duration || 0;
+          const rpe = s.rpe || '';
+          rows.push([
+            `"${date}"`,
+            `"${rName}"`,
+            durMin,
+            `"${exName}"`,
+            `"${exType}"`,
+            setNum,
+            `"${tag}"`,
+            w,
+            reps,
+            dist,
+            dur,
+            `"${rpe}"`
+          ]);
+        });
+      }
+    });
+
+    return '\uFEFF' + rows.map(r => r.join(';')).join('\r\n');
   },
 
   importBackup(jsonStr) {
@@ -1006,6 +1081,7 @@ const Storage = {
       if (Array.isArray(data.measurements)) setStore(KEYS.MEASUREMENTS, data.measurements);
       if (Array.isArray(data.habits)) setStore(KEYS.HABITS, data.habits);
       if (data.habitLogs && typeof data.habitLogs === 'object') setStore(KEYS.HABIT_LOGS, data.habitLogs);
+      if (data.exerciseNotes && typeof data.exerciseNotes === 'object') setStore(KEYS.EXERCISE_NOTES, data.exerciseNotes);
       return true;
     } catch {
       return false;

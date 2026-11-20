@@ -191,14 +191,18 @@
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
           <button class="btn btn-secondary" onclick="exportUserData()" style="display:flex; align-items:center; justify-content:center; gap:6px;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            Экспорт
+            Экспорт JSON
           </button>
           <button class="btn btn-secondary" onclick="triggerImportUserData()" style="display:flex; align-items:center; justify-content:center; gap:6px;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-            Импорт
+            Импорт JSON
           </button>
           <input type="file" id="import-backup-file" accept=".json,application/json" style="display:none;" onchange="handleImportFile(event)">
         </div>
+        <button class="btn btn-outline" onclick="exportCSVHistoryData()" style="width:100%; margin-bottom:10px; display:flex; align-items:center; justify-content:center; gap:6px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          Экспорт тренировок в Excel / CSV
+        </button>
         <button class="btn btn-outline" onclick="resetUserLocalData()" style="width:100%; color:#ef4444; border-color:rgba(239,68,68,0.3);">Сбросить локальные данные</button>
       </div>
     `;
@@ -588,6 +592,21 @@
   }
 
   /**
+   * Экспортирует историю тренировок в файл CSV для таблиц Excel / Google Sheets
+   */
+  function exportCSVHistoryData() {
+    if (!window.Storage?.exportHistoryToCSV) return;
+    const csvContent = window.Storage.exportHistoryToCSV();
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `viv_workouts_${fmtDate()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  /**
    * Открывает скрытый файловый input для выбора JSON-файла бэкапа.
    */
   function triggerImportUserData() {
@@ -769,6 +788,7 @@
   window.openMeasurementHistoryModal = openMeasurementHistoryModal;
   window.deleteMeasurementLog = deleteMeasurementLog;
   window.saveProfile = saveProfile;
+  window.exportCSVHistoryData = exportCSVHistoryData;
   window.exportUserData = exportUserData;
   window.triggerImportUserData = triggerImportUserData;
   window.handleImportFile = handleImportFile;
