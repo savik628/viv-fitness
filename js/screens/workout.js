@@ -1194,7 +1194,6 @@
    */
   window.TYPE_LABELS = TYPE_LABELS;
   window.getExerciseTypeLabel = getExerciseTypeLabel;
-  window.renderStepper = renderStepper;
   window.renderSetPill = renderSetPill;
   window.renderWork = renderWork;
   window.startWorkout = startWorkout;
