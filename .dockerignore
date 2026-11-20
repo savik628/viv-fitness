@@ -1,0 +1,15 @@
+.git
+.github
+.gitignore
+.DS_Store
+__pycache__
+*.py[cod]
+server.py
+*.pem
+*.key
+*.crt
+Dockerfile
+docker-compose.yml
+.dockerignore
+GEMINI.md
+README.md
