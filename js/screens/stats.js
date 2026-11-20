@@ -137,9 +137,7 @@
     const categoryChipsHtml = `
       <div class="category-chips-row" style="display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; margin-bottom:12px; -webkit-overflow-scrolling:touch; scrollbar-width:none;">
         ${categories.map(c => `
-          <button class="chip-btn ${activeCat === c.id ? 'active' : ''}" 
-                  onclick="filterExerciseStatsCategory('${c.id}')"
-                  style="padding:6px 14px; border-radius:20px; font-size:12px; font-weight:700; white-space:nowrap; border:1px solid ${activeCat === c.id ? 'var(--accent-color, #DFFF00)' : 'var(--border-color, #1c2229)'}; background:${activeCat === c.id ? 'var(--accent-color, #DFFF00)' : 'var(--card-bg, #14181c)'}; color:${activeCat === c.id ? '#000' : 'var(--text-secondary)'}; cursor:pointer;">
+          <button class="chip-btn ${activeCat === c.id ? 'active' : ''}" onclick="filterExerciseStatsCategory('${c.id}')">
             ${esc(c.label)}
           </button>
         `).join('')}

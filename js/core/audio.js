@@ -84,20 +84,24 @@
   function triggerHaptic(type = 'impact') {
     try {
       if (window.Telegram?.WebApp?.HapticFeedback) {
-        if (type === 'success') {
+        if (type === 'success' || type === 'finish') {
           window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-        } else if (type === 'light') {
+        } else if (type === 'light' || type === 'warning') {
           window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
         } else {
           window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
         }
       } else if (navigator.vibrate) {
-        if (type === 'success') {
+        if (type === 'finish') {
+          navigator.vibrate([200, 100, 200, 100, 400]);
+        } else if (type === 'success') {
           navigator.vibrate([150, 80, 150]);
+        } else if (type === 'warning') {
+          navigator.vibrate(25);
         } else if (type === 'light') {
-          navigator.vibrate(10);
+          navigator.vibrate(12);
         } else {
-          navigator.vibrate(60);
+          navigator.vibrate(50);
         }
       }
     } catch (_) {}

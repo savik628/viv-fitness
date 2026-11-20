@@ -630,10 +630,7 @@
     const categoryChipsHtml = `
       <div id="selector-category-chips" style="display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; margin-bottom:12px; -webkit-overflow-scrolling:touch; scrollbar-width:none;">
         ${categories.map(c => `
-          <button type="button" class="chip-btn ${c.id === 'all' ? 'active' : ''}" 
-                  data-cat="${c.id}"
-                  onclick="filterSelectorModalCategory('${c.id}')"
-                  style="padding:5px 12px; border-radius:18px; font-size:11.5px; font-weight:700; white-space:nowrap; border:1px solid ${c.id === 'all' ? 'var(--accent-color, #DFFF00)' : 'var(--border-color, #1c2229)'}; background:${c.id === 'all' ? 'var(--accent-color, #DFFF00)' : 'var(--card-bg, #14181c)'}; color:${c.id === 'all' ? '#000' : 'var(--text-secondary)'}; cursor:pointer;">
+          <button type="button" class="chip-btn ${c.id === 'all' ? 'active' : ''}" data-cat="${c.id}" onclick="filterSelectorModalCategory('${c.id}')">
             ${esc(c.label)}
           </button>
         `).join('')}
@@ -689,9 +686,10 @@
       const buttons = chipsContainer.querySelectorAll('button');
       buttons.forEach(btn => {
         const isCurrent = btn.getAttribute('data-cat') === catId;
-        btn.style.borderColor = isCurrent ? 'var(--accent-color, #DFFF00)' : 'var(--border-color, #1c2229)';
-        btn.style.backgroundColor = isCurrent ? 'var(--accent-color, #DFFF00)' : 'var(--card-bg, #14181c)';
-        btn.style.color = isCurrent ? '#000' : 'var(--text-secondary)';
+        btn.classList.toggle('active', isCurrent);
+        btn.style.borderColor = '';
+        btn.style.backgroundColor = '';
+        btn.style.color = '';
       });
     }
     filterExerciseSelectorList();

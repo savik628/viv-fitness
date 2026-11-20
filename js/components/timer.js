@@ -69,11 +69,12 @@
         restTimerState.remainingSeconds = 0;
         updateRestTimerWidget();
         if (window.playTimerFinishSequence) window.playTimerFinishSequence();
-        if (window.triggerHaptic) window.triggerHaptic('success');
+        if (window.triggerHaptic) window.triggerHaptic('finish');
       } else {
         updateRestTimerWidget();
         if (left <= 3) {
           if (window.playTimerBeep) window.playTimerBeep(659, 0.1);
+          if (window.triggerHaptic) window.triggerHaptic('warning');
         }
       }
     }, 500);
@@ -205,7 +206,7 @@
         clearInterval(restTimerState.intervalId);
         restTimerState.intervalId = null;
         if (window.playTimerFinishSequence) window.playTimerFinishSequence();
-        if (window.triggerHaptic) window.triggerHaptic('success');
+        if (window.triggerHaptic) window.triggerHaptic('finish');
       }
     }
   });
