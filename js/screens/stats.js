@@ -20,7 +20,7 @@
    * Безопасное экранирование специальных символов HTML для предотвращения XSS-инъекций.
    */
   function esc(str) {
-    return window.escapeHtml ? window.escapeHtml(str) : (str || '');
+    return window.esc ? window.esc(str) : (window.escapeHtml ? window.escapeHtml(str) : (str || ''));
   }
 
   /**
@@ -96,6 +96,9 @@
    * Форматирует объект даты в ISO-строку 'ГГГГ-ММ-ДД' с ведущими нулями.
    */
   function fmtDateIso(d) {
+    if (window.DateUtils && typeof window.DateUtils.toIso === 'function') {
+      return window.DateUtils.toIso(d);
+    }
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
@@ -109,7 +112,7 @@
     if (!window.state) window.state = {};
     if (!window.state.stats) window.state.stats = {};
     if (!window.state.stats.reportSelectedDate) {
-      window.state.stats.reportSelectedDate = window.getLocalDateStr ? window.getLocalDateStr() : fmtDateIso(new Date());
+      window.state.stats.reportSelectedDate = window.DateUtils ? window.DateUtils.today() : (window.getLocalDateStr ? window.getLocalDateStr() : fmtDateIso(new Date()));
     }
     return window.state.stats.reportSelectedDate;
   }
@@ -140,6 +143,9 @@
    * Формирует массив 7 дней (Пн-Вс) для недели, содержащей указанную референсную дату.
    */
   function getReportWeekDates(refDateStr) {
+    if (window.DateUtils && typeof window.DateUtils.getWeekDates === 'function') {
+      return window.DateUtils.getWeekDates(refDateStr);
+    }
     const ref = refDateStr ? new Date(refDateStr + 'T12:00:00') : new Date();
     const dayOfWeek = ref.getDay();
     const distToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
@@ -149,7 +155,7 @@
 
     const week = [];
     const weekdaysNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-    const todayStr = window.getLocalDateStr ? window.getLocalDateStr() : fmtDateIso(new Date());
+    const todayStr = window.DateUtils ? window.DateUtils.today() : fmtDateIso(new Date());
 
     for (let i = 0; i < 7; i++) {
       const d = new Date(monday);

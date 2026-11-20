@@ -106,7 +106,67 @@
   // ---------------------------------------------------------------------------
   // БЛОК 5. Экспорт функций модального окна в глобальную область (window)
   // ---------------------------------------------------------------------------
+  /**
+   * Элегантный диалог подтверждения (замена нативного confirm в стиле VIV)
+   */
+  function showConfirmModal({ title = 'Подтверждение', message = 'Вы уверены?', confirmText = 'Подтвердить', cancelText = 'Отмена', isDanger = true, onConfirm, onCancel }) {
+    const escFn = window.esc || window.escapeHtml || (s => s);
+    openModal(`
+      <div style="padding:4px 0; text-align:center;">
+        <div style="font-size:18px; font-weight:800; color:var(--text-primary); margin-bottom:8px;">${escFn(title)}</div>
+        <div style="font-size:13.5px; color:var(--text-secondary); line-height:1.45; margin-bottom:18px;">${escFn(message)}</div>
+        <div style="display:flex; gap:10px;">
+          <button id="modal-cancel-btn" class="btn btn-secondary" style="flex:1;">${escFn(cancelText)}</button>
+          <button id="modal-confirm-btn" class="btn ${isDanger ? 'btn-outline' : 'btn-green'}" style="flex:1; font-weight:700; ${isDanger ? 'color:#ef4444; border-color:rgba(239,68,68,0.4);' : ''}">${escFn(confirmText)}</button>
+        </div>
+      </div>
+    `);
+
+    setTimeout(() => {
+      const cBtn = document.getElementById('modal-cancel-btn');
+      const okBtn = document.getElementById('modal-confirm-btn');
+      if (cBtn) {
+        cBtn.onclick = () => {
+          closeModal();
+          if (typeof onCancel === 'function') onCancel();
+        };
+      }
+      if (okBtn) {
+        okBtn.onclick = () => {
+          closeModal();
+          if (typeof onConfirm === 'function') onConfirm();
+        };
+      }
+    }, 10);
+  }
+
+  /**
+   * Элегантный диалог уведомления (замена нативного alert в стиле VIV)
+   */
+  function showAlertModal({ title = 'Внимание', message = '', buttonText = 'Понятно', onConfirm }) {
+    const escFn = window.esc || window.escapeHtml || (s => s);
+    openModal(`
+      <div style="padding:4px 0; text-align:center;">
+        <div style="font-size:18px; font-weight:800; color:var(--text-primary); margin-bottom:8px;">${escFn(title)}</div>
+        <div style="font-size:13.5px; color:var(--text-secondary); line-height:1.45; margin-bottom:18px;">${escFn(message)}</div>
+        <button id="modal-alert-ok-btn" class="btn btn-secondary" style="width:100%; font-weight:700;">${escFn(buttonText)}</button>
+      </div>
+    `);
+
+    setTimeout(() => {
+      const okBtn = document.getElementById('modal-alert-ok-btn');
+      if (okBtn) {
+        okBtn.onclick = () => {
+          closeModal();
+          if (typeof onConfirm === 'function') onConfirm();
+        };
+      }
+    }, 10);
+  }
+
   window.openModal = openModal;
   window.showModal = openModal;
   window.closeModal = closeModal;
+  window.showConfirmModal = showConfirmModal;
+  window.showAlertModal = showAlertModal;
 })();

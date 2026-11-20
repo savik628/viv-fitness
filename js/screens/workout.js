@@ -82,75 +82,38 @@
       }
     }
 
-    let cfg = {
-      title: 'Значение',
-      value: val,
-      min: 0,
-      max: 100,
-      step: 1,
-      unit: '',
-      deltas: [-5, -1, 1, 5]
-    };
-
-    if (field === 'weight') {
+    let cfg = null;
+    if (window.PickerPresets && typeof window.PickerPresets[field] === 'function') {
+      cfg = window.PickerPresets[field](val, (newVal) => {
+        setVal(exIdx, sIdx, field, newVal);
+        const inpEl = document.getElementById(`set-input-${exIdx}-${sIdx}-${field}`);
+        if (inpEl) {
+          const valDisplay = (newVal !== 0 && newVal !== '0' && newVal !== null && newVal !== undefined && !isNaN(newVal)) ? newVal : '';
+          if (inpEl.tagName === 'INPUT') {
+            inpEl.value = valDisplay;
+          } else {
+            inpEl.textContent = valDisplay || (field === 'distance' ? '0.0' : '0');
+            inpEl.classList.toggle('placeholder', !valDisplay);
+          }
+        }
+      });
+    } else {
       cfg = {
-        title: 'Вес',
-        value: val,
-        min: 0,
-        max: 400,
-        step: 0.5,
-        unit: '',
-        deltas: [-10, -5, -2.5, 2.5, 5, 10]
-      };
-    } else if (field === 'reps') {
-      cfg = {
-        title: 'Повторения',
+        title: 'Значение',
         value: val,
         min: 0,
         max: 100,
         step: 1,
         unit: '',
-        deltas: [-5, -2, -1, 1, 2, 5]
-      };
-    } else if (field === 'distance') {
-      cfg = {
-        title: 'Дистанция',
-        value: val,
-        min: 0,
-        max: 50,
-        step: 0.1,
-        unit: 'км',
-        deltas: [-2, -1, -0.5, 0.5, 1, 2]
-      };
-    } else if (field === 'duration') {
-      cfg = {
-        title: 'Время',
-        value: val,
-        min: 0,
-        max: 600,
-        step: 5,
-        unit: 'сек',
-        deltas: [-30, -10, -5, 5, 10, 30]
+        deltas: [-5, -1, 1, 5],
+        onConfirm: (newVal) => {
+          setVal(exIdx, sIdx, field, newVal);
+        }
       };
     }
 
     if (window.openNumberPicker) {
-      window.openNumberPicker({
-        ...cfg,
-        onConfirm: (newVal) => {
-          setVal(exIdx, sIdx, field, newVal);
-          const inpEl = document.getElementById(`set-input-${exIdx}-${sIdx}-${field}`);
-          if (inpEl) {
-            const valDisplay = (newVal !== 0 && newVal !== '0' && newVal !== null && newVal !== undefined && !isNaN(newVal)) ? newVal : '';
-            if (inpEl.tagName === 'INPUT') {
-              inpEl.value = valDisplay;
-            } else {
-              inpEl.textContent = valDisplay || (field === 'distance' ? '0.0' : '0');
-              inpEl.classList.toggle('placeholder', !valDisplay);
-            }
-          }
-        }
-      });
+      window.openNumberPicker(cfg);
     }
   }
 
@@ -261,9 +224,21 @@
    * Удаляет программу тренировки из хранилища после подтверждения пользователем.
    */
   function deleteRoutine(id) {
-    if (!confirm('Вы действительно хотите удалить эту программу?')) return;
-    if (window.Storage) window.Storage.deleteRoutine(id);
-    renderWork();
+    const doDelete = () => {
+      if (window.Storage) window.Storage.deleteRoutine(id);
+      renderWork();
+    };
+    if (window.showConfirmModal) {
+      window.showConfirmModal({
+        title: 'Удалить программу?',
+        message: 'Вы действительно хотите удалить эту программу тренировок?',
+        confirmText: 'Удалить',
+        confirmStyle: 'btn-danger',
+        onConfirm: doDelete
+      });
+    } else {
+      if (confirm('Вы действительно хотите удалить эту программу?')) doDelete();
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -451,7 +426,17 @@
    */
   function removeSet(exIdx, sIdx) {
     const sets = window.state.work.activeWorkout.exercises[exIdx].sets;
-    if (sets.length <= 1) return alert('Тренировка должна содержать хотя бы 1 подход');
+    if (sets.length <= 1) {
+      if (window.showAlertModal) {
+        window.showAlertModal({
+          title: 'Внимание',
+          message: 'Тренировка должна содержать хотя бы 1 подход.'
+        });
+      } else {
+        alert('Тренировка должна содержать хотя бы 1 подход');
+      }
+      return;
+    }
     sets.splice(sIdx, 1);
     sets.forEach((s, idx) => s.setNumber = idx + 1);
     rerenderActiveWorkoutPreservingScroll();
@@ -464,59 +449,211 @@
     const aw = window.state.work.activeWorkout;
     if (!aw || !aw.exercises) return;
     if (aw.exercises.length <= 1) {
-      alert('Тренировка должна содержать хотя бы одно упражнение');
+      if (window.showAlertModal) {
+        window.showAlertModal({
+          title: 'Внимание',
+          message: 'Тренировка должна содержать хотя бы одно упражнение.'
+        });
+      } else {
+        alert('Тренировка должна содержать хотя бы одно упражнение');
+      }
       return;
     }
     const ex = aw.exercises[exIdx];
     const hasCompleted = ex.sets?.some(s => s.completed);
-    if (hasCompleted && !confirm(`Удалить упражнение «${ex.name}» и его выполненные подходы?`)) {
-      return;
+    const doRemove = () => {
+      aw.exercises.splice(exIdx, 1);
+      syncActiveDraft();
+      if (window.triggerHaptic) window.triggerHaptic('light');
+      rerenderActiveWorkoutPreservingScroll();
+    };
+
+    if (hasCompleted) {
+      if (window.showConfirmModal) {
+        window.showConfirmModal({
+          title: 'Удалить упражнение?',
+          message: `Удалить упражнение «${ex.name}» и его выполненные подходы?`,
+          confirmText: 'Удалить',
+          confirmStyle: 'btn-danger',
+          onConfirm: doRemove
+        });
+      } else {
+        if (confirm(`Удалить упражнение «${ex.name}» и его выполненные подходы?`)) {
+          doRemove();
+        }
+      }
+    } else {
+      doRemove();
     }
-    aw.exercises.splice(exIdx, 1);
-    syncActiveDraft();
-    if (window.triggerHaptic) window.triggerHaptic('light');
-    rerenderActiveWorkoutPreservingScroll();
   }
 
   // ---------------------------------------------------------------------------
-  // БЛОК 4.1. МОДАЛЬНОЕ ОКНО ДОБАВЛЕНИЯ УПРАЖНЕНИЯ В СЕССИЮ (Add Active Exercise Modal)
+  // БЛОК 4.1. ЕДИНЫЙ СЕЛЕКТОР УПРАЖНЕНИЙ И КАТАЛОГ (Unified Exercise Selector)
   // ---------------------------------------------------------------------------
-  /**
-   * Открывает диалоговое окно быстрого добавления упражнения прямо во время тренировки.
-   * Позволяет указать название и выбрать тип нагрузки (вес, свой вес, дистанция, время).
-   */
-  function openAddExerciseToActiveWorkoutModal() {
-    if (!window.openModal) return;
+  const BASE_EXERCISES = [
+    { name: 'Жим лежа со штангой', type: 'weight_reps' },
+    { name: 'Приседания со штангой', type: 'weight_reps' },
+    { name: 'Становая тяга', type: 'weight_reps' },
+    { name: 'Жим гантелей сидя', type: 'weight_reps' },
+    { name: 'Подтягивания', type: 'bodyweight' },
+    { name: 'Отжимания на брусьях', type: 'bodyweight' },
+    { name: 'Тяга штанги в наклоне', type: 'weight_reps' },
+    { name: 'Сгибания рук на бицепс', type: 'weight_reps' },
+    { name: 'Французский жим', type: 'weight_reps' },
+    { name: 'Разгибания на трицепс в блоке', type: 'weight_reps' },
+    { name: 'Выпады с гантелями', type: 'weight_reps' },
+    { name: 'Жим ногами в тренажере', type: 'weight_reps' },
+    { name: 'Планка', type: 'duration' },
+    { name: 'Скручивания на пресс', type: 'bodyweight' },
+    { name: 'Бег', type: 'distance' },
+    { name: 'Велотренажер', type: 'duration' },
+    { name: 'Гиперэкстензия', type: 'bodyweight' }
+  ];
 
-    window.openModal(`
-      <div style="padding:4px 0;">
-        <div style="font-size:18px; font-weight:800; margin-bottom:14px; text-align:center;">Добавить упражнение</div>
-        <div style="margin-bottom:16px;">
-          <label style="display:block; font-size:12px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; margin-bottom:6px;">Название</label>
-          <input id="active-new-ex-name" class="form-input" placeholder="Название упражнения" autocomplete="off" autofocus onkeydown="if(event.key==='Enter'){event.preventDefault();confirmAddActiveExercise();}">
-        </div>
+  function getAllAvailableExercises() {
+    const map = new Map();
+    BASE_EXERCISES.forEach(e => map.set(e.name.toLowerCase().trim(), { name: e.name, type: e.type }));
+    try {
+      const routines = window.Storage?.getRoutines ? window.Storage.getRoutines() : [];
+      routines.forEach(r => {
+        if (Array.isArray(r.exercises)) {
+          r.exercises.forEach(e => {
+            if (e && e.name) {
+              const key = e.name.toLowerCase().trim();
+              if (!map.has(key)) map.set(key, { name: e.name.trim(), type: e.type || 'weight_reps' });
+            }
+          });
+        }
+      });
+      const history = window.Storage?.getWorkoutHistory ? window.Storage.getWorkoutHistory() : [];
+      history.forEach(h => {
+        if (Array.isArray(h.sets)) {
+          h.sets.forEach(s => {
+            if (s && s.exerciseName) {
+              const key = s.exerciseName.toLowerCase().trim();
+              if (!map.has(key)) map.set(key, { name: s.exerciseName.trim(), type: s.exerciseType || 'weight_reps' });
+            }
+          });
+        }
+      });
+    } catch (e) {
+      console.warn('getAllAvailableExercises error:', e);
+    }
+    return Array.from(map.values());
+  }
 
-        <div style="margin-bottom:18px;">
-          <label style="display:block; font-size:12px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; margin-bottom:6px;">Тип нагрузки</label>
-          <select id="active-new-ex-type" class="form-select">
-            <option value="weight_reps">С весом</option>
-            <option value="bodyweight">Свой вес</option>
-            <option value="distance">Дистанция</option>
-            <option value="duration">Время</option>
-          </select>
-        </div>
+  let _selectorOnSelect = null;
 
-        <div style="display:flex; gap:10px;">
-          <button class="btn btn-secondary" style="flex:1;" onclick="if(window.closeModal)window.closeModal();">Отмена</button>
-          <button class="btn btn-green" style="flex:1; font-weight:700;" onclick="confirmAddActiveExercise()">+ Добавить</button>
-        </div>
+  function openExerciseSelectorModal({ title = 'Выбор упражнения', onSelect } = {}) {
+    _selectorOnSelect = onSelect;
+    const all = getAllAvailableExercises();
+    window._cachedSelectorExercises = all;
+
+    const listHtml = all.slice(0, 15).map(e => `
+      <div class="selector-ex-item" style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:var(--card-bg, #14181c); border:1px solid var(--border-color, #1c2229); border-radius:10px; margin-bottom:6px; cursor:pointer;" onclick="selectExerciseFromSuggestion('${esc(e.name)}', '${e.type}')">
+        <span style="font-weight:600; font-size:14px; color:var(--text-primary);">${esc(e.name)}</span>
+        <span style="font-size:11px; color:var(--text-secondary); text-transform:uppercase; background:rgba(255,255,255,0.06); padding:3px 6px; border-radius:4px;">${getExerciseTypeLabel(e.type)}</span>
       </div>
-    `);
+    `).join('');
+
+    if (window.openModal) {
+      window.openModal(`
+        <div style="padding:4px 0;">
+          <div style="font-size:18px; font-weight:800; margin-bottom:14px; text-align:center;">${esc(title)}</div>
+          <div style="margin-bottom:12px;">
+            <label style="display:block; font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; margin-bottom:6px;">Поиск или новое упражнение</label>
+            <input id="selector-ex-search" class="form-input" placeholder="Введите название..." autocomplete="off" autofocus oninput="filterExerciseSelectorList(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();confirmSelectorExercise();}">
+          </div>
+
+          <div style="margin-bottom:14px;">
+            <label style="display:block; font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; margin-bottom:6px;">Тип нагрузки</label>
+            <select id="selector-ex-type" class="form-select">
+              <option value="weight_reps">С весом (вес × повторы)</option>
+              <option value="bodyweight">Свой вес (повторы)</option>
+              <option value="distance">Дистанция (км / метры)</option>
+              <option value="duration">Время (секунды / мин)</option>
+            </select>
+          </div>
+
+          <div style="font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; margin-bottom:6px;">Быстрый выбор</div>
+          <div id="selector-ex-list" style="max-height:180px; overflow-y:auto; margin-bottom:16px; padding-right:2px;">
+            ${listHtml}
+          </div>
+
+          <div style="display:flex; gap:10px;">
+            <button class="btn btn-secondary" style="flex:1;" onclick="if(window.closeModal)window.closeModal();">Отмена</button>
+            <button class="btn btn-green" style="flex:1; font-weight:700;" onclick="confirmSelectorExercise()">+ Добавить</button>
+          </div>
+        </div>
+      `);
+    }
 
     setTimeout(() => {
-      const inp = document.getElementById('active-new-ex-name');
+      const inp = document.getElementById('selector-ex-search');
       if (inp) inp.focus();
     }, 100);
+  }
+
+  function filterExerciseSelectorList(query) {
+    const container = document.getElementById('selector-ex-list');
+    if (!container) return;
+    const q = (query || '').toLowerCase().trim();
+    const all = window._cachedSelectorExercises || getAllAvailableExercises();
+    const filtered = q ? all.filter(e => e.name.toLowerCase().includes(q)) : all;
+
+    if (!filtered.length) {
+      container.innerHTML = `<div style="text-align:center; padding:14px; font-size:12px; color:var(--text-secondary);">Новое упражнение «${esc(query)}». Выберите тип нагрузки и нажмите «+ Добавить».</div>`;
+      return;
+    }
+
+    container.innerHTML = filtered.slice(0, 15).map(e => `
+      <div class="selector-ex-item" style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:var(--card-bg, #14181c); border:1px solid var(--border-color, #1c2229); border-radius:10px; margin-bottom:6px; cursor:pointer;" onclick="selectExerciseFromSuggestion('${esc(e.name)}', '${e.type}')">
+        <span style="font-weight:600; font-size:14px; color:var(--text-primary);">${esc(e.name)}</span>
+        <span style="font-size:11px; color:var(--text-secondary); text-transform:uppercase; background:rgba(255,255,255,0.06); padding:3px 6px; border-radius:4px;">${getExerciseTypeLabel(e.type)}</span>
+      </div>
+    `).join('');
+  }
+
+  function selectExerciseFromSuggestion(name, type) {
+    const searchInp = document.getElementById('selector-ex-search');
+    const typeSel = document.getElementById('selector-ex-type');
+    if (searchInp) searchInp.value = name;
+    if (typeSel && type) typeSel.value = type;
+  }
+
+  function confirmSelectorExercise() {
+    const searchInp = document.getElementById('selector-ex-search');
+    const typeSel = document.getElementById('selector-ex-type');
+    const name = searchInp ? searchInp.value.trim() : '';
+    const type = typeSel ? typeSel.value : 'weight_reps';
+
+    if (!name) {
+      if (window.showAlertModal) {
+        window.showAlertModal({ title: 'Внимание', message: 'Введите название упражнения' });
+      } else {
+        alert('Введите название упражнения');
+      }
+      return;
+    }
+
+    if (window.closeModal) window.closeModal();
+
+    if (typeof _selectorOnSelect === 'function') {
+      _selectorOnSelect({ name, type });
+      _selectorOnSelect = null;
+    }
+  }
+
+  /**
+   * Открывает единый селектор добавления упражнения в активную тренировку.
+   */
+  function openAddExerciseToActiveWorkoutModal() {
+    openExerciseSelectorModal({
+      title: 'Добавить в тренировку',
+      onSelect: ({ name, type }) => {
+        addExerciseToActiveWorkout({ name, type });
+      }
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -556,24 +693,10 @@
   }
 
   /**
-   * Подтверждает создание упражнения в активной сессии:
-   * 1. Считывает название и тип нагрузки.
-   * 2. Подтягивает историю предыдущих сетов из дневника, если упражнение уже выполнялось ранее.
-   * 3. Добавляет упражнение в текущую активную сессию.
-   * 4. Вызывает persistExerciseToRoutine для перманентного сохранения в программе тренировок.
+   * Добавляет упражнение в активную тренировочную сессию с авто-подтягиванием весов из истории.
    */
-  function confirmAddActiveExercise() {
-    const nameInp = document.getElementById('active-new-ex-name');
-    const typeSel = document.getElementById('active-new-ex-type');
-    const muscleSel = document.getElementById('active-new-ex-muscle');
-    const name = nameInp ? nameInp.value.trim() : '';
-    if (!name) {
-      alert('Пожалуйста, введите название упражнения');
-      return;
-    }
-
-    const type = typeSel ? typeSel.value : 'weight_reps';
-    const aw = window.state.work.activeWorkout;
+  function addExerciseToActiveWorkout({ name, type = 'weight_reps' }) {
+    const aw = window.state?.work?.activeWorkout;
     if (!aw) return;
     if (!aw.exercises) aw.exercises = [];
 
@@ -591,7 +714,7 @@
 
     const newExerciseObj = {
       name,
-      type,
+      type: type || 'weight_reps',
       primaryMuscle: 'all',
       sets
     };
@@ -601,9 +724,29 @@
     persistExerciseToRoutine(aw.routineId, aw.routineName, newExerciseObj);
 
     syncActiveDraft();
-    if (window.closeModal) window.closeModal();
     if (window.triggerHaptic) window.triggerHaptic('success');
     rerenderActiveWorkoutPreservingScroll();
+  }
+
+  /**
+   * Подтверждает создание упражнения в активной сессии (для обратной совместимости).
+   */
+  function confirmAddActiveExercise() {
+    const nameInp = document.getElementById('active-new-ex-name');
+    const typeSel = document.getElementById('active-new-ex-type');
+    const name = nameInp ? nameInp.value.trim() : '';
+    if (!name) {
+      if (window.showAlertModal) {
+        window.showAlertModal({ title: 'Внимание', message: 'Пожалуйста, введите название упражнения' });
+      } else {
+        alert('Пожалуйста, введите название упражнения');
+      }
+      return;
+    }
+
+    const type = typeSel ? typeSel.value : 'weight_reps';
+    addExerciseToActiveWorkout({ name, type });
+    if (window.closeModal) window.closeModal();
   }
 
   // ---------------------------------------------------------------------------
@@ -673,9 +816,23 @@
     });
 
     if (record.sets.length === 0) {
-      alert('Заполните хотя бы один подход (вес, повторы, дистанцию или время) перед сохранением тренировки.');
+      if (window.showAlertModal) {
+        window.showAlertModal({
+          title: 'Тренировка пуста',
+          message: 'Заполните хотя бы один подход (вес, повторы, дистанцию или время) перед сохранением тренировки.'
+        });
+      } else {
+        alert('Заполните хотя бы один подход (вес, повторы, дистанцию или время) перед сохранением тренировки.');
+      }
       return;
     }
+
+    const metrics = (window.Storage && window.Storage.calculateSessionMetrics)
+      ? window.Storage.calculateSessionMetrics(record.sets)
+      : { totalVolume, pureVolume: totalVolume, totalSets: totalSetsCount };
+
+    totalVolume = metrics.pureVolume || metrics.totalVolume;
+    totalSetsCount = metrics.totalSets;
 
     const prs = window.Storage ? window.Storage.checkWorkoutPRs(record) : [];
 
@@ -890,7 +1047,8 @@
         </div>
         <div style="display:flex; gap:8px; margin-bottom:16px;">
           <input id="we-new-ex-input" class="form-input" placeholder="Название упражнения" style="flex:1;" onkeydown="if(event.key==='Enter'){event.preventDefault();addEditorExerciseFromInput();}">
-          <button class="btn btn-secondary" onclick="addEditorExerciseFromInput()" style="padding:0 14px; font-weight:700; white-space:nowrap;">+ Добавить</button>
+          <button class="btn btn-secondary" onclick="addEditorExerciseFromInput()" style="padding:0 12px; font-weight:700; white-space:nowrap;">+ Добавить</button>
+          <button class="btn btn-secondary" onclick="promptAddExercise()" title="Выбрать из каталога" style="padding:0 12px; font-weight:700; white-space:nowrap;">📋 Список</button>
         </div>
         <button class="btn btn-green" style="width:100%;" onclick="saveEditorRoutine()">Сохранить программу</button>
       `);
@@ -915,10 +1073,17 @@
   }
 
   /**
-   * Алиас для добавления упражнения.
+   * Открывает единый каталог и селектор для добавления упражнения в конструктор программы.
    */
   function promptAddExercise() {
-    addEditorExerciseFromInput();
+    syncEditorFormValues();
+    openExerciseSelectorModal({
+      title: 'Добавить в программу',
+      onSelect: ({ name, type }) => {
+        editorState.exercises.push({ name, type: type || 'weight_reps' });
+        renderWorkoutEditorModal();
+      }
+    });
   }
 
   /**
@@ -937,8 +1102,22 @@
   function saveEditorRoutine() {
     syncEditorFormValues();
     const name = editorState.name.trim();
-    if (!name) return alert('Введите название программы');
-    if (!editorState.exercises.length) return alert('Добавьте хотя бы одно упражнение');
+    if (!name) {
+      if (window.showAlertModal) {
+        window.showAlertModal({ title: 'Внимание', message: 'Введите название программы' });
+      } else {
+        alert('Введите название программы');
+      }
+      return;
+    }
+    if (!editorState.exercises.length) {
+      if (window.showAlertModal) {
+        window.showAlertModal({ title: 'Внимание', message: 'Добавьте хотя бы одно упражнение' });
+      } else {
+        alert('Добавьте хотя бы одно упражнение');
+      }
+      return;
+    }
 
     if (window.Storage) {
       window.Storage.saveRoutine({ id: editorState.id, name, exercises: editorState.exercises });
@@ -980,6 +1159,11 @@
   window.removeActiveWorkoutEx = removeActiveWorkoutEx;
   window.openAddExerciseToActiveWorkoutModal = openAddExerciseToActiveWorkoutModal;
   window.confirmAddActiveExercise = confirmAddActiveExercise;
+  window.addExerciseToActiveWorkout = addExerciseToActiveWorkout;
+  window.openExerciseSelectorModal = openExerciseSelectorModal;
+  window.filterExerciseSelectorList = filterExerciseSelectorList;
+  window.selectExerciseFromSuggestion = selectExerciseFromSuggestion;
+  window.confirmSelectorExercise = confirmSelectorExercise;
   window.saveEditorRoutine = saveEditorRoutine;
   window.openSetPicker = openSetPicker;
 })();

@@ -215,19 +215,10 @@
   function openProfileHeightPicker() {
     const inp = document.getElementById('prof-height');
     const val = parseFloat(inp?.value) || 175;
-    if (window.openNumberPicker) {
-      window.openNumberPicker({
-        title: 'Рост тела',
-        value: val,
-        min: 100,
-        max: 250,
-        step: 0.5,
-        unit: '',
-        deltas: [-10, -5, -1, 1, 5, 10],
-        onConfirm: (newVal) => {
-          if (inp) inp.value = newVal;
-        }
-      });
+    if (window.openNumberPicker && window.PickerPresets) {
+      window.openNumberPicker(window.PickerPresets.height(val, (newVal) => {
+        if (inp) inp.value = newVal;
+      }));
     }
   }
 
@@ -237,19 +228,10 @@
   function openProfileWeightPicker() {
     const inp = document.getElementById('prof-weight');
     const val = parseFloat(inp?.value) || 75;
-    if (window.openNumberPicker) {
-      window.openNumberPicker({
-        title: 'Вес тела',
-        value: val,
-        min: 30,
-        max: 300,
-        step: 0.1,
-        unit: '',
-        deltas: [-5, -1, -0.5, 0.5, 1, 5],
-        onConfirm: (newVal) => {
-          if (inp) inp.value = newVal;
-        }
-      });
+    if (window.openNumberPicker && window.PickerPresets) {
+      window.openNumberPicker(window.PickerPresets.bodyweight(val, (newVal) => {
+        if (inp) inp.value = newVal;
+      }));
     }
   }
 
@@ -259,18 +241,12 @@
   function openBwWeightPicker() {
     const inp = document.getElementById('bw-weight');
     const val = parseFloat(inp?.value) || (window.Storage?.getProfile()?.weight || 75);
-    if (window.openNumberPicker) {
+    if (window.openNumberPicker && window.PickerPresets) {
       window.openNumberPicker({
-        title: 'Вес взвешивания',
-        value: val,
-        min: 30,
-        max: 300,
-        step: 0.1,
-        unit: '',
-        deltas: [-5, -1, -0.5, 0.5, 1, 5],
-        onConfirm: (newVal) => {
+        ...window.PickerPresets.bodyweight(val, (newVal) => {
           if (inp) inp.value = newVal;
-        }
+        }),
+        title: 'Вес взвешивания'
       });
     }
   }
@@ -637,16 +613,28 @@
         if (!window.Storage) return;
         const success = window.Storage.importBackup(content);
         if (success) {
-          alert('Данные успешно импортированы!');
+          if (window.showAlertModal) {
+            window.showAlertModal({ title: 'Успешно', message: 'Данные резервной копии успешно импортированы!' });
+          } else {
+            alert('Данные успешно импортированы!');
+          }
           renderProfile();
           if (window.renderWork && window.state?.currentTab === 'work') {
             window.renderWork();
           }
         } else {
-          alert('Ошибка при импорте файла: неверный формат резервной копии.');
+          if (window.showAlertModal) {
+            window.showAlertModal({ title: 'Ошибка импорта', message: 'Неверный формат резервной копии. Проверьте JSON-файл.' });
+          } else {
+            alert('Ошибка при импорте файла: неверный формат резервной копии.');
+          }
         }
       } catch (err) {
-        alert('Не удалось прочитать файл резервной копии.');
+        if (window.showAlertModal) {
+          window.showAlertModal({ title: 'Ошибка', message: 'Не удалось прочитать файл резервной копии.' });
+        } else {
+          alert('Не удалось прочитать файл резервной копии.');
+        }
       }
     };
     reader.readAsText(file);
@@ -656,9 +644,22 @@
    * Полностью очищает локальные данные приложения VIV с запросом подтверждения.
    */
   function resetUserLocalData() {
-    if (confirm('Сбросить все тренировки и настройки к начальному состоянию?')) {
+    if (window.showConfirmModal) {
+      window.showConfirmModal({
+        title: 'Сброс данных',
+        message: 'Сбросить все тренировки, привычки и историю к начальному состоянию? Действие необратимо.',
+        confirmText: 'Сбросить',
+        isDanger: true,
+        onConfirm: () => {
+          if (window.Storage) window.Storage.resetAllData();
+          if (window.showAlertModal) {
+            window.showAlertModal({ title: 'Готово', message: 'Локальные данные сброшены.' });
+          }
+          renderProfile();
+        }
+      });
+    } else if (confirm('Сбросить все тренировки и настройки к начальному состоянию?')) {
       if (window.Storage) window.Storage.resetAllData();
-      alert('Локальные данные сброшены');
       renderProfile();
     }
   }

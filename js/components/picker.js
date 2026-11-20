@@ -477,8 +477,72 @@
   }
 
   // ---------------------------------------------------------------------------
-  // БЛОК 8. Экспорт функций барабанного пикера в глобальную область (window)
+  // БЛОК 8. Пресеты конфигурации барабана и экспорт (Presets & Module Export)
   // ---------------------------------------------------------------------------
+  const PickerPresets = {
+    weight: (value, onConfirm) => ({
+      title: 'Вес',
+      value: parseFloat(value) || 0,
+      min: 0,
+      max: 400,
+      step: 0.5,
+      unit: 'кг',
+      deltas: [-10, -5, -2.5, 2.5, 5, 10],
+      onConfirm
+    }),
+    reps: (value, onConfirm) => ({
+      title: 'Повторения',
+      value: parseInt(value, 10) || 0,
+      min: 0,
+      max: 100,
+      step: 1,
+      unit: '',
+      deltas: [-5, -2, -1, 1, 2, 5],
+      onConfirm
+    }),
+    height: (value, onConfirm) => ({
+      title: 'Рост тела',
+      value: parseFloat(value) || 175,
+      min: 100,
+      max: 250,
+      step: 0.5,
+      unit: 'см',
+      deltas: [-10, -5, -1, 1, 5, 10],
+      onConfirm
+    }),
+    bodyweight: (value, onConfirm) => ({
+      title: 'Вес тела',
+      value: parseFloat(value) || 75,
+      min: 30,
+      max: 300,
+      step: 0.1,
+      unit: 'кг',
+      deltas: [-5, -1, -0.5, 0.5, 1, 5],
+      onConfirm
+    }),
+    distance: (value, onConfirm) => ({
+      title: 'Дистанция',
+      value: parseFloat(value) || 0,
+      min: 0,
+      max: 50,
+      step: 0.1,
+      unit: 'км',
+      deltas: [-2, -1, -0.5, 0.5, 1, 2],
+      onConfirm
+    }),
+    duration: (value, onConfirm) => ({
+      title: 'Время',
+      value: parseInt(value, 10) || 0,
+      min: 0,
+      max: 600,
+      step: 5,
+      unit: 'сек',
+      deltas: [-30, -10, -5, 5, 10, 30],
+      onConfirm
+    })
+  };
+
+  window.PickerPresets = PickerPresets;
   window.openNumberPicker = openNumberPicker;
   window.closeNumberPicker = closeNumberPicker;
 })();

@@ -66,6 +66,39 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
+const DateUtils = {
+  today: () => getLocalDateStr(new Date()),
+  toIso: (d) => getLocalDateStr(d),
+  formatDisplay: (d, options) => {
+    const dateObj = (d instanceof Date) ? d : new Date(d);
+    return dateObj.toLocaleDateString('ru-RU', options || { day: 'numeric', month: 'long', year: 'numeric' });
+  },
+  getWeekDates: (refDateStr) => {
+    const ref = refDateStr ? new Date(refDateStr + 'T12:00:00') : new Date();
+    const dayOfWeek = ref.getDay();
+    const distToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const monday = new Date(ref);
+    monday.setDate(ref.getDate() + distToMon);
+
+    const week = [];
+    const weekdaysNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+    const todayStr = getLocalDateStr(new Date());
+
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const iso = getLocalDateStr(d);
+      week.push({
+        dateStr: iso,
+        dayNum: d.getDate(),
+        weekday: weekdaysNames[i],
+        isToday: iso === todayStr
+      });
+    }
+    return week;
+  }
+};
+
 const getStore = (key, fallback) => {
   if (_cache[key] !== undefined) {
     return _cache[key];
@@ -389,8 +422,46 @@ const Storage = {
   },
 
   // ---------------------------------------------------------------------------
-  // БЛОК 8. РАСЧЕТНЫЕ КАЛЬКУЛЯТОРЫ (1RM & Plate Calculator)
+  // БЛОК 8. РАСЧЕТНЫЕ КАЛЬКУЛЯТОРЫ (1RM & Plate Calculator & Session Metrics)
   // ---------------------------------------------------------------------------
+  calculateSessionMetrics(sets) {
+    if (!Array.isArray(sets)) return { totalVolume: 0, pureVolume: 0, totalSets: 0, totalReps: 0, maxWeight: 0, max1RM: 0 };
+    let totalVolume = 0;
+    let pureVolume = 0;
+    let totalSets = 0;
+    let totalReps = 0;
+    let maxWeight = 0;
+    let max1RM = 0;
+
+    sets.forEach(s => {
+      const w = parseFloat(s.weight) || 0;
+      const r = parseInt(s.reps, 10) || 0;
+      const isWarmup = s.type === 'warmup';
+      const vol = w * r;
+
+      totalSets++;
+      totalReps += r;
+      totalVolume += vol;
+      if (!isWarmup) {
+        pureVolume += vol;
+      }
+      if (w > maxWeight) maxWeight = w;
+      if (w > 0 && r > 0) {
+        const est = this.calculate1RM(w, r);
+        if (est > max1RM) max1RM = est;
+      }
+    });
+
+    return {
+      totalVolume: Math.round(totalVolume * 10) / 10,
+      pureVolume: Math.round(pureVolume * 10) / 10,
+      totalSets,
+      totalReps,
+      maxWeight: Math.round(maxWeight * 10) / 10,
+      max1RM: Math.round(max1RM * 10) / 10
+    };
+  },
+
   calculate1RM(weight, reps) {
     const w = parseFloat(weight) || 0;
     const r = parseInt(reps, 10) || 0;
@@ -726,5 +797,7 @@ if (typeof window !== 'undefined') {
   window.Storage = Storage;
   window.getLocalDateStr = getLocalDateStr;
   window.escapeHtml = escapeHtml;
+  window.esc = escapeHtml;
+  window.DateUtils = DateUtils;
 }
 if (typeof module !== 'undefined') module.exports = Storage;

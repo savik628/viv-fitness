@@ -34,20 +34,23 @@
    * Форматирует дату в ISO-строку 'ГГГГ-ММ-ДД' с учётом локального пояса.
    */
   function fmtDate(d = new Date()) {
-    return window.getLocalDateStr ? window.getLocalDateStr(d) : d.toISOString().substring(0, 10);
+    return window.DateUtils ? window.DateUtils.toIso(d) : (window.getLocalDateStr ? window.getLocalDateStr(d) : d.toISOString().substring(0, 10));
   }
 
   /**
    * Безопасное экранирование спецсимволов HTML.
    */
   function esc(str) {
-    return window.escapeHtml ? window.escapeHtml(str) : (str || '');
+    return window.esc ? window.esc(str) : (window.escapeHtml ? window.escapeHtml(str) : (str || ''));
   }
 
   /**
    * Формирует массив 7 дней (Пн-Вс) текущей выбранной недели для полосы дат.
    */
   function getCurrentWeekDates(refDateStr) {
+    if (window.DateUtils && typeof window.DateUtils.getWeekDates === 'function') {
+      return window.DateUtils.getWeekDates(refDateStr);
+    }
     const ref = refDateStr ? new Date(refDateStr + 'T12:00:00') : new Date();
     const dayOfWeek = ref.getDay();
     const distToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
@@ -407,7 +410,11 @@
     const emoji = emojiInput?.value || '💧';
 
     if (!title) {
-      alert('Введите название привычки');
+      if (window.showAlertModal) {
+        window.showAlertModal({ title: 'Внимание', message: 'Введите название привычки' });
+      } else {
+        alert('Введите название привычки');
+      }
       return;
     }
 
@@ -427,12 +434,25 @@
    * Удаляет привычку и всю связанную историю её отметок после подтверждения пользователем.
    */
   function deleteHabitModal(habitId) {
-    if (!confirm('Удалить эту привычку и её историю?')) return;
-    if (window.Storage) {
-      window.Storage.deleteHabit(habitId);
+    if (window.showConfirmModal) {
+      window.showConfirmModal({
+        title: 'Удаление привычки',
+        message: 'Удалить эту привычку и всю историю её выполнения? Отменить действие будет невозможно.',
+        confirmText: 'Удалить',
+        isDanger: true,
+        onConfirm: () => {
+          if (window.Storage) window.Storage.deleteHabit(habitId);
+          renderHabits();
+        }
+      });
+    } else {
+      if (!confirm('Удалить эту привычку и её историю?')) return;
+      if (window.Storage) {
+        window.Storage.deleteHabit(habitId);
+      }
+      if (window.closeModal) window.closeModal();
+      renderHabits();
     }
-    if (window.closeModal) window.closeModal();
-    renderHabits();
   }
 
   // ---------------------------------------------------------------------------
