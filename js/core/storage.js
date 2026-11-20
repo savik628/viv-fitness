@@ -577,7 +577,7 @@ const Storage = {
     const cleanTarget = exerciseName.trim().toLowerCase();
 
     const sessions = this.getHistory()
-      .filter(h => (!routineName || h.routineName === routineName) && h.sets?.some(s => s && s.exerciseName && s.exerciseName.trim().toLowerCase() === cleanTarget))
+      .filter(h => h.sets?.some(s => s && s.exerciseName && s.exerciseName.trim().toLowerCase() === cleanTarget))
       .sort((a, b) => {
         const diff = new Date(a.date) - new Date(b.date);
         return diff !== 0 && !isNaN(diff) ? diff : (Number(a.id) || 0) - (Number(b.id) || 0);

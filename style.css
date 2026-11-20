@@ -388,60 +388,6 @@ input[type=number] {
   font-weight: 500;
 }
 
-/* Stepper (- and + controls) */
-.stepper-container {
-  display: flex;
-  align-items: center;
-  background-color: var(--card-bg-elevated);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  overflow: hidden;
-  height: 36px;
-  min-width: 0;
-  transition: border-color 0.15s;
-}
-
-.stepper-container:focus-within {
-  border-color: var(--accent-color);
-}
-
-.stepper-btn {
-  background: none;
-  border: none;
-  color: var(--text-primary);
-  font-size: 16px;
-  font-weight: 600;
-  width: 26px;
-  min-width: 26px;
-  height: 100%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  user-select: none;
-  flex-shrink: 0;
-  transition: background-color 0.1s;
-}
-
-.stepper-btn:active {
-  background-color: var(--accent-subtle);
-}
-
-.stepper-input {
-  flex: 1;
-  width: 100%;
-  min-width: 0;
-  background: none;
-  border: none;
-  text-align: center;
-  font-size: 14px;
-  font-weight: 700;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-  color: var(--text-primary);
-  outline: none;
-  padding: 0 1px;
-}
-
 /* Соосные колонки таблицы подходов */
 .sets-table-header {
   display: flex;
@@ -1735,15 +1681,6 @@ canvas {
   .col-action {
     width: 20px;
     min-width: 20px;
-  }
-  .stepper-btn {
-    width: 22px;
-    min-width: 22px;
-    font-size: 14px;
-  }
-  .stepper-input {
-    font-size: 13px;
-    padding: 0;
   }
   .nav-item {
     font-size: 9.5px;

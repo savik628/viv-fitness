@@ -59,10 +59,6 @@
     `;
   }
 
-  function renderStepper(value, onMinus, onPlus, onChange, step = 1, inputId = '', onInputClick = '') {
-    return renderSetPill(value, inputId, onInputClick);
-  }
-
   // ---------------------------------------------------------------------------
   // БЛОК 1.3. БАРАБАННЫЙ ВЫБОР ЗНАЧЕНИЙ ПОДХОДА (Set Number Wheel Picker)
   // ---------------------------------------------------------------------------
@@ -533,31 +529,11 @@
   // ---------------------------------------------------------------------------
   // БЛОК 4.1. ЕДИНЫЙ СЕЛЕКТОР УПРАЖНЕНИЙ И КАТАЛОГ (Unified Exercise Selector)
   // ---------------------------------------------------------------------------
-  const BASE_EXERCISES = [
-    { name: 'Жим лежа со штангой', type: 'weight_reps' },
-    { name: 'Приседания со штангой', type: 'weight_reps' },
-    { name: 'Становая тяга', type: 'weight_reps' },
-    { name: 'Жим гантелей сидя', type: 'weight_reps' },
-    { name: 'Подтягивания', type: 'bodyweight' },
-    { name: 'Отжимания на брусьях', type: 'bodyweight' },
-    { name: 'Тяга штанги в наклоне', type: 'weight_reps' },
-    { name: 'Сгибания рук на бицепс', type: 'weight_reps' },
-    { name: 'Французский жим', type: 'weight_reps' },
-    { name: 'Разгибания на трицепс в блоке', type: 'weight_reps' },
-    { name: 'Выпады с гантелями', type: 'weight_reps' },
-    { name: 'Жим ногами в тренажере', type: 'weight_reps' },
-    { name: 'Планка', type: 'duration' },
-    { name: 'Скручивания на пресс', type: 'bodyweight' },
-    { name: 'Бег', type: 'distance' },
-    { name: 'Велотренажер', type: 'duration' },
-    { name: 'Гиперэкстензия', type: 'bodyweight' }
-  ];
-
   let _selectorSelectedCategory = 'all';
 
   function getAllAvailableExercises() {
     const map = new Map();
-    const catalog = window.EXERCISE_CATALOG || BASE_EXERCISES;
+    const catalog = window.EXERCISE_CATALOG || [];
     catalog.forEach(e => {
       map.set(e.name.toLowerCase().trim(), { 
         name: e.name, 
@@ -851,27 +827,6 @@
     syncActiveDraft();
     if (window.triggerHaptic) window.triggerHaptic('success');
     rerenderActiveWorkoutPreservingScroll();
-  }
-
-  /**
-   * Подтверждает создание упражнения в активной сессии (для обратной совместимости).
-   */
-  function confirmAddActiveExercise() {
-    const nameInp = document.getElementById('active-new-ex-name');
-    const typeSel = document.getElementById('active-new-ex-type');
-    const name = nameInp ? nameInp.value.trim() : '';
-    if (!name) {
-      if (window.showAlertModal) {
-        window.showAlertModal({ title: 'Внимание', message: 'Пожалуйста, введите название упражнения' });
-      } else {
-        alert('Пожалуйста, введите название упражнения');
-      }
-      return;
-    }
-
-    const type = typeSel ? typeSel.value : 'weight_reps';
-    addExerciseToActiveWorkout({ name, type });
-    if (window.closeModal) window.closeModal();
   }
 
   // ---------------------------------------------------------------------------
@@ -1180,23 +1135,6 @@
   }
 
   /**
-   * Добавляет новое упражнение в список конструктора из текстового поля ввода.
-   */
-  function addEditorExerciseFromInput() {
-    const inp = document.getElementById('we-new-ex-input');
-    const name = inp?.value.trim();
-    if (name) {
-      syncEditorFormValues();
-      editorState.exercises.push({ name, type: 'weight_reps' });
-      updateWorkoutEditorListDOM();
-      if (inp) {
-        inp.value = '';
-        inp.focus();
-      }
-    }
-  }
-
-  /**
    * Открывает единый каталог и селектор для добавления упражнения в конструктор программы.
    */
   function promptAddExercise() {
@@ -1278,11 +1216,9 @@
   window.moveEditorEx = moveEditorEx;
   window.renderWorkoutEditorModal = renderWorkoutEditorModal;
   window.promptAddExercise = promptAddExercise;
-  window.addEditorExerciseFromInput = addEditorExerciseFromInput;
   window.removeEditorEx = removeEditorEx;
   window.removeActiveWorkoutEx = removeActiveWorkoutEx;
   window.openAddExerciseToActiveWorkoutModal = openAddExerciseToActiveWorkoutModal;
-  window.confirmAddActiveExercise = confirmAddActiveExercise;
   window.addExerciseToActiveWorkout = addExerciseToActiveWorkout;
   window.openExerciseSelectorModal = openExerciseSelectorModal;
   window.filterSelectorModalCategory = filterSelectorModalCategory;

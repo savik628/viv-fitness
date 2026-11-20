@@ -1133,23 +1133,6 @@
   }
   window.openChartLimitPicker = openChartLimitPicker;
 
-  /**
-   * Обработчик выбора программы в селекторе: сбрасывает выбранное упражнение и перерисовывает графики.
-   */
-  function changeStatsRoutine(val) {
-    window.state.stats.selectedRoutine = val;
-    window.state.stats.selectedExercise = null;
-    renderStatsProgressTab();
-  }
-
-  /**
-   * Обработчик выбора конкретного упражнения: обновляет графики выбранного движения.
-   */
-  function changeStatsExercise(val) {
-    window.state.stats.selectedExercise = val;
-    renderStatsProgressTab();
-  }
-
   // ---------------------------------------------------------------------------
   // БЛОК 3. ВКЛАДКА "КАЛЕНДАРЬ АКТИВНОСТИ" (Monthly Calendar Grid)
   // ---------------------------------------------------------------------------
@@ -1455,9 +1438,6 @@
   window.shiftReportWeek = shiftReportWeek;
   window.selectReportDate = selectReportDate;
   window.triggerPrintReport = exportVivReportPng;
-  window.renderStatsProgressTab = renderStatsProgressTab;
-  window.changeStatsRoutine = changeStatsRoutine;
-  window.changeStatsExercise = changeStatsExercise;
   window.renderStatsCalendarTab = renderStatsCalendarTab;
   window.changeCalMonth = changeCalMonth;
   window.showDayWorkoutDetails = showDayWorkoutDetails;
