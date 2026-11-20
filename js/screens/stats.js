@@ -75,6 +75,7 @@
         mainContent.innerHTML = `
           <div style="padding:40px 16px; text-align:center; color:var(--text-secondary);">
             <div style="font-weight:700; font-size:16px; margin-bottom:8px; color:var(--text-primary);">Экран статистики</div>
+            <div style="font-size:12px; color:#ff4d4f; margin-bottom:12px; font-family:monospace; word-break:break-all;">${esc(err && (err.stack || err.message || String(err)))}</div>
             <div style="font-size:12.5px; margin-bottom:16px;">Пожалуйста, обновите страницу.</div>
             <button class="btn btn-outline btn-sm" onclick="window.location.reload(true)">Обновить</button>
           </div>`;
@@ -177,6 +178,7 @@
       contentHtml = `
         <div class="item-list">
           ${filtered.map(ex => {
+            const isWeight = ex.hasWeightSets || ex.maxWeight > 0 || ex.type === 'weight_reps';
             let primaryMetric = '';
             if (ex.isHybrid) {
               primaryMetric = `<span style="font-size:14.5px; font-weight:800; color:var(--accent-color, #DFFF00);">${ex.maxWeight} кг <span style="font-size:11px; font-weight:600; color:var(--text-secondary);">/ ${ex.maxBodyweightReps} повт</span></span>`;
