@@ -277,9 +277,9 @@
 
           return `
             <div class="card">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px;">
-                <div style="display:flex; align-items:center; gap:8px; min-width:0;">
-                  <div class="active-ex-reorder">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; gap:8px;">
+                <div style="display:flex; align-items:flex-start; gap:8px; min-width:0; flex:1;">
+                  <div class="active-ex-reorder" style="margin-top:2px; flex-shrink:0;">
                     <button class="reorder-btn ${exIdx === 0 ? 'disabled' : ''}" 
                             onclick="moveActiveWorkoutEx(${exIdx}, -1)" 
                             ${exIdx === 0 ? 'disabled' : ''} 
@@ -293,15 +293,15 @@
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </button>
                   </div>
-                  <strong style="font-size:15.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(ex.name)}</strong>
+                  <strong style="font-size:15.5px; font-weight:700; line-height:1.35; word-break:break-word; color:var(--text-primary);">${esc(ex.name)}</strong>
                 </div>
-                <div style="display:flex; gap:6px; align-items:center; flex-shrink:0;">
+                <div style="display:flex; gap:6px; align-items:center; flex-shrink:0; margin-top:1px;">
                   ${isWeight ? `
                     <button class="btn btn-outline btn-sm" style="padding:4px 8px; font-size:11.5px;" onclick="openPlateCalculatorModal(${(ex.sets?.find(s => !s.completed && parseFloat(s.weight) > 0)?.weight) || (ex.sets?.[0]?.weight) || 'null'}, ${exIdx})">
                       Блины
                     </button>
                   ` : ''}
-                  <span class="badge">${getExerciseTypeLabel(ex.type)}</span>
+                  <span class="badge" style="font-size:10.5px; padding:3px 6px;">${getExerciseTypeLabel(ex.type)}</span>
                   <button class="modal-close-btn" style="width:24px; height:24px; font-size:13px; opacity:0.65; margin-left:2px;" onclick="removeActiveWorkoutEx(${exIdx})" title="Удалить упражнение">✕</button>
                 </div>
               </div>
@@ -510,9 +510,20 @@
     { name: 'Гиперэкстензия', type: 'bodyweight' }
   ];
 
+  let _selectorSelectedCategory = 'all';
+
   function getAllAvailableExercises() {
     const map = new Map();
-    BASE_EXERCISES.forEach(e => map.set(e.name.toLowerCase().trim(), { name: e.name, type: e.type }));
+    const catalog = window.EXERCISE_CATALOG || BASE_EXERCISES;
+    catalog.forEach(e => {
+      map.set(e.name.toLowerCase().trim(), { 
+        name: e.name, 
+        type: e.type || 'weight_reps',
+        category: e.category || 'other',
+        categoryLabel: window.getCategoryLabel ? window.getCategoryLabel(e.category) : 'Другое'
+      });
+    });
+
     try {
       const routines = window.Storage?.getRoutines ? window.Storage.getRoutines() : [];
       routines.forEach(r => {
@@ -520,7 +531,15 @@
           r.exercises.forEach(e => {
             if (e && e.name) {
               const key = e.name.toLowerCase().trim();
-              if (!map.has(key)) map.set(key, { name: e.name.trim(), type: e.type || 'weight_reps' });
+              if (!map.has(key)) {
+                const meta = window.getExerciseMeta ? window.getExerciseMeta(e.name) : null;
+                map.set(key, { 
+                  name: e.name.trim(), 
+                  type: e.type || (meta ? meta.type : 'weight_reps'),
+                  category: meta ? meta.category : 'other',
+                  categoryLabel: meta ? window.getCategoryLabel(meta.category) : 'Мои'
+                });
+              }
             }
           });
         }
@@ -531,7 +550,15 @@
           h.sets.forEach(s => {
             if (s && s.exerciseName) {
               const key = s.exerciseName.toLowerCase().trim();
-              if (!map.has(key)) map.set(key, { name: s.exerciseName.trim(), type: s.exerciseType || 'weight_reps' });
+              if (!map.has(key)) {
+                const meta = window.getExerciseMeta ? window.getExerciseMeta(s.exerciseName) : null;
+                map.set(key, { 
+                  name: s.exerciseName.trim(), 
+                  type: s.exerciseType || (meta ? meta.type : 'weight_reps'),
+                  category: meta ? meta.category : 'other',
+                  categoryLabel: meta ? window.getCategoryLabel(meta.category) : 'История'
+                });
+              }
             }
           });
         }
@@ -544,30 +571,72 @@
 
   let _selectorOnSelect = null;
 
+  function renderSelectorExerciseListHTML(filteredList) {
+    if (!filteredList.length) {
+      return `<div style="text-align:center; padding:16px; font-size:12.5px; color:var(--text-secondary);">Упражнение не найдено в каталоге. Вы можете ввести своё название выше и добавить его.</div>`;
+    }
+
+    return filteredList.slice(0, 30).map(e => `
+      <div class="selector-ex-item" 
+           style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:var(--card-bg, #14181c); border:1px solid var(--border-color, #1c2229); border-radius:10px; margin-bottom:6px; cursor:pointer;" 
+           onclick="selectExerciseFromSuggestion('${esc(e.name)}', '${e.type}')">
+        <div style="flex:1; min-width:0; padding-right:8px;">
+          <div style="font-weight:600; font-size:14px; color:var(--text-primary); line-height:1.3; word-break:break-word;">${esc(e.name)}</div>
+          <div style="font-size:10.5px; color:var(--text-secondary); text-transform:uppercase; margin-top:2px;">${esc(e.categoryLabel || '')}</div>
+        </div>
+        <span style="font-size:11px; color:var(--text-secondary); text-transform:uppercase; background:rgba(255,255,255,0.06); padding:3px 6px; border-radius:4px; flex-shrink:0;">
+          ${getExerciseTypeLabel(e.type)}
+        </span>
+      </div>
+    `).join('');
+  }
+
   function openExerciseSelectorModal({ title = 'Выбор упражнения', onSelect } = {}) {
     _selectorOnSelect = onSelect;
+    _selectorSelectedCategory = 'all';
     const all = getAllAvailableExercises();
     window._cachedSelectorExercises = all;
 
-    const listHtml = all.slice(0, 15).map(e => `
-      <div class="selector-ex-item" style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:var(--card-bg, #14181c); border:1px solid var(--border-color, #1c2229); border-radius:10px; margin-bottom:6px; cursor:pointer;" onclick="selectExerciseFromSuggestion('${esc(e.name)}', '${e.type}')">
-        <span style="font-weight:600; font-size:14px; color:var(--text-primary);">${esc(e.name)}</span>
-        <span style="font-size:11px; color:var(--text-secondary); text-transform:uppercase; background:rgba(255,255,255,0.06); padding:3px 6px; border-radius:4px;">${getExerciseTypeLabel(e.type)}</span>
+    const categories = window.EXERCISE_CATEGORIES || [
+      { id: 'all', label: 'Все' },
+      { id: 'chest', label: 'Грудь' },
+      { id: 'back', label: 'Спина' },
+      { id: 'shoulders', label: 'Плечи' },
+      { id: 'legs', label: 'Ноги' },
+      { id: 'arms', label: 'Руки' },
+      { id: 'core', label: 'Кор' },
+      { id: 'cardio', label: 'Кардио' }
+    ];
+
+    const categoryChipsHtml = `
+      <div id="selector-category-chips" style="display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; margin-bottom:12px; -webkit-overflow-scrolling:touch; scrollbar-width:none;">
+        ${categories.map(c => `
+          <button type="button" class="chip-btn ${c.id === 'all' ? 'active' : ''}" 
+                  data-cat="${c.id}"
+                  onclick="filterSelectorModalCategory('${c.id}')"
+                  style="padding:5px 12px; border-radius:18px; font-size:11.5px; font-weight:700; white-space:nowrap; border:1px solid ${c.id === 'all' ? 'var(--accent-color, #DFFF00)' : 'var(--border-color, #1c2229)'}; background:${c.id === 'all' ? 'var(--accent-color, #DFFF00)' : 'var(--card-bg, #14181c)'}; color:${c.id === 'all' ? '#000' : 'var(--text-secondary)'}; cursor:pointer;">
+            ${esc(c.label)}
+          </button>
+        `).join('')}
       </div>
-    `).join('');
+    `;
+
+    const listHtml = renderSelectorExerciseListHTML(all);
 
     if (window.openModal) {
       window.openModal(`
         <div style="padding:4px 0;">
-          <div style="font-size:18px; font-weight:800; margin-bottom:14px; text-align:center;">${esc(title)}</div>
-          <div style="margin-bottom:12px;">
-            <label style="display:block; font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; margin-bottom:6px;">Поиск или новое упражнение</label>
-            <input id="selector-ex-search" class="form-input" placeholder="Введите название..." autocomplete="off" autofocus oninput="filterExerciseSelectorList(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();confirmSelectorExercise();}">
+          <div style="font-size:18px; font-weight:800; margin-bottom:12px; text-align:center;">${esc(title)}</div>
+          
+          <div style="margin-bottom:10px;">
+            <input id="selector-ex-search" class="form-input" placeholder="Поиск по 100+ упражнениям..." autocomplete="off" autofocus oninput="filterExerciseSelectorList()" onkeydown="if(event.key==='Enter'){event.preventDefault();confirmSelectorExercise();}">
           </div>
 
-          <div style="margin-bottom:14px;">
-            <label style="display:block; font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; margin-bottom:6px;">Тип нагрузки</label>
-            <select id="selector-ex-type" class="form-select">
+          ${categoryChipsHtml}
+
+          <div style="margin-bottom:12px;">
+            <label style="display:block; font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; margin-bottom:4px;">Тип нагрузки</label>
+            <select id="selector-ex-type" class="form-select" style="padding:8px 12px; font-size:13px;">
               <option value="weight_reps">С весом (вес × повторы)</option>
               <option value="bodyweight">Свой вес (повторы)</option>
               <option value="distance">Дистанция (км / метры)</option>
@@ -575,8 +644,8 @@
             </select>
           </div>
 
-          <div style="font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; margin-bottom:6px;">Быстрый выбор</div>
-          <div id="selector-ex-list" style="max-height:180px; overflow-y:auto; margin-bottom:16px; padding-right:2px;">
+          <div style="font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; margin-bottom:6px;">Каталог упражнений</div>
+          <div id="selector-ex-list" style="max-height:200px; overflow-y:auto; margin-bottom:16px; padding-right:2px;">
             ${listHtml}
           </div>
 
@@ -594,24 +663,37 @@
     }, 100);
   }
 
-  function filterExerciseSelectorList(query) {
-    const container = document.getElementById('selector-ex-list');
-    if (!container) return;
-    const q = (query || '').toLowerCase().trim();
-    const all = window._cachedSelectorExercises || getAllAvailableExercises();
-    const filtered = q ? all.filter(e => e.name.toLowerCase().includes(q)) : all;
-
-    if (!filtered.length) {
-      container.innerHTML = `<div style="text-align:center; padding:14px; font-size:12px; color:var(--text-secondary);">Новое упражнение «${esc(query)}». Выберите тип нагрузки и нажмите «+ Добавить».</div>`;
-      return;
+  function filterSelectorModalCategory(catId) {
+    _selectorSelectedCategory = catId;
+    const chipsContainer = document.getElementById('selector-category-chips');
+    if (chipsContainer) {
+      const buttons = chipsContainer.querySelectorAll('button');
+      buttons.forEach(btn => {
+        const isCurrent = btn.getAttribute('data-cat') === catId;
+        btn.style.borderColor = isCurrent ? 'var(--accent-color, #DFFF00)' : 'var(--border-color, #1c2229)';
+        btn.style.backgroundColor = isCurrent ? 'var(--accent-color, #DFFF00)' : 'var(--card-bg, #14181c)';
+        btn.style.color = isCurrent ? '#000' : 'var(--text-secondary)';
+      });
     }
+    filterExerciseSelectorList();
+  }
 
-    container.innerHTML = filtered.slice(0, 15).map(e => `
-      <div class="selector-ex-item" style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:var(--card-bg, #14181c); border:1px solid var(--border-color, #1c2229); border-radius:10px; margin-bottom:6px; cursor:pointer;" onclick="selectExerciseFromSuggestion('${esc(e.name)}', '${e.type}')">
-        <span style="font-weight:600; font-size:14px; color:var(--text-primary);">${esc(e.name)}</span>
-        <span style="font-size:11px; color:var(--text-secondary); text-transform:uppercase; background:rgba(255,255,255,0.06); padding:3px 6px; border-radius:4px;">${getExerciseTypeLabel(e.type)}</span>
-      </div>
-    `).join('');
+  function filterExerciseSelectorList() {
+    const container = document.getElementById('selector-ex-list');
+    const searchInp = document.getElementById('selector-ex-search');
+    if (!container) return;
+
+    const q = (searchInp?.value || '').toLowerCase().trim();
+    const cat = _selectorSelectedCategory || 'all';
+    const all = window._cachedSelectorExercises || getAllAvailableExercises();
+
+    const filtered = all.filter(e => {
+      const matchCat = cat === 'all' || e.category === cat;
+      const matchSearch = !q || e.name.toLowerCase().includes(q) || (e.categoryLabel && e.categoryLabel.toLowerCase().includes(q));
+      return matchCat && matchSearch;
+    });
+
+    container.innerHTML = renderSelectorExerciseListHTML(filtered);
   }
 
   function selectExerciseFromSuggestion(name, type) {
@@ -978,9 +1060,9 @@
           </button>
         </div>
         <div style="flex:1; min-width:0;">
-          <div style="display:flex; align-items:center; gap:6px;">
-            <span style="font-size:12px; font-weight:700; color:var(--text-secondary);">${idx + 1}.</span>
-            <div style="font-weight:600; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(e.name)}</div>
+          <div style="display:flex; align-items:flex-start; gap:6px;">
+            <span style="font-size:12px; font-weight:700; color:var(--text-secondary); margin-top:2px;">${idx + 1}.</span>
+            <div style="font-weight:600; font-size:14px; line-height:1.35; word-break:break-word; color:var(--text-primary);">${esc(e.name)}</div>
           </div>
           <select id="we-type-${idx}" class="form-select" style="padding:4px 8px; font-size:12px; margin-top:4px;" onchange="editorState.exercises[${idx}].type = this.value">
             <option value="weight_reps" ${e.type === 'weight_reps' ? 'selected' : ''}>С весом (кг + повторения)</option>
@@ -1161,6 +1243,7 @@
   window.confirmAddActiveExercise = confirmAddActiveExercise;
   window.addExerciseToActiveWorkout = addExerciseToActiveWorkout;
   window.openExerciseSelectorModal = openExerciseSelectorModal;
+  window.filterSelectorModalCategory = filterSelectorModalCategory;
   window.filterExerciseSelectorList = filterExerciseSelectorList;
   window.selectExerciseFromSuggestion = selectExerciseFromSuggestion;
   window.confirmSelectorExercise = confirmSelectorExercise;

@@ -38,22 +38,26 @@
       if (!window.state) window.state = {};
       if (!window.state.stats) {
         window.state.stats = {
-          activeSubTab: 'progress',
+          activeSubTab: 'exercises',
           selectedRoutine: null,
           selectedExercise: null,
+          selectedExerciseDetail: null,
+          exerciseCategoryFilter: 'all',
+          exerciseSearchQuery: '',
           calYear: new Date().getFullYear(),
           calMonth: new Date().getMonth(),
           chartLimit: 10
         };
       }
 
-      const validTabs = ['progress', 'calendar', 'report'];
+      const validTabs = ['exercises', 'progress', 'calendar', 'report'];
       if (!validTabs.includes(window.state.stats.activeSubTab)) {
-        window.state.stats.activeSubTab = 'progress';
+        window.state.stats.activeSubTab = 'exercises';
       }
 
       mainContent.innerHTML = `
         <div class="sub-tabs">
+          <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'exercises' ? 'active' : ''}" onclick="switchStatsSubTab('exercises')">Упражнения</button>
           <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'progress' ? 'active' : ''}" onclick="switchStatsSubTab('progress')">Прогресс</button>
           <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'calendar' ? 'active' : ''}" onclick="switchStatsSubTab('calendar')">Календарь</button>
           <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'report' ? 'active' : ''}" onclick="switchStatsSubTab('report')" title="VIV" style="display:inline-flex; align-items:center; justify-content:center;"><img src="icon.svg" style="height:14px; width:auto; border:none; vertical-align:middle; background:transparent;" alt="VIV"></button>
@@ -64,8 +68,10 @@
         renderStatsReportTab();
       } else if (window.state.stats.activeSubTab === 'calendar') {
         renderStatsCalendarTab();
-      } else {
+      } else if (window.state.stats.activeSubTab === 'progress') {
         renderStatsProgressTab();
+      } else {
+        renderStatsExercisesTab();
       }
     } catch (err) {
       console.error('Ошибка в renderStats():', err);
@@ -87,6 +93,291 @@
   function switchStatsSubTab(tab) {
     window.state.stats.activeSubTab = tab;
     renderStats();
+  }
+
+  // ---------------------------------------------------------------------------
+  // БЛОК 1.0. АВТОНОМНАЯ АНАЛИТИКА УПРАЖНЕНИЙ (Exercise-First Analytics)
+  // ---------------------------------------------------------------------------
+  /**
+   * Рендерит вкладку автономной аналитики упражнений со всей истории тренировок:
+   * - Список всех когда-либо выполненных упражнений с фильтром по мышечным группам и поиском.
+   * - Отображение рекордов (PR), дат активности и переходов в детальную аналитику.
+   */
+  function renderStatsExercisesTab() {
+    const container = document.getElementById('stats-tab-content');
+    if (!container) return;
+
+    if (window.state.stats.selectedExerciseDetail) {
+      renderExerciseDetailView(window.state.stats.selectedExerciseDetail);
+      return;
+    }
+
+    const allExercises = (window.Storage && window.Storage.getAllUniqueHistoryExercises)
+      ? window.Storage.getAllUniqueHistoryExercises()
+      : [];
+
+    const activeCat = window.state.stats.exerciseCategoryFilter || 'all';
+    const searchQuery = (window.state.stats.exerciseSearchQuery || '').toLowerCase().trim();
+
+    const categories = window.EXERCISE_CATEGORIES || [
+      { id: 'all', label: 'Все' },
+      { id: 'chest', label: 'Грудь' },
+      { id: 'back', label: 'Спина' },
+      { id: 'shoulders', label: 'Плечи' },
+      { id: 'legs', label: 'Ноги' },
+      { id: 'arms', label: 'Руки' },
+      { id: 'core', label: 'Кор' },
+      { id: 'cardio', label: 'Кардио' },
+      { id: 'mobility', label: 'Растяжка' }
+    ];
+
+    const filtered = allExercises.filter(ex => {
+      const matchCat = activeCat === 'all' || ex.category === activeCat;
+      const matchSearch = !searchQuery || ex.name.toLowerCase().includes(searchQuery);
+      return matchCat && matchSearch;
+    });
+
+    const categoryChipsHtml = `
+      <div class="category-chips-row" style="display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; margin-bottom:12px; -webkit-overflow-scrolling:touch; scrollbar-width:none;">
+        ${categories.map(c => `
+          <button class="chip-btn ${activeCat === c.id ? 'active' : ''}" 
+                  onclick="filterExerciseStatsCategory('${c.id}')"
+                  style="padding:6px 14px; border-radius:20px; font-size:12px; font-weight:700; white-space:nowrap; border:1px solid ${activeCat === c.id ? 'var(--accent-color, #DFFF00)' : 'var(--border-color, #1c2229)'}; background:${activeCat === c.id ? 'var(--accent-color, #DFFF00)' : 'var(--card-bg, #14181c)'}; color:${activeCat === c.id ? '#000' : 'var(--text-secondary)'}; cursor:pointer;">
+            ${esc(c.label)}
+          </button>
+        `).join('')}
+      </div>
+    `;
+
+    const searchInputHtml = `
+      <div style="margin-bottom:12px;">
+        <input class="form-input" 
+               placeholder="Поиск по упражнениям..." 
+               value="${esc(window.state.stats.exerciseSearchQuery || '')}"
+               oninput="filterExerciseStatsSearch(this.value)"
+               style="width:100%; padding:10px 14px; font-size:13.5px; border-radius:12px;">
+      </div>
+    `;
+
+    let contentHtml = '';
+    if (!allExercises.length) {
+      contentHtml = `
+        <div class="card" style="text-align:center; padding:32px 16px; color:var(--text-secondary);">
+          <div style="font-size:24px; margin-bottom:10px;">🏋️‍♂️</div>
+          <div style="font-size:16px; font-weight:700; color:var(--text-primary); margin-bottom:6px;">Нет записей упражнений</div>
+          <div style="font-size:13px; line-height:1.5; margin-bottom:16px;">
+            Выполните свою первую тренировку во вкладке «Тренировка», и здесь появится подробный персональный анализ каждого движения из всех программ.
+          </div>
+          <button class="btn btn-green btn-sm" onclick="if(window.switchTab)window.switchTab('workout');">Перейти к тренировкам</button>
+        </div>
+      `;
+    } else if (!filtered.length) {
+      contentHtml = `
+        <div class="card" style="text-align:center; padding:24px 16px; color:var(--text-secondary);">
+          Ничего не найдено по фильтрам «${esc(activeCat !== 'all' ? activeCat : '')} ${esc(searchQuery)}».
+        </div>
+      `;
+    } else {
+      contentHtml = `
+        <div class="item-list">
+          ${filtered.map(ex => {
+            const isWeight = ex.type === 'weight_reps' || ex.maxWeight > 0;
+            const primaryMetric = isWeight 
+              ? `<span style="font-size:16px; font-weight:800; color:var(--accent-color, #DFFF00);">${ex.maxWeight} <span style="font-size:11px; font-weight:600; color:var(--text-secondary);">кг</span></span>`
+              : (ex.type === 'bodyweight' 
+                  ? `<span style="font-size:16px; font-weight:800; color:var(--accent-color, #DFFF00);">${ex.maxReps} <span style="font-size:11px; font-weight:600; color:var(--text-secondary);">повт</span></span>`
+                  : `<span style="font-size:16px; font-weight:800; color:var(--accent-color, #DFFF00);">${ex.totalSets} <span style="font-size:11px; font-weight:600; color:var(--text-secondary);">сетов</span></span>`);
+
+            return `
+              <div class="card exercise-stat-card" 
+                   onclick="openExerciseDetail('${esc(ex.name)}')" 
+                   style="cursor:pointer; transition:transform 0.15s ease, border-color 0.15s ease; padding:14px 16px; margin-bottom:10px;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:8px;">
+                  <div style="flex:1; min-width:0;">
+                    <div style="font-size:15.5px; font-weight:700; color:var(--text-primary); line-height:1.3; word-break:break-word; margin-bottom:4px;">
+                      ${esc(ex.name)}
+                    </div>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                      <span class="badge" style="font-size:10.5px; padding:2px 7px; text-transform:uppercase;">${esc(ex.categoryLabel || 'Силовые')}</span>
+                      ${isWeight && ex.max1RM > 0 ? `<span style="font-size:11.5px; color:var(--text-secondary);">1RM ~ <b>${ex.max1RM}</b> кг</span>` : ''}
+                    </div>
+                  </div>
+                  <div style="text-align:right; flex-shrink:0;">
+                    <div style="font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; margin-bottom:2px;">Рекорд</div>
+                    ${primaryMetric}
+                  </div>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:11.5px; color:var(--text-secondary); border-top:1px solid var(--border-color, #1c2229); padding-top:8px; margin-top:6px;">
+                  <div>Тренировок: <strong style="color:var(--text-primary);">${ex.totalSessions}</strong> (${ex.totalSets} подх.)</div>
+                  <div>${ex.lastDate ? `Посл: ${ex.lastDate}` : ''} <span style="color:var(--accent-color, #DFFF00); font-weight:700;">→</span></div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    container.innerHTML = `
+      <div style="margin-bottom:16px;">
+        ${searchInputHtml}
+        ${categoryChipsHtml}
+        ${contentHtml}
+      </div>
+    `;
+  }
+
+  /**
+   * Рендерит глубокий экран детальной аналитики упражнения (рекорды, графики, история подходов).
+   */
+  function renderExerciseDetailView(exerciseName) {
+    const container = document.getElementById('stats-tab-content');
+    if (!container) return;
+
+    const stats = window.Storage ? window.Storage.getExerciseAggregatedStats(exerciseName) : null;
+    const history = window.Storage ? window.Storage.getExerciseHistoryTimeline(exerciseName) : [];
+    const chartPoints = window.Storage ? window.Storage.getExerciseChartPoints(exerciseName) : [];
+
+    const currentLimit = (window.Storage && window.Storage.getChartLimit) ? window.Storage.getChartLimit() : 10;
+    const visiblePoints = chartPoints.slice(-currentLimit);
+
+    const isWeight = stats ? (stats.exerciseType === 'weight_reps' || stats.maxWeight > 0) : true;
+    const meta = window.getExerciseMeta ? window.getExerciseMeta(exerciseName) : null;
+    const catLabel = meta ? (window.getCategoryLabel ? window.getCategoryLabel(meta.category) : meta.category) : 'Упражнение';
+
+    let chartsHtml = '';
+    if (!chartPoints.length) {
+      chartsHtml = '<div class="card" style="text-align:center; color:var(--text-secondary); padding:24px;">Нет данных для графиков</div>';
+    } else if (isWeight) {
+      chartsHtml = `
+        <div class="card" style="margin-bottom:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <div style="font-weight:700; font-size:12px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Динамика MAX веса (кг)</div>
+            <button class="btn btn-outline btn-sm" onclick="openChartLimitPicker()" style="padding:4px 8px; font-size:11px;">Выборка: ${currentLimit}</button>
+          </div>
+          <div class="chart-container"><canvas id="exDetailCanvasMax"></canvas></div>
+        </div>
+        <div class="card" style="margin-bottom:12px;">
+          <div style="font-weight:700; font-size:12px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">Расчетный 1RM (кг)</div>
+          <div class="chart-container"><canvas id="exDetailCanvas1RM"></canvas></div>
+        </div>
+        <div class="card" style="margin-bottom:12px;">
+          <div style="font-weight:700; font-size:12px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">Суммарный тоннаж за тренировку (кг)</div>
+          <div class="chart-container"><canvas id="exDetailCanvasVol"></canvas></div>
+        </div>
+      `;
+    } else {
+      chartsHtml = `
+        <div class="card" style="margin-bottom:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <div style="font-weight:700; font-size:12px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Динамика результата</div>
+            <button class="btn btn-outline btn-sm" onclick="openChartLimitPicker()" style="padding:4px 8px; font-size:11px;">Выборка: ${currentLimit}</button>
+          </div>
+          <div class="chart-container"><canvas id="exDetailCanvasSingle"></canvas></div>
+        </div>
+      `;
+    }
+
+    const historySessionsHtml = history.map(h => `
+      <div class="card" style="padding:14px; margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <div>
+            <div style="font-size:14.5px; font-weight:700; color:var(--text-primary);">${esc(h.routineName)}</div>
+            <div style="font-size:11.5px; color:var(--text-secondary);">${h.date}</div>
+          </div>
+          <div class="badge" style="font-size:11px;">${h.sets.length} подх.</div>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:6px;">
+          ${h.sets.map((s, idx) => `
+            <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-color, #1c2229); border-radius:8px; padding:6px 10px; font-size:12px;">
+              <span style="color:var(--text-secondary); font-weight:600;">№${s.setNumber || idx + 1}:</span>
+              <strong style="color:var(--text-primary); margin-left:4px;">
+                ${s.weight > 0 ? `${s.weight} кг × ${s.reps}` : (s.reps > 0 ? `${s.reps} повт` : (s.distance > 0 ? `${s.distance} км` : `${s.duration} с`))}
+              </strong>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+
+    container.innerHTML = `
+      <div style="margin-bottom:16px;">
+        <button class="btn btn-outline btn-sm" onclick="closeExerciseDetail()" style="margin-bottom:14px; display:inline-flex; align-items:center; gap:6px; font-weight:700;">
+          <span>← Все упражнения</span>
+        </button>
+
+        <div style="margin-bottom:16px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+            <span class="badge" style="font-size:11px; text-transform:uppercase;">${esc(catLabel)}</span>
+            <span style="font-size:12px; color:var(--text-secondary);">${stats ? stats.totalLifetimeSessions : 0} тренировок</span>
+          </div>
+          <h2 style="font-size:22px; font-weight:800; color:var(--text-primary); line-height:1.25; margin:0; word-break:break-word;">
+            ${esc(exerciseName)}
+          </h2>
+        </div>
+
+        <div class="finish-stat-grid" style="margin-bottom:16px;">
+          <div class="finish-stat-box">
+            <div class="finish-stat-val" style="color:var(--accent-color, #DFFF00);">${stats ? stats.maxWeight : 0} кг</div>
+            <div class="finish-stat-lbl">Рекорд (MAX)</div>
+          </div>
+          <div class="finish-stat-box">
+            <div class="finish-stat-val">${stats ? stats.max1RM : 0} кг</div>
+            <div class="finish-stat-lbl">Расчетный 1RM</div>
+          </div>
+          <div class="finish-stat-box">
+            <div class="finish-stat-val">${stats ? Math.round(stats.totalLifetimeVolume) : 0} кг</div>
+            <div class="finish-stat-lbl">Тоннаж за все время</div>
+          </div>
+        </div>
+
+        ${chartsHtml}
+
+        <div style="margin-top:20px;">
+          <div style="font-size:13px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:10px;">
+            История выполнения (${history.length})
+          </div>
+          ${historySessionsHtml || '<div class="card" style="text-align:center; color:var(--text-secondary); padding:16px;">Нет истории</div>'}
+        </div>
+      </div>
+    `;
+
+    if (visiblePoints.length > 0 && window.drawChart) {
+      setTimeout(() => {
+        if (isWeight) {
+          window.drawChart('exDetailCanvasMax', visiblePoints, p => p.maxWeight, 'кг');
+          window.drawChart('exDetailCanvas1RM', visiblePoints, p => p.oneRepMax, 'кг');
+          window.drawChart('exDetailCanvasVol', visiblePoints, p => p.totalVolume, 'кг');
+        } else {
+          window.drawChart('exDetailCanvasSingle', visiblePoints, p => p.totalValue, visiblePoints[0]?.unit || '');
+        }
+      }, 50);
+    }
+  }
+
+  function openExerciseDetail(name) {
+    if (!window.state.stats) window.state.stats = {};
+    window.state.stats.selectedExerciseDetail = name;
+    renderStats();
+  }
+
+  function closeExerciseDetail() {
+    if (!window.state.stats) window.state.stats = {};
+    window.state.stats.selectedExerciseDetail = null;
+    renderStats();
+  }
+
+  function filterExerciseStatsCategory(catId) {
+    if (!window.state.stats) window.state.stats = {};
+    window.state.stats.exerciseCategoryFilter = catId;
+    renderStats();
+  }
+
+  function filterExerciseStatsSearch(q) {
+    if (!window.state.stats) window.state.stats = {};
+    window.state.stats.exerciseSearchQuery = q;
+    renderStatsExercisesTab();
   }
 
   // ---------------------------------------------------------------------------
@@ -1206,6 +1497,7 @@
   window.addEventListener('viv-theme-changed', () => {
     if (window.state && window.state.currentTab === 'stats') {
       if (window.state.stats.activeSubTab === 'progress') renderStatsProgressTab();
+      else if (window.state.stats.activeSubTab === 'exercises') renderStatsExercisesTab();
     }
   });
 
@@ -1217,6 +1509,12 @@
    */
   window.renderStats = renderStats;
   window.switchStatsSubTab = switchStatsSubTab;
+  window.renderStatsExercisesTab = renderStatsExercisesTab;
+  window.renderExerciseDetailView = renderExerciseDetailView;
+  window.openExerciseDetail = openExerciseDetail;
+  window.closeExerciseDetail = closeExerciseDetail;
+  window.filterExerciseStatsCategory = filterExerciseStatsCategory;
+  window.filterExerciseStatsSearch = filterExerciseStatsSearch;
   window.renderStatsReportTab = renderStatsReportTab;
   window.shiftReportWeek = shiftReportWeek;
   window.selectReportDate = selectReportDate;

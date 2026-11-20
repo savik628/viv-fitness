@@ -340,6 +340,166 @@ const Storage = {
     return Array.from(names).sort();
   },
 
+  /**
+   * Возвращает полный реестр всех когда-либо выполненных упражнений по всей истории
+   * с агрегированными сводными метриками и категоризацией (для автономной аналитики).
+   */
+  getAllUniqueHistoryExercises() {
+    const history = this.getHistory();
+    const map = new Map();
+
+    history.forEach(h => {
+      if (!Array.isArray(h.sets)) return;
+      h.sets.forEach(s => {
+        if (!s || !s.exerciseName) return;
+        const name = s.exerciseName.trim();
+        const key = name.toLowerCase();
+
+        let item = map.get(key);
+        if (!item) {
+          const meta = window.getExerciseMeta ? window.getExerciseMeta(name) : null;
+          item = {
+            name,
+            category: meta ? meta.category : (s.primaryMuscle || 'other'),
+            type: s.exerciseType || (meta ? meta.type : 'weight_reps'),
+            maxWeight: 0,
+            max1RM: 0,
+            maxReps: 0,
+            totalSets: 0,
+            totalVolume: 0,
+            sessionsSet: new Set(),
+            lastDate: h.date || '',
+            lastSessionId: h.id || 0
+          };
+          map.set(key, item);
+        }
+
+        const w = parseFloat(s.weight) || 0;
+        const r = parseInt(s.reps, 10) || 0;
+        item.totalSets++;
+        item.totalVolume += (w * r);
+        item.sessionsSet.add(h.id);
+
+        if (w > item.maxWeight) item.maxWeight = w;
+        if (r > item.maxReps) item.maxReps = r;
+        if (w > 0 && r > 0) {
+          const est = this.calculate1RM(w, r);
+          if (est > item.max1RM) item.max1RM = est;
+        }
+
+        if (h.date && (!item.lastDate || h.date >= item.lastDate)) {
+          item.lastDate = h.date;
+          item.lastSessionId = h.id;
+        }
+      });
+    });
+
+    const list = Array.from(map.values()).map(item => ({
+      name: item.name,
+      category: item.category,
+      categoryLabel: window.getCategoryLabel ? window.getCategoryLabel(item.category) : item.category,
+      type: item.type,
+      maxWeight: Math.round(item.maxWeight * 10) / 10,
+      max1RM: Math.round(item.max1RM * 10) / 10,
+      maxReps: item.maxReps,
+      totalSets: item.totalSets,
+      totalSessions: item.sessionsSet.size,
+      totalVolume: Math.round(item.totalVolume),
+      lastDate: item.lastDate
+    }));
+
+    return list.sort((a, b) => b.lastDate.localeCompare(a.lastDate) || a.name.localeCompare(b.name));
+  },
+
+  /**
+   * Возвращает детальные агрегированные рекорды и метрики по конкретному упражнению
+   * за всё время выполнения из любых программ и тренировок.
+   */
+  getExerciseAggregatedStats(exerciseName) {
+    if (!exerciseName) return null;
+    const history = this.getHistory();
+    const cleanName = exerciseName.trim().toLowerCase();
+
+    let maxWeight = 0;
+    let max1RM = 0;
+    let maxReps = 0;
+    let maxSetVolume = 0;
+    let totalLifetimeVolume = 0;
+    let totalLifetimeSets = 0;
+    const sessionIds = new Set();
+    let firstDate = null;
+    let lastDate = null;
+    let exerciseType = 'weight_reps';
+
+    history.forEach(h => {
+      if (!Array.isArray(h.sets)) return;
+      const relevantSets = h.sets.filter(s => s && s.exerciseName && s.exerciseName.trim().toLowerCase() === cleanName);
+      if (!relevantSets.length) return;
+
+      sessionIds.add(h.id);
+      if (!firstDate || (h.date && h.date < firstDate)) firstDate = h.date;
+      if (!lastDate || (h.date && h.date > lastDate)) lastDate = h.date;
+
+      relevantSets.forEach(s => {
+        totalLifetimeSets++;
+        if (s.exerciseType) exerciseType = s.exerciseType;
+        const w = parseFloat(s.weight) || 0;
+        const r = parseInt(s.reps, 10) || 0;
+        const setVol = w * r;
+
+        if (w > maxWeight) maxWeight = w;
+        if (r > maxReps) maxReps = r;
+        if (setVol > maxSetVolume) maxSetVolume = setVol;
+        totalLifetimeVolume += setVol;
+
+        if (w > 0 && r > 0) {
+          const est = this.calculate1RM(w, r);
+          if (est > max1RM) max1RM = est;
+        }
+      });
+    });
+
+    return {
+      exerciseName,
+      exerciseType,
+      maxWeight: Math.round(maxWeight * 10) / 10,
+      max1RM: Math.round(max1RM * 10) / 10,
+      maxReps,
+      maxSetVolume: Math.round(maxSetVolume * 10) / 10,
+      totalLifetimeVolume: Math.round(totalLifetimeVolume),
+      totalLifetimeSets,
+      totalLifetimeSessions: sessionIds.size,
+      firstDate: firstDate || '',
+      lastDate: lastDate || ''
+    };
+  },
+
+  /**
+   * Возвращает хронологическую историю всех тренировок с указанным упражнением.
+   */
+  getExerciseHistoryTimeline(exerciseName) {
+    if (!exerciseName) return [];
+    const cleanName = exerciseName.trim().toLowerCase();
+
+    return this.getHistory()
+      .filter(h => Array.isArray(h.sets) && h.sets.some(s => s && s.exerciseName && s.exerciseName.trim().toLowerCase() === cleanName))
+      .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
+      .map(h => ({
+        id: h.id,
+        date: h.date || '',
+        routineName: h.routineName || 'Тренировка',
+        duration: h.duration || 0,
+        sets: h.sets.filter(s => s && s.exerciseName && s.exerciseName.trim().toLowerCase() === cleanName)
+      }));
+  },
+
+  /**
+   * Возвращает точки для графиков по конкретному упражнению со всех тренировок.
+   */
+  getExerciseChartPoints(exerciseName) {
+    return this.getChartPoints(null, exerciseName);
+  },
+
   getChartPoints(routineName, exerciseName) {
     const sessions = this.getHistory()
       .filter(h => (!routineName || h.routineName === routineName) && h.sets?.some(s => s.exerciseName === exerciseName))
