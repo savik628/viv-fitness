@@ -362,9 +362,17 @@ const Storage = {
             name,
             category: meta ? meta.category : (s.primaryMuscle || 'other'),
             type: s.exerciseType || (meta ? meta.type : 'weight_reps'),
+            hasWeightSets: false,
+            hasBodyweightSets: false,
+            hasDistanceSets: false,
+            hasDurationSets: false,
             maxWeight: 0,
             max1RM: 0,
             maxReps: 0,
+            maxBodyweightReps: 0,
+            maxWeightedReps: 0,
+            maxDistance: 0,
+            maxDuration: 0,
             totalSets: 0,
             totalVolume: 0,
             sessionsSet: new Set(),
@@ -376,15 +384,34 @@ const Storage = {
 
         const w = parseFloat(s.weight) || 0;
         const r = parseInt(s.reps, 10) || 0;
+        const dist = parseFloat(s.distance) || 0;
+        const dur = parseInt(s.duration, 10) || 0;
+
         item.totalSets++;
         item.totalVolume += (w * r);
         item.sessionsSet.add(h.id);
 
-        if (w > item.maxWeight) item.maxWeight = w;
+        if (w > 0) {
+          item.hasWeightSets = true;
+          if (w > item.maxWeight) item.maxWeight = w;
+          if (r > item.maxWeightedReps) item.maxWeightedReps = r;
+          if (r > 0) {
+            const est = this.calculate1RM(w, r);
+            if (est > item.max1RM) item.max1RM = est;
+          }
+        } else if (r > 0) {
+          item.hasBodyweightSets = true;
+          if (r > item.maxBodyweightReps) item.maxBodyweightReps = r;
+        }
+
         if (r > item.maxReps) item.maxReps = r;
-        if (w > 0 && r > 0) {
-          const est = this.calculate1RM(w, r);
-          if (est > item.max1RM) item.max1RM = est;
+        if (dist > 0) {
+          item.hasDistanceSets = true;
+          if (dist > item.maxDistance) item.maxDistance = dist;
+        }
+        if (dur > 0) {
+          item.hasDurationSets = true;
+          if (dur > item.maxDuration) item.maxDuration = dur;
         }
 
         if (h.date && (!item.lastDate || h.date >= item.lastDate)) {
@@ -394,19 +421,29 @@ const Storage = {
       });
     });
 
-    const list = Array.from(map.values()).map(item => ({
-      name: item.name,
-      category: item.category,
-      categoryLabel: window.getCategoryLabel ? window.getCategoryLabel(item.category) : item.category,
-      type: item.type,
-      maxWeight: Math.round(item.maxWeight * 10) / 10,
-      max1RM: Math.round(item.max1RM * 10) / 10,
-      maxReps: item.maxReps,
-      totalSets: item.totalSets,
-      totalSessions: item.sessionsSet.size,
-      totalVolume: Math.round(item.totalVolume),
-      lastDate: item.lastDate
-    }));
+    const list = Array.from(map.values()).map(item => {
+      const isHybrid = item.hasWeightSets && item.hasBodyweightSets;
+      return {
+        name: item.name,
+        category: item.category,
+        categoryLabel: window.getCategoryLabel ? window.getCategoryLabel(item.category) : item.category,
+        type: item.type,
+        hasWeightSets: item.hasWeightSets,
+        hasBodyweightSets: item.hasBodyweightSets,
+        isHybrid,
+        maxWeight: Math.round(item.maxWeight * 10) / 10,
+        max1RM: Math.round(item.max1RM * 10) / 10,
+        maxReps: item.maxReps,
+        maxBodyweightReps: item.maxBodyweightReps,
+        maxWeightedReps: item.maxWeightedReps,
+        maxDistance: Math.round(item.maxDistance * 10) / 10,
+        maxDuration: item.maxDuration,
+        totalSets: item.totalSets,
+        totalSessions: item.sessionsSet.size,
+        totalVolume: Math.round(item.totalVolume),
+        lastDate: item.lastDate
+      };
+    });
 
     return list.sort((a, b) => b.lastDate.localeCompare(a.lastDate) || a.name.localeCompare(b.name));
   },
@@ -423,9 +460,17 @@ const Storage = {
     let maxWeight = 0;
     let max1RM = 0;
     let maxReps = 0;
+    let maxBodyweightReps = 0;
+    let maxWeightedReps = 0;
+    let maxDistance = 0;
+    let maxDuration = 0;
     let maxSetVolume = 0;
     let totalLifetimeVolume = 0;
     let totalLifetimeSets = 0;
+    let hasWeightSets = false;
+    let hasBodyweightSets = false;
+    let hasDistanceSets = false;
+    let hasDurationSets = false;
     const sessionIds = new Set();
     let firstDate = null;
     let lastDate = null;
@@ -445,26 +490,53 @@ const Storage = {
         if (s.exerciseType) exerciseType = s.exerciseType;
         const w = parseFloat(s.weight) || 0;
         const r = parseInt(s.reps, 10) || 0;
+        const dist = parseFloat(s.distance) || 0;
+        const dur = parseInt(s.duration, 10) || 0;
         const setVol = w * r;
 
-        if (w > maxWeight) maxWeight = w;
+        if (w > 0) {
+          hasWeightSets = true;
+          if (w > maxWeight) maxWeight = w;
+          if (r > maxWeightedReps) maxWeightedReps = r;
+          if (r > 0) {
+            const est = this.calculate1RM(w, r);
+            if (est > max1RM) max1RM = est;
+          }
+        } else if (r > 0) {
+          hasBodyweightSets = true;
+          if (r > maxBodyweightReps) maxBodyweightReps = r;
+        }
+
         if (r > maxReps) maxReps = r;
+        if (dist > 0) {
+          hasDistanceSets = true;
+          if (dist > maxDistance) maxDistance = dist;
+        }
+        if (dur > 0) {
+          hasDurationSets = true;
+          if (dur > maxDuration) maxDuration = dur;
+        }
+
         if (setVol > maxSetVolume) maxSetVolume = setVol;
         totalLifetimeVolume += setVol;
-
-        if (w > 0 && r > 0) {
-          const est = this.calculate1RM(w, r);
-          if (est > max1RM) max1RM = est;
-        }
       });
     });
 
     return {
       exerciseName,
       exerciseType,
+      hasWeightSets,
+      hasBodyweightSets,
+      hasDistanceSets,
+      hasDurationSets,
+      isHybrid: hasWeightSets && hasBodyweightSets,
       maxWeight: Math.round(maxWeight * 10) / 10,
       max1RM: Math.round(max1RM * 10) / 10,
       maxReps,
+      maxBodyweightReps,
+      maxWeightedReps,
+      maxDistance: Math.round(maxDistance * 10) / 10,
+      maxDuration,
       maxSetVolume: Math.round(maxSetVolume * 10) / 10,
       totalLifetimeVolume: Math.round(totalLifetimeVolume),
       totalLifetimeSets,
@@ -501,20 +573,25 @@ const Storage = {
   },
 
   getChartPoints(routineName, exerciseName) {
+    if (!exerciseName) return [];
+    const cleanTarget = exerciseName.trim().toLowerCase();
+
     const sessions = this.getHistory()
-      .filter(h => (!routineName || h.routineName === routineName) && h.sets?.some(s => s.exerciseName === exerciseName))
+      .filter(h => (!routineName || h.routineName === routineName) && h.sets?.some(s => s && s.exerciseName && s.exerciseName.trim().toLowerCase() === cleanTarget))
       .sort((a, b) => {
         const diff = new Date(a.date) - new Date(b.date);
         return diff !== 0 && !isNaN(diff) ? diff : (Number(a.id) || 0) - (Number(b.id) || 0);
       });
 
     return sessions.map((session, index) => {
-      const sets = session.sets.filter(s => s.exerciseName === exerciseName);
+      const sets = session.sets.filter(s => s && s.exerciseName && s.exerciseName.trim().toLowerCase() === cleanTarget);
       let maxW = 0, maxR = 0, vol = 0, dist = 0, dur = 0, type = 'weight_reps', max1RM = 0;
+      let hasWeightInSession = false;
 
       sets.forEach(s => {
         const w = parseFloat(s.weight) || 0;
         const r = parseInt(s.reps, 10) || 0;
+        if (w > 0) hasWeightInSession = true;
         if (w > maxW) maxW = w;
         if (r > maxR) maxR = r;
         vol += (w * r);
@@ -527,11 +604,10 @@ const Storage = {
         }
       });
 
-      let val = maxW > 0 ? maxW : vol;
-      let unit = 'кг';
-      if (type === 'bodyweight' || type === 'reps_only') { val = maxR; unit = 'повторений'; }
-      else if (type === 'distance') { val = dist; unit = 'км'; }
-      else if (type === 'duration') { val = dur; unit = 'сек'; }
+      let val = maxW > 0 ? maxW : (maxR > 0 ? maxR : (dist > 0 ? dist : dur));
+      let unit = maxW > 0 ? 'кг' : 'повторений';
+      if (type === 'distance' || dist > 0) { val = dist; unit = 'км'; }
+      else if (type === 'duration' || dur > 0) { val = dur; unit = 'сек'; }
 
       const idx = index + 1;
       return {
@@ -539,12 +615,16 @@ const Storage = {
         orderLabel: `№${idx}`,
         sessionIndex: idx,
         date: session.date ? session.date.substring(0, 10) : '',
+        routineName: session.routineName || 'Тренировка',
         totalValue: Math.round(val * 10) / 10,
         unit,
         maxWeight: Math.round(maxW * 10) / 10,
         maxReps: maxR,
         totalVolume: Math.round(vol * 10) / 10,
         oneRepMax: Math.round(max1RM * 10) / 10,
+        distance: Math.round(dist * 10) / 10,
+        duration: dur,
+        hasWeight: hasWeightInSession,
         exerciseType: type,
         setsCount: sets.length,
       };

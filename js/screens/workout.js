@@ -1127,11 +1127,10 @@
         <div id="we-exercises-list" class="item-list" style="margin-bottom:16px;">
           ${getEditorExercisesHtml()}
         </div>
-        <div style="display:flex; gap:8px; margin-bottom:16px;">
-          <input id="we-new-ex-input" class="form-input" placeholder="Название упражнения" style="flex:1;" onkeydown="if(event.key==='Enter'){event.preventDefault();addEditorExerciseFromInput();}">
-          <button class="btn btn-secondary" onclick="addEditorExerciseFromInput()" style="padding:0 12px; font-weight:700; white-space:nowrap;">+ Добавить</button>
-          <button class="btn btn-secondary" onclick="promptAddExercise()" title="Выбрать из каталога" style="padding:0 12px; font-weight:700; white-space:nowrap;">📋 Список</button>
-        </div>
+        <button class="btn btn-outline" onclick="promptAddExercise()" style="width:100%; margin-top:6px; margin-bottom:16px; padding:13px; font-weight:700; border-style:dashed; display:flex; align-items:center; justify-content:center; gap:8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Добавить упражнение
+        </button>
         <button class="btn btn-green" style="width:100%;" onclick="saveEditorRoutine()">Сохранить программу</button>
       `);
     }

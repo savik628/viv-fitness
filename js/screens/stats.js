@@ -38,9 +38,7 @@
       if (!window.state) window.state = {};
       if (!window.state.stats) {
         window.state.stats = {
-          activeSubTab: 'exercises',
-          selectedRoutine: null,
-          selectedExercise: null,
+          activeSubTab: 'progress',
           selectedExerciseDetail: null,
           exerciseCategoryFilter: 'all',
           exerciseSearchQuery: '',
@@ -50,14 +48,13 @@
         };
       }
 
-      const validTabs = ['exercises', 'progress', 'calendar', 'report'];
+      const validTabs = ['progress', 'calendar', 'report'];
       if (!validTabs.includes(window.state.stats.activeSubTab)) {
-        window.state.stats.activeSubTab = 'exercises';
+        window.state.stats.activeSubTab = 'progress';
       }
 
       mainContent.innerHTML = `
         <div class="sub-tabs">
-          <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'exercises' ? 'active' : ''}" onclick="switchStatsSubTab('exercises')">Упражнения</button>
           <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'progress' ? 'active' : ''}" onclick="switchStatsSubTab('progress')">Прогресс</button>
           <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'calendar' ? 'active' : ''}" onclick="switchStatsSubTab('calendar')">Календарь</button>
           <button class="sub-tab-btn ${window.state.stats.activeSubTab === 'report' ? 'active' : ''}" onclick="switchStatsSubTab('report')" title="VIV" style="display:inline-flex; align-items:center; justify-content:center;"><img src="icon.svg" style="height:14px; width:auto; border:none; vertical-align:middle; background:transparent;" alt="VIV"></button>
@@ -68,10 +65,8 @@
         renderStatsReportTab();
       } else if (window.state.stats.activeSubTab === 'calendar') {
         renderStatsCalendarTab();
-      } else if (window.state.stats.activeSubTab === 'progress') {
-        renderStatsProgressTab();
       } else {
-        renderStatsExercisesTab();
+        renderStatsProgressTab();
       }
     } catch (err) {
       console.error('Ошибка в renderStats():', err);
@@ -96,14 +91,15 @@
   }
 
   // ---------------------------------------------------------------------------
-  // БЛОК 1.0. АВТОНОМНАЯ АНАЛИТИКА УПРАЖНЕНИЙ (Exercise-First Analytics)
+  // БЛОК 1.0. ЕДИНАЯ АНАЛИТИКА ПРОГРЕССА И УПРАЖНЕНИЙ (Unified Exercise & Progress Analytics)
   // ---------------------------------------------------------------------------
   /**
-   * Рендерит вкладку автономной аналитики упражнений со всей истории тренировок:
-   * - Список всех когда-либо выполненных упражнений с фильтром по мышечным группам и поиском.
-   * - Отображение рекордов (PR), дат активности и переходов в детальную аналитику.
+   * Рендерит объединённую вкладку «Прогресс» со всей истории тренировок:
+   * - Список всех когда-либо выполненных упражнений с фильтром по категориям и поиском.
+   * - Отображение рекордов (PR) для всех 4 типов нагрузок и гибридных движений.
+   * - Переход в детальный экран упражнения с динамическими графиками и историей подходов.
    */
-  function renderStatsExercisesTab() {
+  function renderStatsProgressTab() {
     const container = document.getElementById('stats-tab-content');
     if (!container) return;
 
@@ -181,12 +177,20 @@
       contentHtml = `
         <div class="item-list">
           ${filtered.map(ex => {
-            const isWeight = ex.type === 'weight_reps' || ex.maxWeight > 0;
-            const primaryMetric = isWeight 
-              ? `<span style="font-size:16px; font-weight:800; color:var(--accent-color, #DFFF00);">${ex.maxWeight} <span style="font-size:11px; font-weight:600; color:var(--text-secondary);">кг</span></span>`
-              : (ex.type === 'bodyweight' 
-                  ? `<span style="font-size:16px; font-weight:800; color:var(--accent-color, #DFFF00);">${ex.maxReps} <span style="font-size:11px; font-weight:600; color:var(--text-secondary);">повт</span></span>`
-                  : `<span style="font-size:16px; font-weight:800; color:var(--accent-color, #DFFF00);">${ex.totalSets} <span style="font-size:11px; font-weight:600; color:var(--text-secondary);">сетов</span></span>`);
+            let primaryMetric = '';
+            if (ex.isHybrid) {
+              primaryMetric = `<span style="font-size:14.5px; font-weight:800; color:var(--accent-color, #DFFF00);">${ex.maxWeight} кг <span style="font-size:11px; font-weight:600; color:var(--text-secondary);">/ ${ex.maxBodyweightReps} повт</span></span>`;
+            } else if (ex.hasWeightSets || ex.maxWeight > 0) {
+              primaryMetric = `<span style="font-size:16px; font-weight:800; color:var(--accent-color, #DFFF00);">${ex.maxWeight} <span style="font-size:11px; font-weight:600; color:var(--text-secondary);">кг</span></span>`;
+            } else if (ex.hasBodyweightSets || ex.maxReps > 0) {
+              primaryMetric = `<span style="font-size:16px; font-weight:800; color:var(--accent-color, #DFFF00);">${ex.maxReps} <span style="font-size:11px; font-weight:600; color:var(--text-secondary);">повт</span></span>`;
+            } else if (ex.maxDistance > 0) {
+              primaryMetric = `<span style="font-size:16px; font-weight:800; color:var(--accent-color, #DFFF00);">${ex.maxDistance} <span style="font-size:11px; font-weight:600; color:var(--text-secondary);">км</span></span>`;
+            } else if (ex.maxDuration > 0) {
+              primaryMetric = `<span style="font-size:16px; font-weight:800; color:var(--accent-color, #DFFF00);">${ex.maxDuration} <span style="font-size:11px; font-weight:600; color:var(--text-secondary);">сек</span></span>`;
+            } else {
+              primaryMetric = `<span style="font-size:16px; font-weight:800; color:var(--accent-color, #DFFF00);">${ex.totalSets} <span style="font-size:11px; font-weight:600; color:var(--text-secondary);">сетов</span></span>`;
+            }
 
             return `
               <div class="card exercise-stat-card" 
@@ -289,14 +293,32 @@
           <div class="badge" style="font-size:11px;">${h.sets.length} подх.</div>
         </div>
         <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:6px;">
-          ${h.sets.map((s, idx) => `
-            <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-color, #1c2229); border-radius:8px; padding:6px 10px; font-size:12px;">
-              <span style="color:var(--text-secondary); font-weight:600;">№${s.setNumber || idx + 1}:</span>
-              <strong style="color:var(--text-primary); margin-left:4px;">
-                ${s.weight > 0 ? `${s.weight} кг × ${s.reps}` : (s.reps > 0 ? `${s.reps} повт` : (s.distance > 0 ? `${s.distance} км` : `${s.duration} с`))}
-              </strong>
-            </div>
-          `).join('')}
+          ${h.sets.map((s, idx) => {
+            let setValText = '';
+            const w = parseFloat(s.weight) || 0;
+            const r = parseInt(s.reps, 10) || 0;
+            const dist = parseFloat(s.distance) || 0;
+            const dur = parseInt(s.duration, 10) || 0;
+
+            if (w > 0) {
+              setValText = `<span style="color:var(--accent-color, #DFFF00); font-weight:700;">+${w} кг</span> × ${r}`;
+            } else if (r > 0) {
+              setValText = `<strong style="color:var(--text-primary);">${r} повт</strong> <span style="font-size:10px; color:var(--text-secondary);">(свой вес)</span>`;
+            } else if (dist > 0) {
+              setValText = `<strong style="color:var(--text-primary);">${dist} км</strong>`;
+            } else if (dur > 0) {
+              setValText = `<strong style="color:var(--text-primary);">${dur} с</strong>`;
+            } else {
+              setValText = `<span style="color:var(--text-secondary);">0</span>`;
+            }
+
+            return `
+              <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-color, #1c2229); border-radius:8px; padding:6px 10px; font-size:12px;">
+                <span style="color:var(--text-secondary); font-weight:600;">№${s.setNumber || idx + 1}:</span>
+                <span style="margin-left:4px;">${setValText}</span>
+              </div>
+            `;
+          }).join('')}
         </div>
       </div>
     `).join('');
@@ -318,18 +340,72 @@
         </div>
 
         <div class="finish-stat-grid" style="margin-bottom:16px;">
-          <div class="finish-stat-box">
-            <div class="finish-stat-val" style="color:var(--accent-color, #DFFF00);">${stats ? stats.maxWeight : 0} кг</div>
-            <div class="finish-stat-lbl">Рекорд (MAX)</div>
-          </div>
-          <div class="finish-stat-box">
-            <div class="finish-stat-val">${stats ? stats.max1RM : 0} кг</div>
-            <div class="finish-stat-lbl">Расчетный 1RM</div>
-          </div>
-          <div class="finish-stat-box">
-            <div class="finish-stat-val">${stats ? Math.round(stats.totalLifetimeVolume) : 0} кг</div>
-            <div class="finish-stat-lbl">Тоннаж за все время</div>
-          </div>
+          ${stats && stats.isHybrid ? `
+            <div class="finish-stat-box">
+              <div class="finish-stat-val" style="color:var(--accent-color, #DFFF00);">+${stats.maxWeight} кг</div>
+              <div class="finish-stat-lbl">Доп. вес (MAX)</div>
+            </div>
+            <div class="finish-stat-box">
+              <div class="finish-stat-val">${stats.maxBodyweightReps} повт</div>
+              <div class="finish-stat-lbl">Свой вес (MAX)</div>
+            </div>
+            <div class="finish-stat-box">
+              <div class="finish-stat-val">${stats.max1RM} кг</div>
+              <div class="finish-stat-lbl">Расчетный 1RM</div>
+            </div>
+          ` : (stats && (stats.hasWeightSets || stats.maxWeight > 0) ? `
+            <div class="finish-stat-box">
+              <div class="finish-stat-val" style="color:var(--accent-color, #DFFF00);">${stats.maxWeight} кг</div>
+              <div class="finish-stat-lbl">Рекорд (MAX)</div>
+            </div>
+            <div class="finish-stat-box">
+              <div class="finish-stat-val">${stats.max1RM} кг</div>
+              <div class="finish-stat-lbl">Расчетный 1RM</div>
+            </div>
+            <div class="finish-stat-box">
+              <div class="finish-stat-val">${Math.round(stats.totalLifetimeVolume)} кг</div>
+              <div class="finish-stat-lbl">Тоннаж за все время</div>
+            </div>
+          ` : (stats && stats.maxDistance > 0 ? `
+            <div class="finish-stat-box">
+              <div class="finish-stat-val" style="color:var(--accent-color, #DFFF00);">${stats.maxDistance} км</div>
+              <div class="finish-stat-lbl">Макс. дистанция</div>
+            </div>
+            <div class="finish-stat-box">
+              <div class="finish-stat-val">${stats.totalLifetimeSessions}</div>
+              <div class="finish-stat-lbl">Тренировок</div>
+            </div>
+            <div class="finish-stat-box">
+              <div class="finish-stat-val">${stats.totalLifetimeSets}</div>
+              <div class="finish-stat-lbl">Подходов</div>
+            </div>
+          ` : (stats && stats.maxDuration > 0 ? `
+            <div class="finish-stat-box">
+              <div class="finish-stat-val" style="color:var(--accent-color, #DFFF00);">${stats.maxDuration} с</div>
+              <div class="finish-stat-lbl">Макс. время</div>
+            </div>
+            <div class="finish-stat-box">
+              <div class="finish-stat-val">${stats.totalLifetimeSessions}</div>
+              <div class="finish-stat-lbl">Тренировок</div>
+            </div>
+            <div class="finish-stat-box">
+              <div class="finish-stat-val">${stats.totalLifetimeSets}</div>
+              <div class="finish-stat-lbl">Подходов</div>
+            </div>
+          ` : `
+            <div class="finish-stat-box">
+              <div class="finish-stat-val" style="color:var(--accent-color, #DFFF00);">${stats ? stats.maxReps : 0} повт</div>
+              <div class="finish-stat-lbl">Рекорд повторов</div>
+            </div>
+            <div class="finish-stat-box">
+              <div class="finish-stat-val">${stats ? stats.totalLifetimeSessions : 0}</div>
+              <div class="finish-stat-lbl">Тренировок</div>
+            </div>
+            <div class="finish-stat-box">
+              <div class="finish-stat-val">${stats ? stats.totalLifetimeSets : 0}</div>
+              <div class="finish-stat-lbl">Подходов</div>
+            </div>
+          `)))}
         </div>
 
         ${chartsHtml}
@@ -377,7 +453,7 @@
   function filterExerciseStatsSearch(q) {
     if (!window.state.stats) window.state.stats = {};
     window.state.stats.exerciseSearchQuery = q;
-    renderStatsExercisesTab();
+    renderStatsProgressTab();
   }
 
   // ---------------------------------------------------------------------------
@@ -1027,152 +1103,8 @@
   window.exportVivReportPng = exportVivReportPng;
 
   // ---------------------------------------------------------------------------
-  // БЛОК 2. ВКЛАДКА "ПРОГРЕСС" И ГРАФИКИ ДИНАМИКИ (Progress Charts & 1RM Metrics)
+  // БЛОК 2. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ И ПИКЕРЫ (Chart Helpers & Limit Picker)
   // ---------------------------------------------------------------------------
-  /**
-   * Рендерит вкладку аналитики «Прогресс»:
-   * 1. Селекторы выбора программы и упражнения.
-   * 2. Кнопка фильтра глубины выборки (последние 5, 10, 20... записей).
-   * 3. Для упражнений с отягощением: 3 синхронных графических графика:
-   *    - MAX: максимальный поднятый рабочий вес в рамках сессии.
-   *    - 1RM: расчётный одноповторный максимум по формуле Эпли/Бржицки.
-   *    - SUM: суммарный тоннаж за тренировку в данном движении.
-   * 4. Для упражнений со своим весом, дистанцией или временем — специализированный график динамики.
-   */
-  function renderStatsProgressTab() {
-    const container = document.getElementById('stats-tab-content');
-    if (!container) return;
-
-    const routines = window.Storage ? window.Storage.getStatsRoutines() : [];
-    window.state.stats.routines = routines;
-
-    if (!routines.length) {
-      container.innerHTML = `<div style="text-align:center; padding:40px 16px; color:var(--text-secondary)">Нет записей тренировок.</div>`;
-      return;
-    }
-
-    if (!window.state.stats.selectedRoutine || !routines.includes(window.state.stats.selectedRoutine)) {
-      window.state.stats.selectedRoutine = routines[0];
-    }
-
-    const exercises = window.Storage.getStatsExercises(window.state.stats.selectedRoutine);
-    window.state.stats.exercises = exercises;
-
-    if (!window.state.stats.selectedExercise || !exercises.includes(window.state.stats.selectedExercise)) {
-      window.state.stats.selectedExercise = exercises[0] || null;
-    }
-
-    const chartPoints = window.state.stats.selectedExercise
-      ? window.Storage.getChartPoints(window.state.stats.selectedRoutine, window.state.stats.selectedExercise)
-      : [];
-    window.state.stats.chartPoints = chartPoints;
-
-    const currentLimit = (window.Storage && window.Storage.getChartLimit) ? window.Storage.getChartLimit() : 10;
-    window.state.stats.chartLimit = currentLimit;
-    const visiblePoints = chartPoints.slice(-currentLimit);
-
-    const exType = chartPoints[0]?.exerciseType || 'weight_reps';
-    const isWeightReps = exType === 'weight_reps' || (chartPoints[0]?.maxWeight > 0);
-
-    let chartsHtml = '';
-    if (!chartPoints.length) {
-      chartsHtml = '<div class="card" style="text-align:center; color:var(--text-secondary); padding:24px;">Нет данных для графика по этому упражнению</div>';
-    } else if (isWeightReps) {
-      chartsHtml = `
-        <div class="card" style="margin-bottom:12px;">
-          <div style="font-weight:bold; font-size:15px; margin-bottom:2px;">${esc(window.state.stats.selectedExercise)}</div>
-          <div style="font-size:11.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:12px;">MAX</div>
-          <div class="chart-container">
-            <canvas id="progressCanvasMaxWeight"></canvas>
-          </div>
-        </div>
-        <div class="card" style="margin-bottom:12px;">
-          <div style="font-weight:bold; font-size:15px; margin-bottom:2px;">${esc(window.state.stats.selectedExercise)}</div>
-          <div style="font-size:11.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:12px;">1RM</div>
-          <div class="chart-container">
-            <canvas id="progressCanvas1RM"></canvas>
-          </div>
-        </div>
-        <div class="card">
-          <div style="font-weight:bold; font-size:15px; margin-bottom:2px;">${esc(window.state.stats.selectedExercise)}</div>
-          <div style="font-size:11.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:12px;">SUM</div>
-          <div class="chart-container">
-            <canvas id="progressCanvasTotalVolume"></canvas>
-          </div>
-        </div>
-      `;
-    } else if (exType === 'bodyweight') {
-      chartsHtml = `
-        <div class="card">
-          <div style="font-weight:bold; font-size:15px; margin-bottom:2px;">${esc(window.state.stats.selectedExercise)}</div>
-          <div style="font-size:11.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:12px;">MAX</div>
-          <div class="chart-container">
-            <canvas id="progressCanvasSingle"></canvas>
-          </div>
-        </div>
-      `;
-    } else if (exType === 'distance') {
-      chartsHtml = `
-        <div class="card">
-          <div style="font-weight:bold; font-size:15px; margin-bottom:2px;">${esc(window.state.stats.selectedExercise)}</div>
-          <div style="font-size:11.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:12px;">DIST</div>
-          <div class="chart-container">
-            <canvas id="progressCanvasSingle"></canvas>
-          </div>
-        </div>
-      `;
-    } else {
-      chartsHtml = `
-        <div class="card">
-          <div style="font-weight:bold; font-size:15px; margin-bottom:2px;">${esc(window.state.stats.selectedExercise)}</div>
-          <div style="font-size:11.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:12px;">TIME</div>
-          <div class="chart-container">
-            <canvas id="progressCanvasSingle"></canvas>
-          </div>
-        </div>
-      `;
-    }
-
-    container.innerHTML = `
-      <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <div style="font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">Выбор упражнения</div>
-          <button class="btn btn-outline btn-sm chart-limit-filter-btn" onclick="openChartLimitPicker()" style="display:inline-flex; align-items:center; gap:6px; font-weight:600; padding:6px 12px; border-radius:10px; cursor:pointer;">
-            <span>Последние: <b style="color:var(--accent-color);">${currentLimit}</b></span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
-          </button>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Программа</label>
-          <select class="form-select" onchange="changeStatsRoutine(this.value)">
-            ${routines.map(r => `<option value="${esc(r)}" ${r === window.state.stats.selectedRoutine ? 'selected' : ''}>${esc(r)}</option>`).join('')}
-          </select>
-        </div>
-        <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">Упражнение</label>
-          <select class="form-select" onchange="changeStatsExercise(this.value)">
-            ${exercises.map(e => `<option value="${esc(e)}" ${e === window.state.stats.selectedExercise ? 'selected' : ''}>${esc(e)}</option>`).join('')}
-          </select>
-        </div>
-      </div>
-      ${chartsHtml}
-    `;
-
-    if (visiblePoints.length > 0 && window.drawChart) {
-      if (isWeightReps) {
-        window.drawChart('progressCanvasMaxWeight', visiblePoints, p => p.maxWeight, 'кг');
-        window.drawChart('progressCanvas1RM', visiblePoints, p => p.oneRepMax, 'кг');
-        window.drawChart('progressCanvasTotalVolume', visiblePoints, p => p.totalVolume, 'кг');
-      } else if (exType === 'bodyweight') {
-        window.drawChart('progressCanvasSingle', visiblePoints, p => p.maxReps, 'повторений');
-      } else if (exType === 'distance') {
-        window.drawChart('progressCanvasSingle', visiblePoints, p => p.totalValue, 'км');
-      } else {
-        window.drawChart('progressCanvasSingle', visiblePoints, p => p.totalValue, 'сек');
-      }
-    }
-  }
-
   /**
    * Открывает барабанный пикер для настройки лимита отображаемых тренировок на графиках (от 1 до 50).
    */
@@ -1497,7 +1429,8 @@
   window.addEventListener('viv-theme-changed', () => {
     if (window.state && window.state.currentTab === 'stats') {
       if (window.state.stats.activeSubTab === 'progress') renderStatsProgressTab();
-      else if (window.state.stats.activeSubTab === 'exercises') renderStatsExercisesTab();
+      else if (window.state.stats.activeSubTab === 'report') renderStatsReportTab();
+      else if (window.state.stats.activeSubTab === 'calendar') renderStatsCalendarTab();
     }
   });
 
@@ -1509,7 +1442,8 @@
    */
   window.renderStats = renderStats;
   window.switchStatsSubTab = switchStatsSubTab;
-  window.renderStatsExercisesTab = renderStatsExercisesTab;
+  window.renderStatsProgressTab = renderStatsProgressTab;
+  window.renderStatsExercisesTab = renderStatsProgressTab;
   window.renderExerciseDetailView = renderExerciseDetailView;
   window.openExerciseDetail = openExerciseDetail;
   window.closeExerciseDetail = closeExerciseDetail;
